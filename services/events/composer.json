@@ -1,0 +1,16 @@
+{
+    "name": "ramona/automation-platform-svc-events",
+    "description": "The event persistence service for AutomationPlatform",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Ramona\\AutomationPlatformSvcEvents\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php-amqplib/php-amqplib": "^3.0"
+    }
+}

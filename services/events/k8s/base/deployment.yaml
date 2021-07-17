@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: svc-events
+  labels:
+    app: svc-events
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: svc-events
+  template:
+    metadata:
+      labels:
+        app: svc-events
+    spec:
+      containers:
+        - name: svc-events
+          image: automation-platform-svc-events:latest # todo find out how to handle this for prod
+          imagePullPolicy: Never # todo this will of course break in prod
+          volumeMounts:
+            - name: rmq-events-default-user
+              mountPath: "/etc/svc-events/secrets/rmq-events-default-user"
+              readOnly: true
+      volumes:
+        - name: rmq-events-default-user
+          secret:
+            secretName: rmq-events-default-user
