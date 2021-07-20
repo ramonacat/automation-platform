@@ -1,2 +1,3 @@
 k8s/overlays/dev
 vendor/
+*.cache

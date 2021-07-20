@@ -9,7 +9,7 @@ require_once __DIR__.'/../vendor/autoload.php';
 
 $connection = new AMQPStreamConnection(
     'rmq-events',
-    5672,
+    '5672',
     file_get_contents('/etc/svc-events/secrets/rmq-events-default-user/username'),
     file_get_contents('/etc/svc-events/secrets/rmq-events-default-user/password')
 );
