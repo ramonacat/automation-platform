@@ -1,3 +1,4 @@
 k8s/overlays/dev
+!k8s/overlays/dev/kustomization.yaml
 vendor/
 *.cache
