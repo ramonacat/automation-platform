@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "composer"
+    directory: "services/events/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "composer"
+    directory: "services/events/tools/psalm"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "composer"
+    directory: "services/events/tools/php-cs-fixer"
+    schedule:
+      interval: "daily"
