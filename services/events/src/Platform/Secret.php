@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformSvcEvents\Platform;
 
+/**
+ * @psalm-immutable
+ */
 final class Secret
 {
     public function __construct(
@@ -12,17 +15,11 @@ final class Secret
     ) {
     }
 
-    /**
-     * @psalm-readonly
-     */
     public function username(): string
     {
         return $this->username;
     }
 
-    /**
-     * @psalm-readonly
-     */
     public function password(): string
     {
         return $this->password;
