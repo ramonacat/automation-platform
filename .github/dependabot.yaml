@@ -9,6 +9,6 @@ updates:
     schedule:
       interval: "daily"
   - package-ecosystem: "composer"
-    directory: "services/events/tools/php-cs-fixer"
+    directory: "services/events/tools/easy-coding-standard"
     schedule:
       interval: "daily"

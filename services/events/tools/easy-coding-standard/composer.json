@@ -1,0 +1,6 @@
+{
+    "require": {
+        "symplify/easy-coding-standard": "^9.4",
+        "slevomat/coding-standard": "^7.0"
+    }
+}

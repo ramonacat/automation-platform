@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ramona.fun/automation-platform/v1/events/heartbeat.schema.json",
+  "title": "Home Automation/events/heartbeat",
+  "description": "A heartbeat event, happening periodically",
+  "type": "object",
+  "properties": {
+      "id": {
+        "description": "Unique identifier of the event",
+        "type": "string",
+        "format": "uuid"
+      },
+      "created_timestamp": {
+        "description": "Creation time of the event",
+        "type": "string",
+        "format": "date-time"
+      }
+  },
+  "required": ["id", "created_timestamp"]
+}
