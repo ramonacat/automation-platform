@@ -1,12 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
+use SlevomatCodingStandard\Sniffs\Namespaces\AlphabeticallySortedUsesSniff;
+use SlevomatCodingStandard\Sniffs\Namespaces\ReferenceUsedNamesOnlySniff;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\EasyCodingStandard\ValueObject\Option;
 use Symplify\EasyCodingStandard\ValueObject\Set\SetList;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
-    $services->set(\SlevomatCodingStandard\Sniffs\Namespaces\AlphabeticallySortedUsesSniff::class);
-    $services->set(\SlevomatCodingStandard\Sniffs\Namespaces\ReferenceUsedNamesOnlySniff::class)
+    $services->set(AlphabeticallySortedUsesSniff::class);
+    $services->set(ReferenceUsedNamesOnlySniff::class)
         ->property('searchAnnotations', true)
         ->property('searchAnnotations', true)
         ->property('allowFullyQualifiedExceptions', false)
@@ -19,7 +24,12 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->property('allowFallbackGlobalFunctions', false)
         ->property('allowFallbackGlobalConstants', false);
     $parameters = $containerConfigurator->parameters();
-    $parameters->set(\Symplify\EasyCodingStandard\ValueObject\Option::PATHS, [__DIR__.'/src', __DIR__.'/bin']);
+    $parameters->set(Option::PATHS, [
+        __DIR__ . '/src',
+        __DIR__ . '/bin',
+        __DIR__ . '/build.php',
+        __DIR__ . '/ecs.php'
+    ]);
     $containerConfigurator->import(SetList::PSR_12);
     $containerConfigurator->import(SetList::CLEAN_CODE);
     $containerConfigurator->import(SetList::STRICT);
