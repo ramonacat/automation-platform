@@ -1,7 +1,7 @@
 apiVersion: "acid.zalan.do/v1"
 kind: postgresql
 metadata:
-  name: ap-events
+  name: ap-directory-watcher
   namespace: default
 spec:
   teamId: "ap"
@@ -12,8 +12,8 @@ spec:
     ap:
       - superuser
       - createdb
-    events: []
+    directory_watcher: []
   databases:
-    events: ap  # dbname: owner
+    directory_watcher: ap  # dbname: owner
   postgresql:
     version: "13"

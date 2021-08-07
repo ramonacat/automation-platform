@@ -23,5 +23,4 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $containerConfigurator->import(SetList::PSR_12);
     $containerConfigurator->import(SetList::CLEAN_CODE);
     $containerConfigurator->import(SetList::STRICT);
-//    $containerConfigurator->import(SetList::SYMPLIFY);
 };

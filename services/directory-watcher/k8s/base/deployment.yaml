@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: svc-directory-watcher
+  labels:
+    app: svc-directory-watcher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: svc-directory-watcher
+  template:
+    metadata:
+      labels:
+        app: svc-directory-watcher
+    spec:
+      initContainers:
+        - name: migrations
+          image: automation-platform-svc-migrations:latest
+          volumeMounts:
+            - name: directory-watcher-ap-directory-watcher-credentials
+              mountPath: "/etc/svc-events/secrets/directory-watcher.ap-directory-watcher.credentials"
+              readOnly: true
+      containers:
+        - name: app
+          image: automation-platform-svc-directory-watcher:latest # todo find out how to handle this for prod
+          imagePullPolicy: Never # todo this will of course break in prod
+          volumeMounts:
+            - name: rmq-events-default-user
+              mountPath: "/etc/svc-events/secrets/rmq-events-default-user"
+              readOnly: true
+            - name: directory-watcher-ap-directory-watcher-credentials
+              mountPath: "/etc/svc-events/secrets/directory-watcher.ap-directory-watcher.credentials"
+              readOnly: true
+          env:
+            - name: DW_DIRECTORIES_TO_WATCH
+              value: "/tmp/a:tmpa" # todo configure this to be NFS mounts in prod
+      volumes:
+        - name: rmq-events-default-user
+          secret:
+            secretName: rmq-events-default-user
+        - name: directory-watcher-ap-directory-watcher-credentials
+          secret:
+            secretName: directory-watcher.ap-directory-watcher.credentials

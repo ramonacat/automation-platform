@@ -1,0 +1,16 @@
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: svc-directory-watcher
+        spec:
+          template:
+            metadata:
+              labels:
+                app: svc-directory-watcher
+            spec:
+              initContainers:
+                - name: migrations
+                  image: automation-platform-svc-migrations:610e74110d84a351261180
+              containers:
+                - name: app
+                  image: automation-platform-svc-directory-watcher:610e74110d84a351261180

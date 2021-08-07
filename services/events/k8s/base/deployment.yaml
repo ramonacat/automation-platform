@@ -17,7 +17,6 @@ spec:
       containers:
         - name: svc-events
           image: automation-platform-svc-events:latest # todo find out how to handle this for prod
-          imagePullPolicy: Never # todo this will of course break in prod
           volumeMounts:
             - name: rmq-events-default-user
               mountPath: "/etc/svc-events/secrets/rmq-events-default-user"
