@@ -8,6 +8,7 @@ use std::collections::VecDeque;
 use std::fs::read_dir;
 use std::thread::sleep;
 use std::time::Duration;
+use notify::{Watcher, RecursiveMode, DebouncedEvent};
 
 #[derive(Debug)]
 enum FileStatusSyncResult {
@@ -92,8 +93,13 @@ fn main() {
         .map(|x| x.split(':').collect())
         .collect();
 
+
+    let (sender, receiver) = std::sync::mpsc::channel();
+    let mut watcher = notify::watcher(sender, Duration::from_secs(1)).expect("Failed to get the watcher");
+
     for dir in directories {
         println!("Watching: {} ({})", dir[0], dir[1]);
+        watcher.watch(dir[0], RecursiveMode::Recursive).expect("Failed to watch");
 
         let mut to_check: VecDeque<String> = VecDeque::new();
         to_check.push_back(dir[0].to_string());
@@ -123,7 +129,17 @@ fn main() {
         }
     }
 
-    loop {
-        sleep(Duration::from_secs(1));
+    for item in receiver {
+        match item {
+            DebouncedEvent::NoticeWrite(x) => println!("Notice write: {}", x.to_string_lossy()),
+            DebouncedEvent::NoticeRemove(x) => println!("Notice remove: {}", x.to_string_lossy()),
+            DebouncedEvent::Create(x) => println!("Create: {}", x.to_string_lossy()),
+            DebouncedEvent::Write(x) => println!("Write: {}", x.to_string_lossy()),
+            DebouncedEvent::Chmod(x) => println!("Chmod: {}", x.to_string_lossy()),
+            DebouncedEvent::Remove(x) => println!("Remove: {}", x.to_string_lossy()),
+            DebouncedEvent::Rename(x, y) => println!("Rename: {} -> {}", x.to_string_lossy(), y.to_string_lossy()),
+            DebouncedEvent::Rescan => println!("Rescan!"),
+            DebouncedEvent::Error(x, y) => println!("Error: {} (at {})", x, y.map_or("".into(), |z| z.to_string_lossy().to_string())),
+        }
     }
 }
