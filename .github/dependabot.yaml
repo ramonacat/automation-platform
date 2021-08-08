@@ -5,10 +5,10 @@ updates:
     schedule:
       interval: "daily"
   - package-ecosystem: "composer"
-    directory: "services/events/tools/psalm"
+    directory: "libraries/build"
     schedule:
       interval: "daily"
-  - package-ecosystem: "composer"
-    directory: "services/events/tools/easy-coding-standard"
+  - package-ecosystem: "cargo"
+    directory: "services/directory-watcher/"
     schedule:
       interval: "daily"
