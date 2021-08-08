@@ -1,0 +1,22 @@
+{
+    "name": "ramona/automation-platform-lib-build",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Ramona\\AutomationPlatformLibBuild\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": "^8.0"
+    },
+    "require-dev": {
+        "symplify/easy-coding-standard": "^9.4",
+        "slevomat/coding-standard": "^7.0",
+        "vimeo/psalm": "^4.8"
+    },
+    "bin": [
+        "bin/build.php"
+    ]
+}
