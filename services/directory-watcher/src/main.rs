@@ -1,13 +1,13 @@
 #![deny(clippy::all, clippy::pedantic, clippy::nursery)]
 
-use chrono::{DateTime, Utc, TimeZone};
+use chrono::{DateTime, Utc};
 use native_tls::TlsConnector;
 use postgres::Client;
 use postgres_native_tls::MakeTlsConnector;
 use std::collections::VecDeque;
 use std::fs::read_dir;
 use std::thread::sleep;
-use std::time::{Duration, UNIX_EPOCH};
+use std::time::Duration;
 
 #[derive(Debug)]
 enum FileStatusSyncResult {
@@ -17,8 +17,8 @@ enum FileStatusSyncResult {
 
 fn sync_file_status(
     pg_client: &mut Client,
-    mount_id: String,
-    path: String,
+    mount_id: &str,
+    path: &str,
     modified_at: DateTime<Utc>,
 ) -> FileStatusSyncResult {
     let mut transaction = pg_client.transaction().expect("Failed to start transaction");
@@ -35,7 +35,7 @@ fn sync_file_status(
             .execute("INSERT INTO files (id, mount_id, path, modified_date) VALUES(gen_random_uuid(), $1, $2, $3)", &[&mount_id, &path, &modified_at])
             .expect("Failed to save modified date");
 
-        transaction.commit();
+        transaction.commit().expect("Failed to commit");
         return FileStatusSyncResult::Modified;
     }
 
@@ -48,11 +48,11 @@ fn sync_file_status(
             )
             .expect("Failed to update modified date");
 
-        transaction.commit();
+        transaction.commit().expect("Failed to commit");
         return FileStatusSyncResult::Modified;
     }
 
-    transaction.commit();
+    transaction.commit().expect("Failed to commit");
     FileStatusSyncResult::NotModified
 }
 
@@ -110,12 +110,11 @@ fn main() {
                 } else {
                     let sync_status = sync_file_status(
                         &mut pg_client,
-                        dir[1].to_string(),
+                        dir[1],
                         pathdiff::diff_paths(path.clone(), dir[0])
                             .expect("Failed to get relative path")
                             .to_str()
-                            .expect("Failed to convert path to string")
-                            .to_string(),
+                            .expect("Failed to convert path to string"),
                         DateTime::from(metadata.modified().expect("Failed to get modified date"))
                     );
                     println!("Found file: {} ({:?})", path, sync_status);
