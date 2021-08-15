@@ -22,6 +22,9 @@ extern crate serde;
 #[macro_use]
 extern crate thiserror;
 
+#[macro_use]
+extern crate tracing;
+
 #[derive(Debug)]
 enum FileStatusSyncResult {
     Modified,
@@ -106,6 +109,9 @@ async fn send_file_created(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let subscriber = tracing_subscriber::FmtSubscriber::new();
+    let _guard = tracing::subscriber::set_default(subscriber);
+
     let secret_provider = SecretProvider::new("/etc/svc-events/secrets/");
     let rabbit_secret = secret_provider.read("rmq-events-default-user")?;
     let connection = lapin::Connection::connect(
@@ -125,8 +131,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .danger_accept_invalid_certs(true)
         .build()?;
 
-    println!("Created tls connector");
-
     let (mut pg_client, pg_connection) = tokio_postgres::connect(
         &format!(
             "host=ap-directory-watcher sslmode=require user={} password={}",
@@ -135,16 +139,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ),
         MakeTlsConnector::new(tls_connector),
     )
-    .await
-    .expect("Failed to connect to PostgreSQL");
+    .await?;
 
     tokio::spawn(async move {
         if let Err(e) = pg_connection.await {
-            eprintln!("connection error: {}", e);
+            error!("connection error: {}", e);
         }
     });
 
-    println!("pgsql connection created");
+    info!("Initialization completed");
 
     let directories_from_env = std::env::var("DW_DIRECTORIES_TO_WATCH")?;
     let directories: Vec<Vec<&str>> = directories_from_env
@@ -156,7 +159,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut watcher = notify::watcher(sender, Duration::from_secs(1))?;
 
     for dir in directories {
-        println!("Watching: {} ({})", dir[0], dir[1]);
+        info!("Watching: {} ({})", dir[0], dir[1]);
         watcher.watch(dir[0], RecursiveMode::Recursive)?;
 
         let mut to_check: VecDeque<String> = VecDeque::new();
@@ -176,7 +179,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if metadata.is_dir() {
                     to_check.push_back(path);
                 } else {
-                    println!("Found file: {}", path);
                     let raw_relative_path =
                         pathdiff::diff_paths(path.clone(), dir[0]).expect("Failed to diff paths");
                     let raw_relative_path_str = raw_relative_path.to_string_lossy();
@@ -188,7 +190,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         DateTime::from(metadata.modified().expect("Failed to get modified date")),
                     )
                     .await;
-                    println!("Found file: {} ({:?})", path, sync_status);
+                    info!("Found file: {} ({:?})", path, sync_status);
                     if let Ok(FileStatusSyncResult::Modified) = sync_status {
                         send_file_created(&es, relative_path, dir[1]).await?;
                     }
@@ -199,17 +201,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for item in receiver {
         match item {
-            DebouncedEvent::NoticeWrite(x) => println!("Notice write: {}", x.to_string_lossy()),
-            DebouncedEvent::NoticeRemove(x) => println!("Notice remove: {}", x.to_string_lossy()),
-            DebouncedEvent::Create(x) => println!("Create: {}", x.to_string_lossy()),
-            DebouncedEvent::Write(x) => println!("Write: {}", x.to_string_lossy()),
-            DebouncedEvent::Chmod(x) => println!("Chmod: {}", x.to_string_lossy()),
-            DebouncedEvent::Remove(x) => println!("Remove: {}", x.to_string_lossy()),
+            DebouncedEvent::NoticeWrite(x) => info!("Notice write: {}", x.to_string_lossy()),
+            DebouncedEvent::NoticeRemove(x) => info!("Notice remove: {}", x.to_string_lossy()),
+            DebouncedEvent::Create(x) => info!("Create: {}", x.to_string_lossy()),
+            DebouncedEvent::Write(x) => info!("Write: {}", x.to_string_lossy()),
+            DebouncedEvent::Chmod(x) => info!("Chmod: {}", x.to_string_lossy()),
+            DebouncedEvent::Remove(x) => info!("Remove: {}", x.to_string_lossy()),
             DebouncedEvent::Rename(x, y) => {
-                println!("Rename: {} -> {}", x.to_string_lossy(), y.to_string_lossy())
+                info!("Rename: {} -> {}", x.to_string_lossy(), y.to_string_lossy())
             }
-            DebouncedEvent::Rescan => println!("Rescan!"),
-            DebouncedEvent::Error(x, y) => println!(
+            DebouncedEvent::Rescan => info!("Rescan!"),
+            DebouncedEvent::Error(x, y) => info!(
                 "Error: {} (at {})",
                 x,
                 y.map_or("".into(), |z| z.to_string_lossy().to_string())
