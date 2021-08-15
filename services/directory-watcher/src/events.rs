@@ -1,66 +1,120 @@
-use jsonschema::{ErrorIterator, JSONSchema, ValidationError};
-use lapin::options::BasicPublishOptions;
-use lapin::BasicProperties;
-use serde::Serialize;
+use crate::platform;
+use crate::platform::events::EventSender;
+use chrono::{DateTime, Utc};
+use uuid::Uuid;
 
-pub struct EventSender {
-    schema: JSONSchema,
-    rabbit: lapin::Connection,
+#[derive(Serialize)]
+struct FileCreated<'a> {
+    id: Uuid,
+    created_timestamp: DateTime<Utc>,
+    #[serde(rename = "type")]
+    type_name: &'a str,
+    path: &'a str,
+    mount_id: &'a str,
 }
 
-pub trait Event {}
-
-#[derive(Error, Debug)]
-pub enum Error {
-    #[error("IO error")]
-    Io(#[from] std::io::Error),
-    #[error("Invalid JSON")]
-    InvalidJson(#[from] serde_json::Error),
-    #[error("Failed to validate schema")]
-    SchemaValidation(jsonschema::error::ValidationErrorKind),
-    #[error("Multiple schema validation errors")]
-    MultipleSchemaValidationErrors(Vec<jsonschema::error::ValidationErrorKind>),
-    #[error("Problems communicating with rabbitmq")]
-    Rabbit(#[from] lapin::Error),
+#[derive(Serialize)]
+struct FileChanged<'a> {
+    id: Uuid,
+    created_timestamp: DateTime<Utc>,
+    #[serde(rename = "type")]
+    type_name: &'a str,
+    path: &'a str,
+    mount_id: &'a str,
 }
 
-impl<'a> From<jsonschema::ValidationError<'a>> for Error {
-    fn from(e: ValidationError<'a>) -> Self {
-        Self::SchemaValidation(e.kind)
-    }
+#[derive(Serialize)]
+struct FileDeleted<'a> {
+    id: Uuid,
+    created_timestamp: DateTime<Utc>,
+    #[serde(rename = "type")]
+    type_name: &'a str,
+    path: &'a str,
+    mount_id: &'a str,
 }
 
-impl From<jsonschema::ErrorIterator<'_>> for Error {
-    fn from(e: ErrorIterator) -> Self {
-        Self::MultipleSchemaValidationErrors(e.map(|e| e.kind).collect())
-    }
+#[derive(Serialize)]
+struct FileMoved<'a> {
+    id: Uuid,
+    created_timestamp: DateTime<Utc>,
+    #[serde(rename = "type")]
+    type_name: &'a str,
+    from: &'a str,
+    to: &'a str,
+    mount_id: &'a str,
 }
 
-impl EventSender {
-    pub fn new(rabbit: lapin::Connection) -> Result<Self, Error> {
-        Ok(Self {
-            schema: JSONSchema::compile(&serde_json::from_str(&std::fs::read_to_string(
-                "/etc/svc-directory-watcher/schemas/events.schema.json",
-            )?)?)?,
-            rabbit,
-        })
-    }
+impl<'a> platform::events::Event for FileCreated<'a> {}
+impl<'a> platform::events::Event for FileChanged<'a> {}
+impl<'a> platform::events::Event for FileDeleted<'a> {}
+impl<'a> platform::events::Event for FileMoved<'a> {}
 
-    pub async fn send(&self, event: (impl Event + Serialize + Send)) -> Result<(), Error> {
-        let serialized = serde_json::to_value(event)?;
-        self.schema.validate(&serialized)?;
+pub async fn send_file_created(
+    es: &EventSender,
+    path: &str,
+    mount_id: &str,
+) -> Result<(), platform::events::Error> {
+    es.send(FileCreated {
+        id: Uuid::new_v4(),
+        created_timestamp: Utc::now(),
+        type_name: "file.status.created",
+        path,
+        mount_id,
+    })
+    .await?;
 
-        let channel = self.rabbit.create_channel().await?;
-        channel
-            .basic_publish(
-                "events",
-                "",
-                BasicPublishOptions::default(), // fixme ensure correct options
-                format!("{}", serialized).as_bytes().to_vec(), // fixme can this be simplified?
-                BasicProperties::default(),     // fixme do we need anything here?
-            )
-            .await?;
+    Ok(())
+}
 
-        Ok(())
-    }
+pub async fn send_file_changed(
+    es: &EventSender,
+    path: &str,
+    mount_id: &str,
+) -> Result<(), platform::events::Error> {
+    es.send(FileChanged {
+        id: Uuid::new_v4(),
+        created_timestamp: Utc::now(),
+        type_name: "file.status.changed",
+        path,
+        mount_id,
+    })
+    .await?;
+
+    Ok(())
+}
+
+pub async fn send_file_deleted(
+    es: &EventSender,
+    path: &str,
+    mount_id: &str,
+) -> Result<(), platform::events::Error> {
+    es.send(FileDeleted {
+        id: Uuid::new_v4(),
+        created_timestamp: Utc::now(),
+        type_name: "file.status.deleted",
+        path,
+        mount_id,
+    })
+    .await?;
+
+    Ok(())
+}
+
+pub async fn send_file_moved(
+    es: &EventSender,
+    from: &str,
+    to: &str,
+    mount_id: &str,
+) -> Result<(), platform::events::Error> {
+    es.send(FileMoved {
+        id: Uuid::new_v4(),
+        created_timestamp: Utc::now(),
+        type_name: "file.status.deleted",
+        from,
+        to,
+        mount_id,
+    })
+    .await?;
+
+    Ok(())
 }
