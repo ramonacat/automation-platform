@@ -1,5 +1,5 @@
-use crate::platform;
 use crate::platform::events::EventSender;
+use crate::{platform, MountRelativePath};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
@@ -51,15 +51,14 @@ impl<'a> platform::events::Event for FileMoved<'a> {}
 
 pub async fn send_file_created(
     es: &EventSender,
-    path: &str,
-    mount_id: &str,
+    path: &MountRelativePath<'_>,
 ) -> Result<(), platform::events::Error> {
     es.send(FileCreated {
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.created",
-        path,
-        mount_id,
+        path: &path.path,
+        mount_id: path.mount_id,
     })
     .await?;
 
@@ -68,15 +67,14 @@ pub async fn send_file_created(
 
 pub async fn send_file_changed(
     es: &EventSender,
-    path: &str,
-    mount_id: &str,
+    path: &MountRelativePath<'_>,
 ) -> Result<(), platform::events::Error> {
     es.send(FileChanged {
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.changed",
-        path,
-        mount_id,
+        path: &path.path,
+        mount_id: path.mount_id,
     })
     .await?;
 
@@ -85,15 +83,14 @@ pub async fn send_file_changed(
 
 pub async fn send_file_deleted(
     es: &EventSender,
-    path: &str,
-    mount_id: &str,
+    path: &MountRelativePath<'_>,
 ) -> Result<(), platform::events::Error> {
     es.send(FileDeleted {
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.deleted",
-        path,
-        mount_id,
+        path: &path.path,
+        mount_id: path.mount_id,
     })
     .await?;
 
@@ -102,17 +99,17 @@ pub async fn send_file_deleted(
 
 pub async fn send_file_moved(
     es: &EventSender,
-    from: &str,
-    to: &str,
-    mount_id: &str,
+    from: &MountRelativePath<'_>,
+    to: &MountRelativePath<'_>,
 ) -> Result<(), platform::events::Error> {
+    assert_eq!(from.mount_id, to.mount_id, "File moved between mounts");
     es.send(FileMoved {
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.deleted",
-        from,
-        to,
-        mount_id,
+        from: &from.path,
+        to: &from.path,
+        mount_id: from.mount_id,
     })
     .await?;
 

@@ -5,6 +5,7 @@ use std::fs::read_dir;
 use std::time::Duration;
 
 use crate::events::{send_file_changed, send_file_created, send_file_deleted, send_file_moved};
+use crate::file_status_store::{FileStatusStore, FileStatusSyncResult};
 use crate::platform::events::EventSender;
 use crate::platform::secrets::SecretProvider;
 use chrono::{DateTime, Utc};
@@ -16,6 +17,7 @@ use tokio_amqp::LapinTokioExt;
 use tokio_postgres::Client;
 
 mod events;
+mod file_status_store;
 mod platform;
 
 #[macro_use]
@@ -27,62 +29,40 @@ extern crate thiserror;
 #[macro_use]
 extern crate tracing;
 
-#[derive(Debug)]
-enum FileStatusSyncResult {
-    Modified,
-    NotModified,
+pub struct WatchableMount {
+    path: String,
+    mount_id: String,
+}
+
+pub struct MountRelativePath<'a> {
+    mount_id: &'a str,
+    path: String,
 }
 
 #[derive(Error, Debug)]
-enum SyncError {
-    #[error("Problems communicating with the database")]
-    Database(#[from] tokio_postgres::Error),
+pub enum MountRelativePathError {
+    #[error("The given absolute path is not within the mount")]
+    PathNotInMount,
 }
 
-async fn sync_file_status(
-    pg_client: &mut tokio_postgres::Client,
-    mount_id: &str,
-    path: &str,
-    modified_at: DateTime<Utc>,
-) -> Result<FileStatusSyncResult, SyncError> {
-    let transaction = pg_client.transaction().await?;
-
-    let rows = transaction
-        .query(
-            "SELECT modified_date FROM files WHERE mount_id=$1 AND path=$2 FOR UPDATE",
-            &[&mount_id, &path],
+impl<'a> MountRelativePath<'a> {
+    ///
+    /// # Errors
+    /// Will return an error if the absolute path is not within the mount
+    pub fn from_absolute(
+        mount: &'a WatchableMount,
+        absolute_path: &str,
+    ) -> Result<Self, MountRelativePathError> {
+        pathdiff::diff_paths(absolute_path, &mount.path).map_or(
+            Err(MountRelativePathError::PathNotInMount),
+            |relative_path| {
+                Ok(MountRelativePath {
+                    mount_id: &mount.mount_id,
+                    path: relative_path.to_string_lossy().to_string(),
+                })
+            },
         )
-        .await?;
-
-    if rows.is_empty() {
-        transaction
-            .execute("INSERT INTO files (id, mount_id, path, modified_date) VALUES(gen_random_uuid(), $1, $2, $3)", &[&mount_id, &path, &modified_at])
-            .await?;
-
-        transaction.commit().await?;
-        return Ok(FileStatusSyncResult::Modified);
     }
-
-    let current_modified_at = rows.get(0).expect("No row?").get::<_, DateTime<Utc>>(0);
-    if current_modified_at != modified_at {
-        transaction
-            .execute(
-                "UPDATE files SET modified_date=$1 WHERE mount_id=$2 AND path=$3",
-                &[&modified_at, &mount_id, &path],
-            )
-            .await?;
-
-        transaction.commit().await?;
-        return Ok(FileStatusSyncResult::Modified);
-    }
-
-    transaction.commit().await?;
-    Ok(FileStatusSyncResult::NotModified)
-}
-
-struct WatchableMount {
-    path: String,
-    mount_id: String,
 }
 
 #[tokio::main]
@@ -95,6 +75,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let es = EventSender::new(connection)?;
     let mut pg_client = connect_to_postgres(&secret_provider).await?;
     let directories_from_env = std::env::var("DW_DIRECTORIES_TO_WATCH")?;
+    let mut file_status_store = FileStatusStore::new(&mut pg_client);
 
     info!("Initialization completed");
 
@@ -103,7 +84,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (sender, receiver) = std::sync::mpsc::channel();
     let mut watcher = notify::watcher(sender, Duration::from_secs(1))?;
 
-    pre_scan_directories(&es, &mut pg_client, &directories, &mut watcher).await?;
+    pre_scan_directories(&es, &mut file_status_store, &directories, &mut watcher).await?;
 
     for item in receiver {
         match item {
@@ -112,20 +93,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             DebouncedEvent::Create(x) => {
                 let path = x.to_string_lossy();
                 let mount_relative_path = find_mount_for_path(&directories, &path)?;
-                send_file_created(&es, &mount_relative_path.path, mount_relative_path.mount_id)
+
+                // fixme don't use Utc::now, but the actual modified date here!
+                file_status_store
+                    .sync(&mount_relative_path, Utc::now())
                     .await?;
+                send_file_created(&es, &mount_relative_path).await?;
             }
             DebouncedEvent::Chmod(x) | DebouncedEvent::Write(x) => {
                 let path = x.to_string_lossy();
                 let mount_relative_path = find_mount_for_path(&directories, &path)?;
-                send_file_changed(&es, &mount_relative_path.path, mount_relative_path.mount_id)
+                // fixme don't use Utc::now, but the actual modified date here!
+                file_status_store
+                    .sync(&mount_relative_path, Utc::now())
                     .await?;
+                send_file_changed(&es, &mount_relative_path).await?;
             }
             DebouncedEvent::Remove(x) => {
                 let path = x.to_string_lossy();
                 let mount_relative_path = find_mount_for_path(&directories, &path)?;
-                send_file_deleted(&es, &mount_relative_path.path, mount_relative_path.mount_id)
-                    .await?;
+                file_status_store.delete(&mount_relative_path).await?;
+                send_file_deleted(&es, &mount_relative_path).await?;
             }
             DebouncedEvent::Rename(x, y) => {
                 let path_from = x.to_string_lossy();
@@ -134,19 +122,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let path_relative_from = find_mount_for_path(&directories, &path_from)?;
                 let path_relative_to = find_mount_for_path(&directories, &path_to)?;
 
-                // fixme in that case this should be evented as delete and create
-                assert_eq!(
-                    path_relative_from.mount_id, path_relative_to.mount_id,
-                    "File was moved between mounts, this is not supported"
-                );
-
-                send_file_moved(
-                    &es,
-                    &path_relative_from.path,
-                    &path_relative_to.path,
-                    path_relative_from.mount_id,
-                )
-                .await?;
+                file_status_store
+                    .rename(&path_relative_from, &path_relative_to)
+                    .await?;
+                send_file_moved(&es, &path_relative_from, &path_relative_to).await?;
             }
             DebouncedEvent::Rescan => info!("Rescan!"),
             DebouncedEvent::Error(x, y) => error!(
@@ -166,21 +145,13 @@ enum MountForPathError {
     MountNotFound,
 }
 
-struct MountRelativePath<'a> {
-    mount_id: &'a str,
-    path: String,
-}
-
 fn find_mount_for_path<'a>(
     mounts: &'a [WatchableMount],
     path: &str,
 ) -> Result<MountRelativePath<'a>, MountForPathError> {
     for mount in mounts {
-        if let Some(relative_path) = pathdiff::diff_paths(path, &mount.path) {
-            return Ok(MountRelativePath {
-                mount_id: &mount.mount_id,
-                path: relative_path.to_string_lossy().to_string(),
-            });
+        if let Ok(mount_relative_path) = MountRelativePath::from_absolute(mount, path) {
+            return Ok(mount_relative_path);
         }
     }
 
@@ -195,11 +166,13 @@ enum PreScanDirectoriesError {
     Io(#[from] std::io::Error),
     #[error("Failure publishing the event")]
     Event(#[from] platform::events::Error),
+    #[error("Failed to get mount relative path")]
+    MountRelativePath(#[from] MountRelativePathError),
 }
 
 async fn pre_scan_directories(
     es: &EventSender,
-    mut pg_client: &mut Client,
+    file_status_store: &mut FileStatusStore<'_>,
     directories: &[WatchableMount],
     watcher: &mut RecommendedWatcher,
 ) -> Result<(), PreScanDirectoriesError> {
@@ -220,20 +193,21 @@ async fn pre_scan_directories(
                 if metadata.is_dir() {
                     to_check.push_back(path);
                 } else {
-                    let raw_relative_path = pathdiff::diff_paths(path.clone(), &dir.path)
-                        .expect("Failed to diff paths");
-                    let raw_relative_path_str = raw_relative_path.to_string_lossy();
-                    let relative_path = raw_relative_path_str.as_ref();
-                    let sync_status = sync_file_status(
-                        &mut pg_client,
-                        &dir.mount_id,
-                        relative_path,
-                        DateTime::from(metadata.modified()?),
-                    )
-                    .await;
+                    let mount_relative_path = MountRelativePath::from_absolute(dir, &path)?;
+                    let sync_status = file_status_store
+                        .sync(&mount_relative_path, DateTime::from(metadata.modified()?))
+                        .await;
                     info!("Found file: {} ({:?})", path, sync_status);
-                    if let Ok(FileStatusSyncResult::Modified) = sync_status {
-                        send_file_created(es, relative_path, &dir.mount_id).await?;
+                    if let Ok(sync_status) = sync_status {
+                        match sync_status {
+                            FileStatusSyncResult::Created => {
+                                send_file_created(es, &mount_relative_path).await?;
+                            }
+                            FileStatusSyncResult::Modified => {
+                                send_file_changed(es, &mount_relative_path).await?;
+                            }
+                            FileStatusSyncResult::NotModified => {}
+                        }
                     }
                 }
             }
