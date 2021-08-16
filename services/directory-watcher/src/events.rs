@@ -1,4 +1,4 @@
-use crate::mount_relative_path::MountRelativePath;
+use crate::mount::PathInside;
 use crate::platform;
 use crate::platform::events::EventSender;
 use chrono::{DateTime, Utc};
@@ -52,13 +52,13 @@ impl<'a> platform::events::Event for FileMoved<'a> {}
 
 pub async fn send_file_created(
     es: &EventSender,
-    path: &MountRelativePath<'_>,
+    path: &PathInside<'_>,
 ) -> Result<(), platform::events::Error> {
     es.send(FileCreated {
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.created",
-        path: path.path(),
+        path: path.path().to_string_lossy().as_ref(),
         mount_id: path.mount_id(),
     })
     .await?;
@@ -68,13 +68,13 @@ pub async fn send_file_created(
 
 pub async fn send_file_changed(
     es: &EventSender,
-    path: &MountRelativePath<'_>,
+    path: &PathInside<'_>,
 ) -> Result<(), platform::events::Error> {
     es.send(FileChanged {
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.changed",
-        path: path.path(),
+        path: path.path().to_string_lossy().as_ref(),
         mount_id: path.mount_id(),
     })
     .await?;
@@ -84,13 +84,13 @@ pub async fn send_file_changed(
 
 pub async fn send_file_deleted(
     es: &EventSender,
-    path: &MountRelativePath<'_>,
+    path: &PathInside<'_>,
 ) -> Result<(), platform::events::Error> {
     es.send(FileDeleted {
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.deleted",
-        path: path.path(),
+        path: path.path().to_string_lossy().as_ref(),
         mount_id: path.mount_id(),
     })
     .await?;
@@ -100,16 +100,16 @@ pub async fn send_file_deleted(
 
 pub async fn send_file_moved(
     es: &EventSender,
-    from: &MountRelativePath<'_>,
-    to: &MountRelativePath<'_>,
+    from: &PathInside<'_>,
+    to: &PathInside<'_>,
 ) -> Result<(), platform::events::Error> {
     assert_eq!(from.mount_id(), to.mount_id(), "File moved between mounts");
     es.send(FileMoved {
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.deleted",
-        from: from.path(),
-        to: from.path(),
+        from: from.path().to_string_lossy().as_ref(),
+        to: from.path().to_string_lossy().as_ref(),
         mount_id: from.mount_id(),
     })
     .await?;
