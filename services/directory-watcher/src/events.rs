@@ -1,5 +1,6 @@
+use crate::mount_relative_path::MountRelativePath;
+use crate::platform;
 use crate::platform::events::EventSender;
-use crate::{platform, MountRelativePath};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
@@ -57,8 +58,8 @@ pub async fn send_file_created(
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.created",
-        path: &path.path,
-        mount_id: path.mount_id,
+        path: path.path(),
+        mount_id: path.mount_id(),
     })
     .await?;
 
@@ -73,8 +74,8 @@ pub async fn send_file_changed(
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.changed",
-        path: &path.path,
-        mount_id: path.mount_id,
+        path: path.path(),
+        mount_id: path.mount_id(),
     })
     .await?;
 
@@ -89,8 +90,8 @@ pub async fn send_file_deleted(
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.deleted",
-        path: &path.path,
-        mount_id: path.mount_id,
+        path: path.path(),
+        mount_id: path.mount_id(),
     })
     .await?;
 
@@ -102,14 +103,14 @@ pub async fn send_file_moved(
     from: &MountRelativePath<'_>,
     to: &MountRelativePath<'_>,
 ) -> Result<(), platform::events::Error> {
-    assert_eq!(from.mount_id, to.mount_id, "File moved between mounts");
+    assert_eq!(from.mount_id(), to.mount_id(), "File moved between mounts");
     es.send(FileMoved {
         id: Uuid::new_v4(),
         created_timestamp: Utc::now(),
         type_name: "file.status.deleted",
-        from: &from.path,
-        to: &from.path,
-        mount_id: from.mount_id,
+        from: from.path(),
+        to: from.path(),
+        mount_id: from.mount_id(),
     })
     .await?;
 

@@ -1,4 +1,4 @@
-use crate::MountRelativePath;
+use crate::mount_relative_path::MountRelativePath;
 use chrono::{DateTime, Utc};
 use tokio_postgres::Client;
 
@@ -28,7 +28,7 @@ impl<'a> FileStatusStore<'a> {
         self.pg_client
             .execute(
                 "DELETE FROM files WHERE mount_id=$1 AND path=$2",
-                &[&path.mount_id, &path.path],
+                &[&path.mount_id(), &path.path()],
             )
             .await?;
         Ok(())
@@ -40,14 +40,15 @@ impl<'a> FileStatusStore<'a> {
         to: &MountRelativePath<'_>,
     ) -> Result<(), SyncError> {
         assert_eq!(
-            from.mount_id, to.mount_id,
+            from.mount_id(),
+            to.mount_id(),
             "File moved between different mounts"
         );
 
         self.pg_client
             .execute(
                 "UPDATE files SET path=$1 WHERE mount_id=$2 AND path=$3",
-                &[&to.path, &from.mount_id, &from.path],
+                &[&to.path(), &from.mount_id(), &from.path()],
             )
             .await?;
         Ok(())
@@ -63,13 +64,13 @@ impl<'a> FileStatusStore<'a> {
         let rows = transaction
             .query(
                 "SELECT modified_date FROM files WHERE mount_id=$1 AND path=$2 FOR UPDATE",
-                &[&path.mount_id, &path.path],
+                &[&path.mount_id(), &path.path()],
             )
             .await?;
 
         if rows.is_empty() {
             transaction
-                .execute("INSERT INTO files (id, mount_id, path, modified_date) VALUES(gen_random_uuid(), $1, $2, $3)", &[&path.mount_id, &path.path, &modified_at])
+                .execute("INSERT INTO files (id, mount_id, path, modified_date) VALUES(gen_random_uuid(), $1, $2, $3)", &[&path.mount_id(), &path.path(), &modified_at])
                 .await?;
 
             transaction.commit().await?;
@@ -81,7 +82,7 @@ impl<'a> FileStatusStore<'a> {
             transaction
                 .execute(
                     "UPDATE files SET modified_date=$1 WHERE mount_id=$2 AND path=$3",
-                    &[&modified_at, &path.mount_id, &path.path],
+                    &[&modified_at, &path.mount_id(), &path.path()],
                 )
                 .await?;
 

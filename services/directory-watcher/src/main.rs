@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use crate::events::{send_file_changed, send_file_created, send_file_deleted, send_file_moved};
 use crate::file_status_store::{FileStatusStore, FileStatusSyncResult};
+use crate::mount_relative_path::{Error, MountRelativePath};
 use crate::platform::events::EventSender;
 use crate::platform::secrets::SecretProvider;
 use chrono::{DateTime, Utc};
@@ -18,6 +19,7 @@ use tokio_postgres::Client;
 
 mod events;
 mod file_status_store;
+mod mount_relative_path;
 mod platform;
 
 #[macro_use]
@@ -32,37 +34,6 @@ extern crate tracing;
 pub struct WatchableMount {
     path: String,
     mount_id: String,
-}
-
-pub struct MountRelativePath<'a> {
-    mount_id: &'a str,
-    path: String,
-}
-
-#[derive(Error, Debug)]
-pub enum MountRelativePathError {
-    #[error("The given absolute path is not within the mount")]
-    PathNotInMount,
-}
-
-impl<'a> MountRelativePath<'a> {
-    ///
-    /// # Errors
-    /// Will return an error if the absolute path is not within the mount
-    pub fn from_absolute(
-        mount: &'a WatchableMount,
-        absolute_path: &str,
-    ) -> Result<Self, MountRelativePathError> {
-        pathdiff::diff_paths(absolute_path, &mount.path).map_or(
-            Err(MountRelativePathError::PathNotInMount),
-            |relative_path| {
-                Ok(MountRelativePath {
-                    mount_id: &mount.mount_id,
-                    path: relative_path.to_string_lossy().to_string(),
-                })
-            },
-        )
-    }
 }
 
 #[tokio::main]
@@ -167,7 +138,7 @@ enum PreScanDirectoriesError {
     #[error("Failure publishing the event")]
     Event(#[from] platform::events::Error),
     #[error("Failed to get mount relative path")]
-    MountRelativePath(#[from] MountRelativePathError),
+    MountRelativePath(#[from] Error),
 }
 
 async fn pre_scan_directories(
