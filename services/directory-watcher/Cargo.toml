@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 notify = "4.0.17"
-lapin = "1.7.1"
+lapin = "1.8.0"
 pathdiff="0.2.0"
 postgres-native-tls = "0.5.0"
 native-tls = "0.2.7"
