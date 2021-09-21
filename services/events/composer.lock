@@ -2512,16 +2512,16 @@
         },
         {
             "name": "symplify/easy-coding-standard",
-            "version": "9.4.25",
+            "version": "9.4.63",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symplify/easy-coding-standard.git",
-                "reference": "4c5d871adb5d198e72f12c6c589bbe14b148e8d3"
+                "reference": "5b22e3dfc78da47d75fd29a597f6bdb4596310f1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symplify/easy-coding-standard/zipball/4c5d871adb5d198e72f12c6c589bbe14b148e8d3",
-                "reference": "4c5d871adb5d198e72f12c6c589bbe14b148e8d3",
+                "url": "https://api.github.com/repos/symplify/easy-coding-standard/zipball/5b22e3dfc78da47d75fd29a597f6bdb4596310f1",
+                "reference": "5b22e3dfc78da47d75fd29a597f6bdb4596310f1",
                 "shasum": ""
             },
             "require": {
@@ -2546,7 +2546,7 @@
             ],
             "description": "Prefixed scoped version of ECS package",
             "support": {
-                "source": "https://github.com/symplify/easy-coding-standard/tree/9.4.25"
+                "source": "https://github.com/symplify/easy-coding-standard/tree/9.4.63"
             },
             "funding": [
                 {
@@ -2558,7 +2558,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2021-08-05T05:42:41+00:00"
+            "time": "2021-09-20T14:27:55+00:00"
         },
         {
             "name": "vimeo/psalm",
