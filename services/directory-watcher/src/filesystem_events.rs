@@ -1,4 +1,4 @@
-use crate::events::{FileCreated, FileDeleted, FileMoved, FileChanged};
+use crate::events::{FileChanged, FileCreated, FileDeleted, FileMoved};
 use crate::file_status_store::FileStatusStore;
 use crate::mount::{Mount, PathInside};
 use crate::platform::events::EventSender;
@@ -136,7 +136,7 @@ mod tests {
     }
 
     struct MockFileStatusStore {
-        sync_result: FileStatusSyncResult
+        sync_result: FileStatusSyncResult,
     }
 
     #[async_trait]
@@ -161,13 +161,15 @@ mod tests {
             _path: &PathInside<'_>,
             _modified_at: DateTime<Utc>,
         ) -> Result<FileStatusSyncResult, crate::file_status_store::Error> {
-
             Ok(self.sync_result)
         }
     }
 
-    async fn setup(temp:&TempDir, event:DebouncedEvent, sync_result: FileStatusSyncResult) -> Vec<Value>
-    {
+    async fn setup(
+        temp: &TempDir,
+        event: DebouncedEvent,
+        sync_result: FileStatusSyncResult,
+    ) -> Vec<Value> {
         let temp = temp.path();
 
         std::fs::create_dir(temp.join("b/")).unwrap();
@@ -194,7 +196,12 @@ mod tests {
     #[tokio::test]
     async fn can_handle_file_creation() {
         let temp = TempDir::new("tmp").unwrap();
-        let events = setup(&temp, DebouncedEvent::Create(temp.path().join("b/1")), FileStatusSyncResult::Created).await;
+        let events = setup(
+            &temp,
+            DebouncedEvent::Create(temp.path().join("b/1")),
+            FileStatusSyncResult::Created,
+        )
+        .await;
         assert_eq!(1, events.len());
         assert_eq!(
             &Value::String("file.status.created".into()),
@@ -205,7 +212,12 @@ mod tests {
     #[tokio::test]
     async fn can_handle_file_change() {
         let temp = TempDir::new("tmp").unwrap();
-        let events = setup(&temp, DebouncedEvent::Write(temp.path().join("b/1")), FileStatusSyncResult::Modified).await;
+        let events = setup(
+            &temp,
+            DebouncedEvent::Write(temp.path().join("b/1")),
+            FileStatusSyncResult::Modified,
+        )
+        .await;
         assert_eq!(1, events.len());
         assert_eq!(
             &Value::String("file.status.changed".into()),
@@ -216,7 +228,12 @@ mod tests {
     #[tokio::test]
     async fn can_handle_file_removal() {
         let temp = TempDir::new("tmp").unwrap();
-        let events = setup(&temp, DebouncedEvent::Remove(temp.path().join("b/1")), FileStatusSyncResult::Modified).await;
+        let events = setup(
+            &temp,
+            DebouncedEvent::Remove(temp.path().join("b/1")),
+            FileStatusSyncResult::Modified,
+        )
+        .await;
         assert_eq!(1, events.len());
         assert_eq!(
             &Value::String("file.status.deleted".into()),
@@ -227,7 +244,12 @@ mod tests {
     #[tokio::test]
     async fn can_handle_file_rename() {
         let temp = TempDir::new("tmp").unwrap();
-        let events = setup(&temp, DebouncedEvent::Rename(temp.path().join("b/0"), temp.path().join("b/1")), FileStatusSyncResult::Modified).await;
+        let events = setup(
+            &temp,
+            DebouncedEvent::Rename(temp.path().join("b/0"), temp.path().join("b/1")),
+            FileStatusSyncResult::Modified,
+        )
+        .await;
         assert_eq!(1, events.len());
         assert_eq!(
             &Value::String("file.status.moved".into()),
