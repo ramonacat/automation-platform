@@ -4,3 +4,4 @@ target/
 k8s/overlays/dev/*
 !k8s/overlays/dev/kustomization.yaml
 events.schema.json
+build/

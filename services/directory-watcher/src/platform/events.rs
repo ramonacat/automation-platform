@@ -3,12 +3,20 @@ use lapin::options::BasicPublishOptions;
 use lapin::BasicProperties;
 use serde::Serialize;
 
-pub struct EventSender {
+#[async_trait]
+pub trait EventSender {
+    async fn send<'a, T: Event + Send + Sync + Serialize + 'a>(
+        &self,
+        event: T,
+    ) -> Result<(), Error>;
+}
+
+pub struct RabbitMQ {
     schema: JSONSchema,
     rabbit: lapin::Connection,
 }
 
-pub trait Event {}
+pub trait Event: Send {}
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -36,7 +44,7 @@ impl From<jsonschema::ErrorIterator<'_>> for Error {
     }
 }
 
-impl EventSender {
+impl RabbitMQ {
     pub fn new(rabbit: lapin::Connection) -> Result<Self, Error> {
         Ok(Self {
             schema: JSONSchema::compile(&serde_json::from_str(&std::fs::read_to_string(
@@ -45,8 +53,11 @@ impl EventSender {
             rabbit,
         })
     }
+}
 
-    pub async fn send(&self, event: (impl Event + Serialize + Send)) -> Result<(), Error> {
+#[async_trait]
+impl EventSender for RabbitMQ {
+    async fn send<'a, T: Event + Serialize + 'a>(&self, event: T) -> Result<(), Error> {
         let serialized = serde_json::to_value(event)?;
         self.schema.validate(&serialized)?;
 
