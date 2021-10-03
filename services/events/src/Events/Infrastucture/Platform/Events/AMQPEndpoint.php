@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformSvcEvents\Events\Infrastucture;
+namespace Ramona\AutomationPlatformSvcEvents\Events\Infrastucture\Platform\Events;
 
 use Ramona\AutomationPlatformSvcEvents\Platform\Secret;
 

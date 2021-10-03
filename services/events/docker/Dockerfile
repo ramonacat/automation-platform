@@ -15,5 +15,6 @@ RUN chmod +x /usr/local/bin/install-composer \
     && mv composer.phar /usr/local/bin/composer
 
 RUN composer install --prefer-dist --no-dev
+ADD events.schema.json /etc/svc-events/schemas/events.schema.json
 
 CMD ["php", "bin/start.php"]

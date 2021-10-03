@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformSvcEvents\Events\Infrastucture;
+namespace Ramona\AutomationPlatformSvcEvents\Events\Infrastucture\Platform\Events;
 
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
@@ -14,7 +14,7 @@ final class EventSubscriber
     private AMQPStreamConnection $connection;
     private AMQPChannel $channel;
 
-    public function __construct(AMQPEndpoint $endpoint)
+    public function __construct(AMQPEndpoint $endpoint, private MessageParser $messageParser)
     {
         $this->connection = new AMQPStreamConnection($endpoint->hostname(), (string)$endpoint->port(), $endpoint->username(), $endpoint->password());
         $this->channel = $this->connection->channel();
@@ -27,7 +27,7 @@ final class EventSubscriber
         $this->channel->queue_bind($subscriberQueueName, self::EXCHANGE_NAME);
 
         $this->channel->basic_consume($subscriberQueueName, callback: function (AMQPMessage $message) use ($onMessage) {
-            $onMessage($message);
+            $onMessage($this->messageParser->parse($message));
             $message->ack();
         });
     }
