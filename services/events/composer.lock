@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f1de5cf9bfe2198e5403d25fc3c8b18d",
+    "content-hash": "c00b52c2ed46b6c2d7260ed0931bbf5e",
     "packages": [
         {
             "name": "paragonie/constant_time_encoding",
@@ -1514,6 +1514,35 @@
             "time": "2021-07-14T16:41:46+00:00"
         },
         {
+            "name": "ramona/automation-platform-lib-build",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../../libraries/build",
+                "reference": "3adcd3de9ec01ee957d240d467347a9c3ca94978"
+            },
+            "require": {
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "slevomat/coding-standard": "^7.0",
+                "symplify/easy-coding-standard": "^9.4",
+                "vimeo/psalm": "^4.8"
+            },
+            "bin": [
+                "bin/build.php"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Ramona\\AutomationPlatformLibBuild\\": "src/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "sebastian/diff",
             "version": "4.0.4",
             "source": {
@@ -2562,16 +2591,16 @@
         },
         {
             "name": "vimeo/psalm",
-            "version": "4.9.2",
+            "version": "4.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/vimeo/psalm.git",
-                "reference": "00c062267d6e3229d91a1939992987e2d46f2393"
+                "reference": "916b098b008f6de4543892b1e0651c1c3b92cbfa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vimeo/psalm/zipball/00c062267d6e3229d91a1939992987e2d46f2393",
-                "reference": "00c062267d6e3229d91a1939992987e2d46f2393",
+                "url": "https://api.github.com/repos/vimeo/psalm/zipball/916b098b008f6de4543892b1e0651c1c3b92cbfa",
+                "reference": "916b098b008f6de4543892b1e0651c1c3b92cbfa",
                 "shasum": ""
             },
             "require": {
@@ -2581,6 +2610,7 @@
                 "composer/semver": "^1.4 || ^2.0 || ^3.0",
                 "composer/xdebug-handler": "^1.1 || ^2.0",
                 "dnoegel/php-xdg-base-dir": "^0.1.1",
+                "ext-ctype": "*",
                 "ext-dom": "*",
                 "ext-json": "*",
                 "ext-libxml": "*",
@@ -2613,7 +2643,6 @@
                 "slevomat/coding-standard": "^7.0",
                 "squizlabs/php_codesniffer": "^3.5",
                 "symfony/process": "^4.3 || ^5.0",
-                "weirdan/phpunit-appveyor-reporter": "^1.0.0",
                 "weirdan/prophecy-shim": "^1.0 || ^2.0"
             },
             "suggest": {
@@ -2661,9 +2690,9 @@
             ],
             "support": {
                 "issues": "https://github.com/vimeo/psalm/issues",
-                "source": "https://github.com/vimeo/psalm/tree/4.9.2"
+                "source": "https://github.com/vimeo/psalm/tree/4.10.0"
             },
-            "time": "2021-08-01T01:15:26+00:00"
+            "time": "2021-09-04T21:00:09+00:00"
         },
         {
             "name": "webmozart/assert",

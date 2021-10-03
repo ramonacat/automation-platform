@@ -27,7 +27,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $parameters->set(Option::PATHS, [
         __DIR__ . '/src',
         __DIR__ . '/bin',
-        __DIR__ . '/build.php',
+        __DIR__ . '/build-config.php',
         __DIR__ . '/ecs.php'
     ]);
     $containerConfigurator->import(SetList::PSR_12);

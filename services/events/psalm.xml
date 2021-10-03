@@ -13,7 +13,7 @@
     <projectFiles>
         <directory name="src" />
         <directory name="bin" />
-        <file name="build.php" />
+        <file name="build-config.php" />
         <ignoreFiles>
             <directory name="vendor" />
         </ignoreFiles>

@@ -18,6 +18,13 @@
     "require-dev": {
         "symplify/easy-coding-standard": "^9.4",
         "slevomat/coding-standard": "^7.0",
-        "vimeo/psalm": "^4.8"
-    }
+        "vimeo/psalm": "^4.8",
+        "ramona/automation-platform-lib-build": "*"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../libraries/*"
+        }
+    ]
 }
