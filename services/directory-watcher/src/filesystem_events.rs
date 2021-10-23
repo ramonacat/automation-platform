@@ -11,14 +11,14 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 pub struct FilesystemEventHandler<'a, T: EventSender + Sync + Send> {
-    event_sender: Arc<T>,
+    event_sender: Arc<Mutex<T>>,
     file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
     mounts: &'a [Mount],
 }
 
 impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
     pub fn new(
-        event_sender: Arc<T>,
+        event_sender: Arc<Mutex<T>>,
         file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
         mounts: &'a [Mount],
     ) -> Self {
@@ -33,6 +33,7 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
         &self,
         receiver: Receiver<DebouncedEvent>,
     ) -> Result<(), HandleEventsError> {
+        info!("Waiting for filesystem events");
         for item in receiver {
             self.handle_event(item).await?;
         }
@@ -41,6 +42,7 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
     }
 
     async fn handle_event(&self, item: DebouncedEvent) -> Result<(), HandleEventsError> {
+        info!("Handling filesystem event: {:?}", item);
         match item {
             DebouncedEvent::Create(x) => {
                 let mount_relative_path = PathInside::from_mount_list(self.mounts, &x)?;
@@ -52,6 +54,8 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .sync(&mount_relative_path, modfiied_date)
                     .await?;
                 self.event_sender
+                    .lock()
+                    .await
                     .send(FileCreated::new(&mount_relative_path))
                     .await?;
             }
@@ -65,6 +69,8 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .sync(&mount_relative_path, modfiied_date)
                     .await?;
                 self.event_sender
+                    .lock()
+                    .await
                     .send(FileChanged::new(&mount_relative_path))
                     .await?;
             }
@@ -76,6 +82,8 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .delete(&mount_relative_path)
                     .await?;
                 self.event_sender
+                    .lock()
+                    .await
                     .send(FileDeleted::new(&mount_relative_path))
                     .await?;
             }
@@ -89,6 +97,8 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .rename(&path_relative_from, &path_relative_to)
                     .await?;
                 self.event_sender
+                    .lock()
+                    .await
                     .send(FileMoved::new(&path_relative_from, &path_relative_to))
                     .await?;
             }

@@ -1,20 +1,39 @@
-FROM php:8.0.8-cli
+FROM rust:1.55-slim-buster AS planner
 
-RUN apt-get update && apt-get install -y libpq-dev libzip-dev && rm -rf /var/lib/apt/lists/*
-RUN docker-php-ext-install -j$(nproc) pdo_pgsql sockets zip
+RUN cargo install cargo-chef
 
 ADD . /opt/events/
+WORKDIR /opt/events/services/events/
 
-WORKDIR /opt/events/
+RUN cargo chef prepare --recipe-path recipe.json
 
-# todo separate stage for composer
-ADD ./docker/composer.sh /usr/local/bin/install-composer
-RUN chmod +x /usr/local/bin/install-composer \
-    && install-composer \
-    && rm /usr/local/bin/install-composer \
-    && mv composer.phar /usr/local/bin/composer
+FROM rust:1.55-slim-buster AS cacher
 
-RUN composer install --prefer-dist --no-dev
-ADD events.schema.json /etc/svc-events/schemas/events.schema.json
+RUN apt-get update && apt-get install -y libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
+RUN cargo install cargo-chef
 
-CMD ["php", "bin/start.php"]
+WORKDIR /opt/events/services/events/
+
+COPY --from=planner /opt/events/services/events/recipe.json recipe.json
+COPY libraries/rust/platform/ /opt/events/libraries/rust/platform
+RUN cargo chef cook --release --recipe-path recipe.json
+
+FROM rust:1.55-slim-buster AS build
+
+RUN apt-get update && apt-get install -y libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
+
+ADD . /opt/events/
+WORKDIR /opt/events/services/events/
+COPY --from=cacher /opt/events/services/events/target target
+COPY --from=cacher /usr/local/cargo /usr/local/cargo
+
+RUN cargo build --release
+
+FROM debian:buster-slim
+
+RUN apt-get update && apt-get install -y libssl1.1 pkg-config && rm -rf /var/lib/apt/lists/*
+
+ADD schemas/events.schema.json /etc/svc-events/schemas/events.schema.json
+COPY --from=build /opt/events/services/events/target/release/events /opt/events/
+
+ENTRYPOINT ["/opt/events/events"]

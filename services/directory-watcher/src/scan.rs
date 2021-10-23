@@ -25,13 +25,13 @@ pub enum Error {
 }
 
 pub struct Scanner<T: EventSender + Sync + Send> {
-    event_sender: Arc<T>,
+    event_sender: Arc<Mutex<T>>,
     file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
 }
 
 impl<T: EventSender + Sync + Send> Scanner<T> {
     pub fn new(
-        event_sender: Arc<T>,
+        event_sender: Arc<Mutex<T>>,
         file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
     ) -> Self {
         Self {
@@ -61,6 +61,7 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
                 }
             }
         }
+        info!("Initial scan completed");
         Ok(())
     }
 
@@ -84,13 +85,15 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
         match sync_status {
             FileStatusSyncResult::Created => {
                 self.event_sender
-                    .as_ref()
+                    .lock()
+                    .await
                     .send(FileCreated::new(&mount_relative_path))
                     .await?;
             }
             FileStatusSyncResult::Modified => {
                 self.event_sender
-                    .as_ref()
+                    .lock()
+                    .await
                     .send(FileChanged::new(&mount_relative_path))
                     .await?;
             }

@@ -14,14 +14,29 @@ spec:
       labels:
         app: svc-events
     spec:
+      initContainers:
+        - name: migrations
+          image: automation-platform-svc-events-migrations:latest
+          imagePullPolicy: Never # todo this will of course break in prod
+          volumeMounts:
+            - name: events-ap-events-credentials
+              mountPath: "/etc/svc-events/secrets/events.ap-events.credentials"
+              readOnly: true
       containers:
-        - name: svc-events
+        - name: app
           image: automation-platform-svc-events:latest # todo find out how to handle this for prod
+          imagePullPolicy: Never # todo this will of course break in prod
           volumeMounts:
             - name: rmq-events-default-user
               mountPath: "/etc/svc-events/secrets/rmq-events-default-user"
+              readOnly: true
+            - name: events-ap-events-credentials
+              mountPath: "/etc/svc-events/secrets/events.ap-events.credentials"
               readOnly: true
       volumes:
         - name: rmq-events-default-user
           secret:
             secretName: rmq-events-default-user
+        - name: events-ap-events-credentials
+          secret:
+            secretName: events.ap-events.credentials

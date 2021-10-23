@@ -30,8 +30,7 @@ $override = <<<EOT
 
 return [
     'build-dev' => new ActionGroup([
-        new CopyFile(__DIR__.'/../../schemas/events.schema.json', __DIR__.'/events.schema.json'), // todo support workspace-relative paths
-        new RunProcess('docker build -t ' . $imageWithTag . ' -f docker/Dockerfile .'),
+        new RunProcess('docker build -t ' . $imageWithTag . ' -f docker/Dockerfile ../../'),
         new RunProcess('docker build -t ' . $migrationsImageWithTag . ' -f docker/migrations.Dockerfile .'),
         new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override)
     ]),

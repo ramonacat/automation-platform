@@ -1,0 +1,7 @@
+**/target/
+**/k8s/
+**/.idea/
+**/*.iml
+**/vendor/
+.git/
+.github/

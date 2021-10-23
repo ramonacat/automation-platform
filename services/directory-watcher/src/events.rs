@@ -3,7 +3,7 @@ use crate::platform;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-#[derive(Serialize, Copy, Clone)]
+#[derive(Serialize, Copy, Clone, Debug)]
 pub struct FileCreated<'a> {
     id: Uuid,
     created_timestamp: DateTime<Utc>,
@@ -28,7 +28,7 @@ impl<'a> FileCreated<'a> {
     }
 }
 
-#[derive(Serialize, Copy, Clone)]
+#[derive(Serialize, Copy, Clone, Debug)]
 pub struct FileChanged<'a> {
     id: Uuid,
     created_timestamp: DateTime<Utc>,
@@ -53,7 +53,7 @@ impl<'a> FileChanged<'a> {
     }
 }
 
-#[derive(Serialize, Copy, Clone)]
+#[derive(Serialize, Copy, Clone, Debug)]
 pub struct FileDeleted<'a> {
     id: Uuid,
     created_timestamp: DateTime<Utc>,
@@ -78,7 +78,7 @@ impl<'a> FileDeleted<'a> {
     }
 }
 
-#[derive(Serialize, Copy, Clone)]
+#[derive(Serialize, Copy, Clone, Debug)]
 pub struct FileMoved<'a> {
     id: Uuid,
     created_timestamp: DateTime<Utc>,

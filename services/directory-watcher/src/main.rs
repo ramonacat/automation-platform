@@ -3,17 +3,16 @@
 use crate::file_status_store::{Error, Postgres};
 use crate::filesystem_events::FilesystemEventHandler;
 use crate::mount::Mount;
-use crate::platform::events::RabbitMQ;
-use crate::platform::secrets::SecretProvider;
+use crate::platform::events::Service;
 use crate::scan::Scanner;
-use lapin::{Connection, ConnectionProperties};
+use ::platform::secrets::SecretProvider;
 use native_tls::TlsConnector;
 use notify::{RecursiveMode, Watcher};
 use postgres_native_tls::MakeTlsConnector;
+use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
-use tokio_amqp::LapinTokioExt;
 use tokio_postgres::Client;
 
 mod events;
@@ -41,12 +40,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _guard = tracing::subscriber::set_default(subscriber);
 
     let secret_provider = SecretProvider::new("/etc/svc-events/secrets/");
-    let connection = connect_to_rabbit(&secret_provider).await?;
-    let es = Arc::new(RabbitMQ::new(connection)?);
+    let es_watcher = Service::new("svc-events:7654".to_socket_addrs()?.last().unwrap()).await?; // todo don't panic here
+    let es_scanner = Service::new("svc-events:7654".to_socket_addrs()?.last().unwrap()).await?; // todo don't panic here
     let pg_client = Arc::new(Mutex::new(connect_to_postgres(&secret_provider).await?));
     let directories_from_env = std::env::var("DW_DIRECTORIES_TO_WATCH")?;
     let file_status_store = Arc::new(Mutex::new(Postgres::new(pg_client.clone())));
-    let mut scanner = Scanner::new(es.clone(), file_status_store.clone());
+    let mut scanner = Scanner::new(Arc::new(Mutex::new(es_scanner)), file_status_store.clone());
 
     info!("Initialization completed");
 
@@ -54,8 +53,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (sender, receiver) = std::sync::mpsc::channel();
     let mut watcher = notify::watcher(sender, Duration::from_secs(1))?;
-    let filesystem_event_handler =
-        FilesystemEventHandler::new(es.clone(), file_status_store.clone(), &mounts);
+    let filesystem_event_handler = FilesystemEventHandler::new(
+        Arc::new(Mutex::new(es_watcher)),
+        file_status_store.clone(),
+        &mounts,
+    );
 
     for mount in &mounts {
         watcher.watch(&mount.path(), RecursiveMode::Recursive)?;
@@ -88,7 +90,7 @@ fn parse_mounts(directories_from_env: &str) -> Vec<Mount> {
 #[derive(Error, Debug)]
 enum PostgresConnectionError {
     #[error("Failed to read secret")]
-    SecretFailed(#[from] platform::secrets::Error),
+    SecretFailed(#[from] ::platform::secrets::Error),
     #[error("Failed to connect to postgres")]
     PostgresFailed(#[from] tokio_postgres::Error),
     #[error("TLS error")]
@@ -121,28 +123,4 @@ async fn connect_to_postgres(
         }
     });
     Ok(pg_client)
-}
-
-#[derive(Error, Debug)]
-enum RabbitConnectionError {
-    #[error("Failed to read secret")]
-    SecretFailed(#[from] platform::secrets::Error),
-    #[error("RabbitMQ connection failed")]
-    LapinFailed(#[from] lapin::Error),
-}
-
-async fn connect_to_rabbit(
-    secret_provider: &SecretProvider<'_>,
-) -> Result<Connection, RabbitConnectionError> {
-    let rabbit_secret = secret_provider.read("rmq-events-default-user")?;
-    let connection = lapin::Connection::connect(
-        &format!(
-            "amqp://{}:{}@rmq-events:5672",
-            rabbit_secret.username(),
-            rabbit_secret.password()
-        ),
-        ConnectionProperties::default().with_tokio(),
-    )
-    .await?;
-    Ok(connection)
 }

@@ -1,19 +1,20 @@
-use jsonschema::{ErrorIterator, JSONSchema, ValidationError};
-use lapin::options::BasicPublishOptions;
-use lapin::BasicProperties;
+use jsonschema::{ErrorIterator, ValidationError};
 use serde::Serialize;
+use std::fmt::Debug;
+use std::net::SocketAddr;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::{TcpSocket, TcpStream};
 
 #[async_trait]
 pub trait EventSender {
-    async fn send<'a, T: Event + Send + Sync + Serialize + 'a>(
-        &self,
+    async fn send<'a, T: Event + Send + Sync + Serialize + Debug + 'a>(
+        &mut self,
         event: T,
     ) -> Result<(), Error>;
 }
 
-pub struct RabbitMQ {
-    schema: JSONSchema,
-    rabbit: lapin::Connection,
+pub struct Service {
+    socket: TcpStream,
 }
 
 pub trait Event: Send {}
@@ -44,33 +45,28 @@ impl From<jsonschema::ErrorIterator<'_>> for Error {
     }
 }
 
-impl RabbitMQ {
-    pub fn new(rabbit: lapin::Connection) -> Result<Self, Error> {
+impl Service {
+    pub async fn new(address: SocketAddr) -> Result<Self, Error> {
         Ok(Self {
-            schema: JSONSchema::compile(&serde_json::from_str(&std::fs::read_to_string(
-                "/etc/svc-directory-watcher/schemas/events.schema.json",
-            )?)?)?,
-            rabbit,
+            socket: TcpSocket::new_v4()?.connect(address).await?,
         })
     }
 }
 
 #[async_trait]
-impl EventSender for RabbitMQ {
-    async fn send<'a, T: Event + Serialize + 'a>(&self, event: T) -> Result<(), Error> {
+impl EventSender for Service {
+    async fn send<'a, T: Event + Serialize + Debug + 'a>(&mut self, event: T) -> Result<(), Error> {
+        info!("Sending an event: {:?}", event);
         let serialized = serde_json::to_value(event)?;
-        self.schema.validate(&serialized)?;
 
-        let channel = self.rabbit.create_channel().await?;
-        channel
-            .basic_publish(
-                "events",
-                "",
-                BasicPublishOptions::default(), // fixme ensure correct options
-                format!("{}", serialized).as_bytes().to_vec(), // fixme can this be simplified?
-                BasicProperties::default(),     // fixme do we need anything here?
-            )
-            .await?;
+        let mut reader = BufReader::new(&mut self.socket);
+
+        reader.write(format!("{}\n", serialized).as_bytes()).await?;
+        info!("Event sent. Awaiting response.");
+        let mut response = String::new();
+        reader.read_line(&mut response).await?;
+
+        info!("Received a response for the event: {}", response);
 
         Ok(())
     }
