@@ -3,3 +3,4 @@ k8s/
 docker/
 .idea/
 *.iml
+build-config.php

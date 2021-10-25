@@ -4,6 +4,9 @@ use Ramona\AutomationPlatformLibBuild\ActionGroup;
 use Ramona\AutomationPlatformLibBuild\RunProcess;
 use Ramona\AutomationPlatformLibBuild\PutFile;
 use Ramona\AutomationPlatformLibBuild\CopyFile;
+use Ramona\AutomationPlatformLibBuild\BuildDefinition;
+use Ramona\AutomationPlatformLibBuild\Target;
+use Ramona\AutomationPlatformLibBuild\Dependency;
 
 $tag = str_replace('.', '', uniqid('', true));
 
@@ -28,11 +31,11 @@ $override = <<<EOT
                   image: {$imageWithTag}
         EOT;
 
-return [
-    'build-dev' => new ActionGroup([
+return new BuildDefinition([
+    new Target('build-dev', new ActionGroup([
         new RunProcess('docker build -t ' . $imageWithTag . ' -f docker/Dockerfile ../../'),
         new RunProcess('docker build -t ' . $migrationsImageWithTag . ' -f docker/migrations.Dockerfile .'),
         new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override)
-    ]),
-    'check' => new RunProcess('cargo clippy')
-];
+    ]), [new Dependency(__DIR__, 'check'), new Dependency(__DIR__.'/../events/', 'build-dev')]), // todo there should be no dependency on build-dev, but on deploy-dev instead, when it exists
+    new Target('check', new RunProcess('cargo clippy'))
+]);

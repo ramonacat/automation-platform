@@ -33,6 +33,7 @@ final class BuildActionResult
     {
         return $this->succeeded;
     }
+
     public function getMessage(): ?string
     {
         return $this->message;
