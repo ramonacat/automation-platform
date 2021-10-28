@@ -7,7 +7,7 @@ namespace Ramona\AutomationPlatformLibBuild;
 /**
  * @psalm-immutable
  */
-final class Dependency
+final class TargetId
 {
     private string $path;
     private string $target;

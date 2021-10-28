@@ -1,68 +1,90 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ramona\AutomationPlatformLibBuild;
+
 use function Safe\chdir;
 use function Safe\getcwd;
 
 final class BuildExecutor
 {
-    private array $executedTargets = [];
-    private DependencyQueue $leftToRun;
-
-    public function __construct(private BuildDefinitions $buildDefinitions)
+    public function __construct(private BuildDefinitionsLoader $buildDefinitions)
     {
-        $this->leftToRun = new DependencyQueue();
+    }
+
+    /**
+     * @todo extract this to its own class?
+     */
+    public function buildQueue(TargetId $desiredTarget): TargetQueue
+    {
+        $leftToBuild = new TargetQueue();
+        $leftToBuild->enqueue($desiredTarget);
+
+        $buildQueue = new TargetQueue();
+
+        while (!$leftToBuild->isEmpty()) {
+            $toBuild = $leftToBuild->dequeue();
+            $target = $this->buildDefinitions->target($toBuild);
+
+            $allDependenciesAdded = true;
+            foreach ($target->dependencies() as $targetDependency) {
+                if (!$buildQueue->hasId($targetDependency->id())) {
+                    $leftToBuild->enqueue($targetDependency);
+                    $allDependenciesAdded = false;
+                }
+            }
+
+            if ($allDependenciesAdded) {
+                if (!$buildQueue->hasId($toBuild->id())) {
+                    $buildQueue->enqueue($toBuild);
+                }
+            } else {
+                if ($leftToBuild->hasId($toBuild->id())) {
+                    throw CyclicDependencyFound::at($toBuild->id());
+                }
+
+                $leftToBuild->enqueue($toBuild);
+            }
+        }
+
+        return $buildQueue;
     }
 
     public function executeTarget(string $workingDirectory, string $name): BuildActionResult
     {
-        $this->leftToRun->push(new Dependency($workingDirectory, $name));
-        return $this->runQueue();
-    }
+        $queue = $this->buildQueue(new TargetId($workingDirectory, $name));
 
-    private function runQueue(): BuildActionResult
-    {
-        // todo the queue building should be separate from execution, so a cyclic dependency check can be done
-        while(!$this->leftToRun->isEmpty()) {
-            $currentDependency = $this->leftToRun->pop();
+        while (!$queue->isEmpty()) {
+            $targetId = $queue->dequeue();
+            $target = $this->buildDefinitions->target($targetId);
 
-            $target = $this->buildDefinitions
-                ->get($currentDependency->path())
-                ->target($currentDependency->target());
+            $result = $this->inWorkingDirectory($targetId->path(), fn () => $target->execute());
 
-            $dependencies = $target->dependencies();
-
-            $allDependenciesExecuted = true;
-
-            foreach($dependencies as $dependency) {
-                $dependencyKey = $dependency->id();
-                if(!isset($this->executedTargets[$dependencyKey])) {
-                    $this->leftToRun->push($dependency);
-
-                    $allDependenciesExecuted = false;
-                }
-            }
-
-            if($allDependenciesExecuted) {
-                $workingDirectory = getcwd();
-                chdir($currentDependency->path());
-                try {
-                    $result = $target->execute();
-                } finally {
-                    chdir($workingDirectory);
-                }
-
-                if(!$result->hasSucceeded())
-                {
-                    return $result;
-                }
-
-                $this->executedTargets[$currentDependency->id()] = true;
-            } else {
-                $this->leftToRun->push($currentDependency);
+            if (!$result->hasSucceeded()) {
+                return $result;
             }
         }
 
         return BuildActionResult::ok();
+    }
+
+    /**
+     * todo this should probably be placed elsewhere
+     * @template T
+     * @param callable():T $callback
+     * @return T
+     */
+    private function inWorkingDirectory(string $workingDirectory, callable $callback)
+    {
+        $currentWorkingDirectory = getcwd();
+        chdir($workingDirectory);
+        try {
+            $result = ($callback)();
+        } finally {
+            chdir($currentWorkingDirectory);
+        }
+
+        return $result;
     }
 }

@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ramona\AutomationPlatformLibBuild;
+
 use RuntimeException;
 use function sprintf;
 

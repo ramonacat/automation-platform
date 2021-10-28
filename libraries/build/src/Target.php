@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild;
+
 use function count;
 
 final class Target
@@ -19,12 +20,12 @@ final class Target
 
     /**
      * @psalm-readonly
-     * @var list<Dependency>
+     * @var list<TargetId>
      */
     private array $dependencies;
 
     /**
-     * @param list<Dependency> $dependencies
+     * @param list<TargetId> $dependencies
      */
     public function __construct(string $name, BuildAction $action, array $dependencies = [])
     {
@@ -44,7 +45,7 @@ final class Target
     }
 
     /**
-     * @return list<Dependency>
+     * @return list<TargetId>
      */
     public function dependencies(): array
     {

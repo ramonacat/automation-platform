@@ -2,10 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild;
+namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use function file_put_contents;
+use Ramona\AutomationPlatformLibBuild\BuildAction;
+use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 
+/**
+ * @api
+ */
 final class PutFile implements BuildAction
 {
     public function __construct(private string $path, private string $contents)

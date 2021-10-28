@@ -7,10 +7,9 @@ namespace Ramona\AutomationPlatformLibBuild;
 use function file_exists;
 use function fprintf;
 use function implode;
+use const PHP_EOL;
 use function Safe\getcwd;
 use function Safe\realpath;
-use const DIRECTORY_SEPARATOR;
-use const PHP_EOL;
 use const STDERR;
 
 foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php'] as $file) {
@@ -22,19 +21,12 @@ foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php
 
 $workingDirectory = realpath(getcwd());
 
-$buildDefinitions = new BuildDefinitions();
-$buildDefinitions->load(getcwd());
+$buildDefinitions = new DefaultBuildDefinitionsLoader();
 $executor = new BuildExecutor($buildDefinitions);
-
-// fixme
-//if (!$buildDefinition instanceof BuildDefinition) {
-//    fprintf(STDERR, 'Invalid build definition.');
-//    exit(1);
-//}
 
 if ($argc !== 2) {
     fprintf(STDERR, 'Usage: %s [action-name]%s', $argv[0], PHP_EOL);
-    fprintf(STDERR, 'Supported actions: %s', implode(', ', $buildDefinitions->get($workingDirectory)->actionNames()));
+    fprintf(STDERR, 'Supported actions: %s', implode(', ', $buildDefinitions->getActionNames($workingDirectory)));
     exit(2);
 }
 

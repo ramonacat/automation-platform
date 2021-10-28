@@ -2,10 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild;
+namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use function passthru;
+use Ramona\AutomationPlatformLibBuild\BuildAction;
+use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 
+/**
+ * @api
+ */
 final class RunProcess implements BuildAction
 {
     public function __construct(private string $command)
