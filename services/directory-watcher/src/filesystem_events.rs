@@ -130,16 +130,16 @@ mod tests {
     use tempdir::TempDir;
 
     struct MockEventSender {
-        events: Mutex<Vec<Value>>,
+        events: Vec<Value>,
     }
 
     #[async_trait]
     impl EventSender for MockEventSender {
         async fn send<'a, T: Event + Send + Sync + Serialize + 'a>(
-            &self,
+            &mut self,
             event: T,
         ) -> Result<(), Error> {
-            self.events.lock().await.push(to_value(event).unwrap());
+            self.events.push(to_value(event).unwrap());
 
             Ok(())
         }
@@ -186,9 +186,9 @@ mod tests {
         std::fs::write(temp.join("b/1"), "aaa").unwrap();
 
         let mounts = vec![Mount::new("mount_a".to_string(), PathBuf::from(temp))];
-        let event_sender = Arc::new(MockEventSender {
-            events: Mutex::new(vec![]),
-        });
+        let event_sender = Arc::new(Mutex::new(MockEventSender {
+            events: vec![],
+        }));
         let handler = FilesystemEventHandler::new(
             event_sender.clone(),
             Arc::new(Mutex::new(MockFileStatusStore { sync_result })),
@@ -199,7 +199,7 @@ mod tests {
         tx.send(event).unwrap();
         drop(tx);
         handler.handle_events(rx).await.unwrap();
-        let events = event_sender.events.lock().await.clone();
+        let events = event_sender.lock().await.events.clone();
         events
     }
 

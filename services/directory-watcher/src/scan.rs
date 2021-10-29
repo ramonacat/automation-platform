@@ -115,15 +115,15 @@ mod tests {
     use tempdir::TempDir;
 
     struct MockEventSender {
-        events: Mutex<Vec<Value>>,
+        events: Vec<Value>,
     }
     #[async_trait]
     impl EventSender for MockEventSender {
         async fn send<'a, T: Event + Serialize + 'a>(
-            &self,
+            &mut self,
             event: T,
         ) -> Result<(), platform::events::Error> {
-            self.events.lock().await.push(to_value(event).unwrap());
+            self.events.push(to_value(event).unwrap());
 
             Ok(())
         }
@@ -164,9 +164,9 @@ mod tests {
 
     #[tokio::test]
     pub async fn will_mark_preexisting_file_as_not_changed() {
-        let sender = Arc::new(MockEventSender {
-            events: Mutex::new(vec![]),
-        });
+        let sender = Arc::new(Mutex::new(MockEventSender {
+            events: vec![],
+        }));
         let mut scanner = Scanner::new(sender.clone(), Arc::new(Mutex::new(MockFileStatusStore)));
         let tempdir = TempDir::new("tmp").unwrap();
         let temp = tempdir.path();
@@ -184,7 +184,7 @@ mod tests {
             .await
             .unwrap();
 
-        let events = sender.events.lock().await;
+        let events = &sender.lock().await.events;
         assert_eq!(2, events.len());
         assert_eq!(
             &Value::String("mount_a".into()),
