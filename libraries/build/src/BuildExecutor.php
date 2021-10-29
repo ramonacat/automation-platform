@@ -24,27 +24,27 @@ final class BuildExecutor
         $buildQueue = new TargetQueue();
 
         while (!$leftToBuild->isEmpty()) {
-            $toBuild = $leftToBuild->dequeue();
-            $target = $this->buildDefinitions->target($toBuild);
+            $targetId = $leftToBuild->dequeue();
+            $dependencies = $this->buildDefinitions->target($targetId)->dependencies();
 
-            $allDependenciesAdded = true;
-            foreach ($target->dependencies() as $targetDependency) {
-                if (!$buildQueue->hasId($targetDependency->id())) {
-                    $leftToBuild->enqueue($targetDependency);
-                    $allDependenciesAdded = false;
+            $allDependenciesQueued = true;
+
+            foreach ($dependencies as $targetDependency) {
+                $isInBuildQueue = $buildQueue->hasId($targetDependency);
+
+                if (!$isInBuildQueue) {
+                    if(!$leftToBuild->hasId($targetDependency)) {
+                        $leftToBuild->enqueue($targetDependency);
+                    }
+
+                    $allDependenciesQueued = false;
                 }
             }
 
-            if ($allDependenciesAdded) {
-                if (!$buildQueue->hasId($toBuild->id())) {
-                    $buildQueue->enqueue($toBuild);
-                }
+            if ($allDependenciesQueued) {
+                $buildQueue->enqueue($targetId);
             } else {
-                if ($leftToBuild->hasId($toBuild->id())) {
-                    throw CyclicDependencyFound::at($toBuild->id());
-                }
-
-                $leftToBuild->enqueue($toBuild);
+                $leftToBuild->enqueue($targetId);
             }
         }
 

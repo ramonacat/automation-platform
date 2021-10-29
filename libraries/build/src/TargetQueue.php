@@ -32,11 +32,11 @@ final class TargetQueue
         return $queue;
     }
 
-    public function hasId(string $id): bool
+    public function hasId(TargetId $id): bool
     {
         // todo this is O(N), probably could be O(1) with a hashmap
         foreach ($this->queue as $dependency) {
-            if ($dependency->id() === $id) {
+            if ($dependency->toString() === $id->toString()) {
                 return true;
             }
         }
@@ -62,5 +62,24 @@ final class TargetQueue
     public function count(): int
     {
         return $this->queue->count();
+    }
+
+    public function __debugInfo(): array
+    {
+        $result = [];
+
+        foreach($this->queue as $item) {
+            $result[] = $item->toString();
+        }
+
+        return $result;
+    }
+
+    public function equals(TargetQueue $other): bool {
+        if($this->count() !== $other->count()) {
+            return false;
+        }
+
+        return array_diff($this->__debugInfo(), $other->__debugInfo()) === [];
     }
 }

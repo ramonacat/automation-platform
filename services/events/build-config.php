@@ -41,5 +41,6 @@ return new BuildDefinition([
         ]),
         [new TargetId(__DIR__, 'check')]
     ),
-    new Target('check', new RunProcess('cargo clippy'))
+    new Target('check', new RunProcess('cargo clippy')),
+    new Target('deploy-dev', new RunProcess('kubectl --context minikube apply -k k8s/overlays/dev'), [new TargetId(__DIR__, 'build-dev')])
 ]);

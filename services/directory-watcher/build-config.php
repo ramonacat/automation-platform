@@ -35,6 +35,7 @@ return new BuildDefinition([
         new RunProcess('docker build -t ' . $imageWithTag . ' -f docker/Dockerfile ../../'),
         new RunProcess('docker build -t ' . $migrationsImageWithTag . ' -f docker/migrations.Dockerfile .'),
         new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override)
-    ]), [new TargetId(__DIR__, 'check'), new TargetId(__DIR__.'/../events/', 'build-dev')]), // todo there should be no dependency on build-dev, but on deploy-dev instead, when it exists
-    new Target('check', new RunProcess('cargo clippy'))
+    ]), [new TargetId(__DIR__, 'check')]),
+    new Target('check', new RunProcess('cargo clippy')),
+    new Target('deploy-dev', new RunProcess('kubectl --context minikube apply -k k8s/overlays/dev'), [new TargetId(__DIR__, 'build-dev'), new TargetId(__DIR__.'/../events/', 'deploy-dev')])
 ]);

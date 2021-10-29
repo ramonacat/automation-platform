@@ -28,7 +28,7 @@ final class TargetId
         return $this->target;
     }
 
-    public function id(): string
+    public function toString(): string
     {
         return "{$this->path}:{$this->target}";
     }
