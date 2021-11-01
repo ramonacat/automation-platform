@@ -8,11 +8,11 @@ use std::future::Future;
 use std::net::SocketAddr;
 use tracing::{error, info};
 
-use serde::Serialize;
 use tokio_postgres::Client;
 
 use chrono::{DateTime, Utc};
 use jsonschema::{ErrorIterator, JSONSchema, ValidationError};
+use platform::events::{Response, Status};
 use postgres_native_tls::MakeTlsConnector;
 use serde_json::Value;
 use std::fmt::{Debug, Formatter};
@@ -82,17 +82,6 @@ where
         }
         Ok(()) => {}
     }
-}
-
-#[derive(Serialize, Debug)]
-enum Status {
-    Ok,
-    Failed,
-}
-
-#[derive(Serialize, Debug)]
-struct Response {
-    status: Status,
 }
 
 #[derive(Error, Debug)]
