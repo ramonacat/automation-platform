@@ -1,10 +1,10 @@
 use crate::events::{FileChanged, FileCreated, FileDeleted, FileMoved};
 use crate::file_status_store::FileStatusStore;
 use crate::mount::{Mount, PathInside};
-use crate::platform::events::EventSender;
 use crate::HandleEventsError;
 use chrono::{DateTime, Utc};
 use notify::DebouncedEvent;
+use platform::events::EventSender;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
@@ -186,9 +186,7 @@ mod tests {
         std::fs::write(temp.join("b/1"), "aaa").unwrap();
 
         let mounts = vec![Mount::new("mount_a".to_string(), PathBuf::from(temp))];
-        let event_sender = Arc::new(Mutex::new(MockEventSender {
-            events: vec![],
-        }));
+        let event_sender = Arc::new(Mutex::new(MockEventSender { events: vec![] }));
         let handler = FilesystemEventHandler::new(
             event_sender.clone(),
             Arc::new(Mutex::new(MockFileStatusStore { sync_result })),

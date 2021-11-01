@@ -1,11 +1,10 @@
 use crate::events::{FileChanged, FileCreated};
 use crate::file_status_store::{FileStatusStore, FileStatusSyncResult};
 use crate::mount::{Mount, PathInside};
-use crate::platform;
-use crate::platform::events::EventSender;
 use async_walkdir::{DirEntry, WalkDir};
 use chrono::DateTime;
 use futures_lite::stream::StreamExt;
+use platform::events::EventSender;
 use std::fs::Metadata;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -164,9 +163,7 @@ mod tests {
 
     #[tokio::test]
     pub async fn will_mark_preexisting_file_as_not_changed() {
-        let sender = Arc::new(Mutex::new(MockEventSender {
-            events: vec![],
-        }));
+        let sender = Arc::new(Mutex::new(MockEventSender { events: vec![] }));
         let mut scanner = Scanner::new(sender.clone(), Arc::new(Mutex::new(MockFileStatusStore)));
         let tempdir = TempDir::new("tmp").unwrap();
         let temp = tempdir.path();

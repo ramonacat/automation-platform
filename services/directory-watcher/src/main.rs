@@ -3,11 +3,11 @@
 use crate::file_status_store::{Error, Postgres};
 use crate::filesystem_events::FilesystemEventHandler;
 use crate::mount::Mount;
-use crate::platform::events::Service;
 use crate::scan::Scanner;
-use ::platform::secrets::SecretProvider;
 use native_tls::TlsConnector;
 use notify::{RecursiveMode, Watcher};
+use platform::events::Service;
+use platform::secrets::SecretProvider;
 use postgres_native_tls::MakeTlsConnector;
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
@@ -19,7 +19,6 @@ mod events;
 mod file_status_store;
 mod filesystem_events;
 mod mount;
-mod platform;
 mod scan;
 
 #[macro_use]

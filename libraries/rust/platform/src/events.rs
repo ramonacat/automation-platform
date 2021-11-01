@@ -1,9 +1,12 @@
+use async_trait::async_trait;
 use jsonschema::{ErrorIterator, ValidationError};
 use serde::Serialize;
 use std::fmt::Debug;
 use std::net::SocketAddr;
+use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpSocket, TcpStream};
+use tracing::info;
 
 #[async_trait]
 pub trait EventSender {
@@ -29,8 +32,6 @@ pub enum Error {
     SchemaValidation(jsonschema::error::ValidationErrorKind),
     #[error("Multiple schema validation errors")]
     MultipleSchemaValidationErrors(Vec<jsonschema::error::ValidationErrorKind>),
-    #[error("Problems communicating with rabbitmq")]
-    Rabbit(#[from] lapin::Error),
 }
 
 impl<'a> From<jsonschema::ValidationError<'a>> for Error {
