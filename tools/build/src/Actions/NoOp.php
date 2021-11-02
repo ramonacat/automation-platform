@@ -12,7 +12,7 @@ use Ramona\AutomationPlatformLibBuild\BuildActionResult;
  */
 final class NoOp implements BuildAction
 {
-    public function execute(): BuildActionResult
+    public function execute(callable $onOutputLine, callable $onErrorLine): BuildActionResult
     {
         return BuildActionResult::ok();
     }

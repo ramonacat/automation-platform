@@ -17,7 +17,7 @@ final class PutFile implements BuildAction
     {
     }
 
-    public function execute(): BuildActionResult
+    public function execute(callable $onOutputLine, callable $onErrorLine): BuildActionResult
     {
         if (file_put_contents($this->path, $this->contents) !== false) {
             return BuildActionResult::ok();

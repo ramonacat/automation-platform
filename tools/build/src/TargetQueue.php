@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild;
 
+use function array_diff;
 use SplQueue;
 
 final class TargetQueue
@@ -68,15 +69,16 @@ final class TargetQueue
     {
         $result = [];
 
-        foreach($this->queue as $item) {
+        foreach ($this->queue as $item) {
             $result[] = $item->toString();
         }
 
         return $result;
     }
 
-    public function equals(TargetQueue $other): bool {
-        if($this->count() !== $other->count()) {
+    public function equals(TargetQueue $other): bool
+    {
+        if ($this->count() !== $other->count()) {
             return false;
         }
 

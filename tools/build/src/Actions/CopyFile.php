@@ -17,7 +17,7 @@ final class CopyFile implements BuildAction
     {
     }
 
-    public function execute(): BuildActionResult
+    public function execute(callable $onOutputLine, callable $onErrorLine): BuildActionResult
     {
         if (!copy($this->source, $this->target)) {
             return BuildActionResult::fail("Failed to copy \"{$this->source}\" to \"{$this->target}\"");

@@ -3,3 +3,4 @@ vendor/
 libraries/**/composer.lock
 .idea/*
 *.iml
+build.log

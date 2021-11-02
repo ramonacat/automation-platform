@@ -1,0 +1,306 @@
+<?php
+
+namespace Bramus\Ansi {
+    class Ansi
+    {
+        /**
+         * @param array $data
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function cuu($data = 1)
+        {
+        }
+
+        /**
+         * @param int $n
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function cursorUp($n = 1)
+        {
+        }
+
+        /**
+         * @param array $data
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function cub($data = 1)
+        {
+        }
+
+        /**
+         * @param int $n
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function cursorBack($n = 1)
+        {
+        }
+
+        /**
+         * @param array $data
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function ed($data)
+        {
+        }
+
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function eraseDisplayUp()
+        {
+        }
+
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function eraseDisplayDown()
+        {
+        }
+
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function eraseDisplay()
+        {
+        }
+        /**
+         * @param Writers\WriterInterface|null $writer
+         */
+        public function __construct($writer = null)
+        {
+        }
+        /**
+         * @param Writers\WriterInterface $writer
+         */
+        public function setWriter(\Bramus\Ansi\Writers\WriterInterface $writer)
+        {
+        }
+        /**
+         * @return Writers\WriterInterface
+         */
+        public function getWriter()
+        {
+        }
+
+        /**
+         * @param string $text
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function text($text)
+        {
+        }
+
+        /**
+         * @return string
+         */
+        public function flush($resetAfterwards = true)
+        {
+        }
+
+        public function get($resetAfterwards = true)
+        {
+        }
+
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function e($resetAfterwards = true)
+        {
+        }
+
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function bell()
+        {
+        }
+
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function backspace()
+        {
+        }
+
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function tab()
+        {
+        }
+
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function lf()
+        {
+        }
+
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function cr()
+        {
+        }
+
+        /**
+         * @param array $data
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function cud($data = 1)
+        {
+        }
+
+        /**
+         * @param int $n
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function cursorDown($n = 1)
+        {
+        }
+
+        /**
+         * @param array $data
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function cuf($data = 1)
+        {
+        }
+        /**
+         * @param int $n
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function cursorForward($n = 1)
+        {
+        }
+        /**
+         * @param array $data
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function cup($data = '1;1')
+        {
+        }
+        public function cursorPosition($n = 1, $m = 1)
+        {
+        }
+        /**
+         * @param array $data
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function el($data)
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function eraseLineToEOL()
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function eraseLineToSOL()
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function eraseLine()
+        {
+        }
+        /**
+         * @param array $data
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function sgr($data = array())
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function nostyle()
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function reset()
+        {
+        }
+        /**
+         * @param array $color
+         *
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function color($color = array())
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function bold()
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function bright()
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function normal()
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function faint()
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function italic()
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function underline()
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function blink()
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function negative()
+        {
+        }
+        /**
+         * @return \Bramus\Ansi\Ansi
+         */
+        public function strikethrough()
+        {
+        }
+    }
+}

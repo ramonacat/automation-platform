@@ -39,9 +39,13 @@ final class Target
         return $this->name;
     }
 
-    public function execute(): BuildActionResult
+    /**
+     * @param callable(string):void $onOutputLine
+     * @param callable(string):void $onErrorLine
+     */
+    public function execute(callable $onOutputLine, callable $onErrorLine): BuildActionResult
     {
-        return $this->action->execute();
+        return $this->action->execute($onOutputLine, $onErrorLine);
     }
 
     /**

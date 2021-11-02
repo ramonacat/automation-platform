@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild;
 
+use Bramus\Ansi\Ansi;
+use Bramus\Ansi\Writers\StreamWriter;
 use function file_exists;
 use function fprintf;
 use function implode;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use const PHP_EOL;
 use function Safe\getcwd;
 use function Safe\realpath;
@@ -21,12 +25,16 @@ foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php
 
 $workingDirectory = realpath(getcwd());
 
+$logger = new Logger('ap-build');
+$logger->pushHandler(new StreamHandler($workingDirectory . '/build.log'));
+$ansi = new Ansi(new StreamWriter('php://stdout'));
+
 $buildDefinitions = new DefaultBuildDefinitionsLoader();
-$executor = new BuildExecutor($buildDefinitions);
+$executor = new BuildExecutor($logger, new StyledBuildOutput($ansi), $buildDefinitions);
 
 if ($argc !== 2) {
     fprintf(STDERR, 'Usage: %s [action-name]%s', $argv[0], PHP_EOL);
-    fprintf(STDERR, 'Supported actions: %s', implode(', ', $buildDefinitions->getActionNames($workingDirectory)));
+    fprintf(STDERR, 'Supported actions: %s%s', implode(', ', $buildDefinitions->getActionNames($workingDirectory)), PHP_EOL);
     exit(2);
 }
 
@@ -38,7 +46,7 @@ try {
 }
 
 if (!$result->hasSucceeded()) {
-    fprintf(STDERR, 'The build has failed.');
+    fprintf(STDERR, 'The build has failed.' . PHP_EOL);
     fprintf(STDERR, $result->getMessage() ?? '<no message>');
     exit(4);
 }

@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Ramona\AutomationPlatformLibBuild;
 
+use Bramus\Ansi\Ansi;
+use Bramus\Ansi\Writers\BufferWriter;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\BuildExecutor;
 use Ramona\AutomationPlatformLibBuild\CyclicDependencyFound;
+use Ramona\AutomationPlatformLibBuild\StyledBuildOutput;
 use Ramona\AutomationPlatformLibBuild\Target;
 use Ramona\AutomationPlatformLibBuild\TargetId;
 use Ramona\AutomationPlatformLibBuild\TargetQueue;
@@ -27,7 +31,7 @@ final class BuildExecutorTest extends TestCase
     public function setUp(): void
     {
         $this->buildDefinitionsLoader = $this->createMock(BuildDefinitionsLoader::class);
-        $this->buildExecutor = new BuildExecutor($this->buildDefinitionsLoader);
+        $this->buildExecutor = new BuildExecutor(new NullLogger(), new StyledBuildOutput(new Ansi(new BufferWriter())), $this->buildDefinitionsLoader);
     }
 
     public function testWillReturnJustSelfForNoDependencies(): void

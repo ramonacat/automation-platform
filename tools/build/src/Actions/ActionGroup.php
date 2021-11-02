@@ -19,10 +19,10 @@ final class ActionGroup implements BuildAction
     {
     }
 
-    public function execute(): BuildActionResult
+    public function execute(callable $onOutputLine, callable $onErrorLine): BuildActionResult
     {
         foreach ($this->actions as $action) {
-            $result = $action->execute();
+            $result = $action->execute($onOutputLine, $onErrorLine);
 
             if (!$result->hasSucceeded()) {
                 return $result;

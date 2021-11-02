@@ -6,5 +6,9 @@ namespace Ramona\AutomationPlatformLibBuild;
 
 interface BuildAction
 {
-    public function execute(): BuildActionResult;
+    /**
+     * @param callable(string):void $onOutputLine
+     * @param callable(string):void $onErrorLine
+     */
+    public function execute(callable $onOutputLine, callable $onErrorLine): BuildActionResult;
 }
