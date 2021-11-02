@@ -5,3 +5,5 @@
 **/vendor/
 .git/
 .github/
+**/build-config.php
+**/.dockerignore
