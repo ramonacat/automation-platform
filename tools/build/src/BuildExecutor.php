@@ -57,6 +57,7 @@ final class BuildExecutor
         $this->logger->info('Building queue for target...', ['working-directory' => $workingDirectory, 'target-name' => $name]);
         $queue = $this->buildQueue(new TargetId($workingDirectory, $name));
         $this->logger->info('Queue built, starting execution...', ['queue-size' => $queue->count()]);
+        $this->styledBuildOutput->setTargetCount($queue->count());
 
         while (!$queue->isEmpty()) {
             $targetId = $queue->dequeue();

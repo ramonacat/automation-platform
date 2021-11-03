@@ -11,12 +11,15 @@ use function count;
 use function explode;
 use function implode;
 use const PHP_EOL;
+use function sprintf;
 
 final class StyledBuildOutput
 {
     private string $standardOutput = '';
     private string $standardError = '';
     private int $outputsPrinted = 0;
+    private ?int $totalTargets = null;
+    private int $targetsExecuted = 0;
 
     public function __construct(private Ansi $ansi)
     {
@@ -25,10 +28,16 @@ final class StyledBuildOutput
     public function startTarget(TargetId $id): void
     {
         $this->writeStartLine($id);
+        $this
+            ->ansi
+            ->color([SGR::COLOR_FG_PURPLE])
+            ->text(sprintf('(%s/%s)' . PHP_EOL, (string)($this->targetsExecuted + 1), (string)($this->totalTargets ?? '?')))
+            ->nostyle();
 
         $this->standardError = '';
         $this->standardOutput = '';
         $this->outputsPrinted = 0;
+        $this->targetsExecuted++;
     }
 
     public function writeStandardOutput(string $data): void
@@ -54,8 +63,6 @@ final class StyledBuildOutput
             $this
                 ->ansi
                 ->cursorUp($this->outputsPrinted);
-        } else {
-            $this->ansi->text(PHP_EOL);
         }
 
         $this->outputsPrinted = count($standardOutputLines) + count($standardErrorLines) + 2;
@@ -78,18 +85,10 @@ final class StyledBuildOutput
 
     public function finalizeTarget(TargetId $targetId, BuildActionResult $result): void
     {
-        if ($this->outputsPrinted > 0) {
-            $this
-                ->ansi
-                ->cursorUp($this->outputsPrinted)
-                ->eraseDisplayDown()
-                ->cursorBack(10000)
-                ->eraseLine();
-        }
-
         $this
             ->ansi
-            ->cursorUp()
+            ->cursorUp(1 + $this->outputsPrinted)
+            ->eraseDisplayDown()
             ->cursorBack(10000)
             ->eraseLine();
 
@@ -131,5 +130,10 @@ final class StyledBuildOutput
         $this
             ->ansi
             ->text('> Running target ' . $id->target() . ' from ' . $id->path() . '... ');
+    }
+
+    public function setTargetCount(int $count): void
+    {
+        $this->totalTargets = $count;
     }
 }
