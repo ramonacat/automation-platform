@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild;
 
-/**
- * @psalm-immutable
- */
+use function Safe\realpath;
+
 final class TargetId
 {
     private string $path;
@@ -14,7 +13,7 @@ final class TargetId
 
     public function __construct(string $path, string $target)
     {
-        $this->path = $path;
+        $this->path = realpath($path);
         $this->target = $target;
     }
 

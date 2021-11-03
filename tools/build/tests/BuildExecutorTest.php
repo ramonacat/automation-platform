@@ -118,23 +118,40 @@ final class BuildExecutorTest extends TestCase
     public function testWorksOnRepeatingDependencies(): void
     {
         $this->setupDefinitions([
-            [new TargetId('b', 'build-dev'), new Target('build-dev', new NoOp(), [new TargetId('b', 'check')])],
-            [new TargetId('b', 'check'), new Target('check', new NoOp())],
-            [new TargetId('b', 'deploy-dev'), new Target('deploy-dev', new NoOp(), [new TargetId('b', 'build-dev')])],
+            [new TargetId(__DIR__ . '/b/', 'build-dev'), new Target('build-dev', new NoOp(), [new TargetId(__DIR__ . '/b', 'check')])],
+            [new TargetId(__DIR__ . '/b/', 'check'), new Target('check', new NoOp())],
+            [new TargetId(__DIR__ . '/b/', 'deploy-dev'), new Target('deploy-dev', new NoOp(), [new TargetId(__DIR__ . '/b', 'build-dev')])],
 
-            [new TargetId('a', 'build-dev'), new Target('build-dev', new NoOp(), [new TargetId('a', 'check')])],
-            [new TargetId('a', 'check'), new Target('check', new NoOp())],
-            [new TargetId('a', 'deploy-dev'), new Target('deploy-dev', new NoOp(), [new TargetId('b', 'deploy-dev')])],
+            [new TargetId(__DIR__ . '/a/', 'build-dev'), new Target('build-dev', new NoOp(), [new TargetId(__DIR__ . '/a', 'check')])],
+            [new TargetId(__DIR__ . '/a/', 'check'), new Target('check', new NoOp())],
+            [new TargetId(__DIR__ . '/a/', 'deploy-dev'), new Target('deploy-dev', new NoOp(), [new TargetId(__DIR__ . '/b', 'deploy-dev')])],
         ]);
 
-        $result = $this->buildExecutor->buildQueue(new TargetId('a', 'deploy-dev'));
+        $result = $this->buildExecutor->buildQueue(new TargetId(__DIR__ . '/a', 'deploy-dev'));
 
         self::assertObjectEquals(TargetQueue::fromArray([
-            new TargetId('b', 'check'),
-            new TargetId('b', 'build-dev'),
-            new TargetId('b', 'deploy-dev'),
-            new TargetId('a', 'deploy-dev'),
-            ]), $result);
+            new TargetId(__DIR__ . '/b', 'check'),
+            new TargetId(__DIR__ . '/b', 'build-dev'),
+            new TargetId(__DIR__ . '/b', 'deploy-dev'),
+            new TargetId(__DIR__ . '/a', 'deploy-dev'),
+        ]), $result);
+    }
+
+    public function testConsidersTargetsWithDifferentPathsToTheSameDirectoryTheSame(): void
+    {
+        $this->setupDefinitions([
+            [new TargetId(__DIR__ . '/a', 'check'), new Target('check', new NoOp(), [new TargetId(__DIR__ . '/b', 'check'), new TargetId(__DIR__ . '/a/../c', 'check')])],
+            [new TargetId(__DIR__ . '/b', 'check'), new Target('check', new NoOp(), [new TargetId(__DIR__ . '/c', 'check')])],
+            [new TargetId(__DIR__ . '/c', 'check'), new Target('check', new NoOp())],
+        ]);
+
+        $result = $this->buildExecutor->buildQueue(new TargetId(__DIR__ . '/a', 'check'));
+
+        self::assertObjectEquals(TargetQueue::fromArray([
+            new TargetId(__DIR__ . '/c', 'check'),
+            new TargetId(__DIR__ . '/b', 'check'),
+            new TargetId(__DIR__ . '/a', 'check'),
+        ]), $result);
     }
 
     /**
