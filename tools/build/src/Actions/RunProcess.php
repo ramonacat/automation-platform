@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use IteratorAggregate;
-use Ramona\AutomationPlatformLibBuild\BuildAction;
+use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Symfony\Component\Process\Process;
 
 /**
@@ -18,18 +19,19 @@ final class RunProcess implements BuildAction
     {
     }
 
-    public function execute(callable $onOutputLine, callable $onErrorLine): BuildActionResult
+    public function execute(ActionOutput $output, Configuration $configuration): BuildActionResult
     {
         $process = Process::fromShellCommandline($this->command);
+        $process->setTimeout(1500); // todo make the timeout configurable
         $process->start();
 
         /** @psalm-var IteratorAggregate<string, string> $process  */
 
         foreach ($process as $type => $data) {
             if ($type === Process::OUT) {
-                $onOutputLine($data);
+                $output->pushOutput($data);
             } else {
-                $onErrorLine($data);
+                $output->pushError($data);
             }
         }
 

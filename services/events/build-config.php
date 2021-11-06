@@ -37,7 +37,7 @@ return new BuildDefinition([
         new ActionGroup([
             new RunProcess('docker build -t ' . $imageWithTag . ' -f docker/Dockerfile ../../'),
             new RunProcess('docker build -t ' . $migrationsImageWithTag . ' -f docker/migrations.Dockerfile .'),
-            new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override)
+            new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', fn() => $override)
         ]),
         [new TargetId(__DIR__, 'check')]
     ),

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Actions;
 
-use Ramona\AutomationPlatformLibBuild\BuildAction;
+use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 
 /**
  * @api
@@ -19,10 +20,10 @@ final class ActionGroup implements BuildAction
     {
     }
 
-    public function execute(callable $onOutputLine, callable $onErrorLine): BuildActionResult
+    public function execute(ActionOutput $output, Configuration $configuration): BuildActionResult
     {
         foreach ($this->actions as $action) {
-            $result = $action->execute($onOutputLine, $onErrorLine);
+            $result = $action->execute($output, $configuration);
 
             if (!$result->hasSucceeded()) {
                 return $result;

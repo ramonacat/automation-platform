@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild;
 
 use function count;
+use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
+use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 
 final class Target
 {
@@ -39,13 +41,9 @@ final class Target
         return $this->name;
     }
 
-    /**
-     * @param callable(string):void $onOutputLine
-     * @param callable(string):void $onErrorLine
-     */
-    public function execute(callable $onOutputLine, callable $onErrorLine): BuildActionResult
+    public function execute(ActionOutput $output, Configuration $configuration): BuildActionResult
     {
-        return $this->action->execute($onOutputLine, $onErrorLine);
+        return $this->action->execute($output, $configuration);
     }
 
     /**

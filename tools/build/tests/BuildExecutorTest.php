@@ -12,6 +12,7 @@ use Psr\Log\NullLogger;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\BuildExecutor;
+use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\CyclicDependencyFound;
 use Ramona\AutomationPlatformLibBuild\StyledBuildOutput;
 use Ramona\AutomationPlatformLibBuild\Target;
@@ -31,7 +32,12 @@ final class BuildExecutorTest extends TestCase
     public function setUp(): void
     {
         $this->buildDefinitionsLoader = $this->createMock(BuildDefinitionsLoader::class);
-        $this->buildExecutor = new BuildExecutor(new NullLogger(), new StyledBuildOutput(new Ansi(new BufferWriter())), $this->buildDefinitionsLoader);
+        $this->buildExecutor = new BuildExecutor(
+            new NullLogger(),
+            new StyledBuildOutput(new Ansi(new BufferWriter())),
+            $this->buildDefinitionsLoader,
+            Configuration::fromJsonString('{}')
+        );
     }
 
     public function testWillReturnJustSelfForNoDependencies(): void

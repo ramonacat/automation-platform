@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild;
 
 use Psr\Log\LoggerInterface;
+use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use function Safe\chdir;
 use function Safe\getcwd;
 
 final class BuildExecutor
 {
-    public function __construct(private LoggerInterface $logger, private StyledBuildOutput $styledBuildOutput, private BuildDefinitionsLoader $buildDefinitions)
-    {
+    public function __construct(
+        private LoggerInterface $logger,
+        private StyledBuildOutput $styledBuildOutput,
+        private BuildDefinitionsLoader $buildDefinitions,
+        private Configuration $configuration
+    ) {
     }
 
     /**
@@ -68,8 +73,8 @@ final class BuildExecutor
             $result = $this->inWorkingDirectory(
                 $targetId->path(),
                 fn () => $target->execute(
-                    fn (string $outputLine) => $this->styledBuildOutput->writeStandardOutput($outputLine),
-                    fn (string $outputLine) => $this->styledBuildOutput->writeStandardError($outputLine),
+                    $this->styledBuildOutput,
+                    $this->configuration
                 )
             );
 

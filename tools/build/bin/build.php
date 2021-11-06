@@ -12,6 +12,8 @@ use function implode;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use const PHP_EOL;
+use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
+use Ramona\AutomationPlatformLibBuild\Configuration\Locator;
 use function Safe\getcwd;
 use function Safe\realpath;
 use const STDERR;
@@ -24,13 +26,19 @@ foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php
 }
 
 $workingDirectory = realpath(getcwd());
+$configuration = (new Locator())->locateConfigurationFile();
 
 $logger = new Logger('ap-build');
 $logger->pushHandler(new StreamHandler($workingDirectory . '/build.log'));
 $ansi = new Ansi(new StreamWriter('php://stdout'));
 
 $buildDefinitions = new DefaultBuildDefinitionsLoader();
-$executor = new BuildExecutor($logger, new StyledBuildOutput($ansi), $buildDefinitions);
+$executor = new BuildExecutor(
+    $logger,
+    new StyledBuildOutput($ansi),
+    $buildDefinitions,
+    Configuration::fromFile($configuration)
+);
 
 if ($argc !== 2) {
     fprintf(STDERR, 'Usage: %s [action-name]%s', $argv[0], PHP_EOL);

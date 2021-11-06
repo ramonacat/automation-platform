@@ -13,7 +13,7 @@ use function implode;
 use const PHP_EOL;
 use function sprintf;
 
-final class StyledBuildOutput
+final class StyledBuildOutput implements ActionOutput
 {
     private string $standardOutput = '';
     private string $standardError = '';
@@ -40,16 +40,16 @@ final class StyledBuildOutput
         $this->targetsExecuted++;
     }
 
-    public function writeStandardOutput(string $data): void
+    public function pushError(string $data): void
     {
-        $this->standardOutput .= $data;
+        $this->standardError .= $data;
 
         $this->printOutputs();
     }
 
-    public function writeStandardError(string $data): void
+    public function pushOutput(string $data): void
     {
-        $this->standardError .= $data;
+        $this->standardOutput .= $data;
 
         $this->printOutputs();
     }

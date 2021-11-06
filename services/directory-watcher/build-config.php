@@ -6,12 +6,16 @@ use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
 use Ramona\AutomationPlatformLibBuild\BuildDefinition;
 use Ramona\AutomationPlatformLibBuild\Target;
 use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 
 $tag = str_replace('.', '', uniqid('', true));
 
 $imageWithTag =  'automation-platform-svc-directory-watcher:' . $tag;
 $migrationsImageWithTag =  'automation-platform-svc-migrations:' . $tag;
-$override = <<<EOT
+$override = function (Configuration $configuration) use($imageWithTag, $migrationsImageWithTag) {
+    $mounts = $configuration->getSingleBuildValue('$.mounts'); // todo move this to runtime configuration
+
+    return <<<EOT
         apiVersion: apps/v1
         kind: Deployment
         metadata:
@@ -28,7 +32,11 @@ $override = <<<EOT
               containers:
                 - name: app
                   image: {$imageWithTag}
+                  env:
+                    - name: DW_DIRECTORIES_TO_WATCH
+                      value: "{$mounts}" # todo configure this to be NFS mounts in prod
         EOT;
+    };
 
 return new BuildDefinition([
     new Target('build-dev', new ActionGroup([

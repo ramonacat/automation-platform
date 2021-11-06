@@ -8,13 +8,7 @@ use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 
-/**
- * @api
- */
-final class NoOp implements BuildAction
+interface BuildAction
 {
-    public function execute(ActionOutput $output, Configuration $configuration): BuildActionResult
-    {
-        return BuildActionResult::ok();
-    }
+    public function execute(ActionOutput $output, Configuration $configuration): BuildActionResult;
 }
