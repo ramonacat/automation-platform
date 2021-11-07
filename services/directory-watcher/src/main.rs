@@ -41,8 +41,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let secret_provider = SecretProvider::new("/etc/svc-events/secrets/");
     let es_watcher = Service::new("svc-events:7654".to_socket_addrs()?.last().unwrap()).await?; // todo don't panic here
     let es_scanner = Service::new("svc-events:7654".to_socket_addrs()?.last().unwrap()).await?; // todo don't panic here
+    let configuration = platform::configuration::Configuration::new()?;
     let pg_client = Arc::new(Mutex::new(connect_to_postgres(&secret_provider).await?));
-    let directories_from_env = std::env::var("DW_DIRECTORIES_TO_WATCH")?;
+    let directories_from_env = configuration.get_string("$.mounts")?;
     let file_status_store = Arc::new(Mutex::new(Postgres::new(pg_client.clone())));
     let mut scanner = Scanner::new(Arc::new(Mutex::new(es_scanner)), file_status_store.clone());
 

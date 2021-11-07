@@ -60,4 +60,17 @@ final class Configuration
 
         return $result->decode();
     }
+
+    public function getRuntimeConfiguration(): mixed
+    {
+        $query = $this->queryFactory->createQuery('$.runtime');
+
+        $runtimeConfiguration = $this->processor->selectOne($query, $this->configuration);
+
+        if (!$runtimeConfiguration->exists()) {
+            throw InvalidConfiguration::missingRuntimeKey();
+        }
+
+        return $runtimeConfiguration->decode();
+    }
 }

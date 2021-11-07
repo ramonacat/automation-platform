@@ -32,9 +32,6 @@ spec:
             - name: directory-watcher-ap-directory-watcher-credentials
               mountPath: "/etc/svc-events/secrets/directory-watcher.ap-directory-watcher.credentials"
               readOnly: true
-          env:
-            - name: DW_DIRECTORIES_TO_WATCH
-              value: "/tmp/a:tmpa" # todo configure this to be NFS mounts in prod
       volumes:
         - name: rmq-events-default-user
           secret:

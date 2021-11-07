@@ -1,6 +1,6 @@
 {
-    "build": {
+    "build": {},
+    "runtime": {
         "mounts": "/tmp/a:tmpa"
-    },
-    "runtime": {}
+    }
 }
