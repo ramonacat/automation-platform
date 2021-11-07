@@ -1,0 +1,12 @@
+name: commit-verifier
+on: [push]
+jobs:
+    commit-verifier:
+        runs-on: ubuntu-20.04
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                toolchain: stable
+            - working-directory: tools/commit-verifier
+              run: cargo run
