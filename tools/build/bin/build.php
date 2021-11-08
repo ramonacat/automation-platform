@@ -12,11 +12,17 @@ use function implode;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use const PHP_EOL;
+use const PHP_SAPI;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Configuration\Locator;
 use function Safe\getcwd;
 use function Safe\realpath;
 use const STDERR;
+
+if (PHP_SAPI !== 'cli') {
+    echo 'Exiting, not a CLI SAPI';
+    exit(0);
+}
 
 foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php'] as $file) {
     if (file_exists($file)) {
@@ -48,7 +54,7 @@ if ($argc !== 2) {
 
 try {
     $result = $executor->executeTarget(getcwd(), $argv[1]);
-} catch (ActionDoesNotExist $exception) {
+} catch (TargetDoesNotExist $exception) {
     fprintf(STDERR, 'The action "%s" does not exist', $exception->actionName());
     exit(3);
 }

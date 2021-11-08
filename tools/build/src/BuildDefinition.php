@@ -26,15 +26,15 @@ final class BuildDefinition
     /**
      * @return non-empty-list<string>
      */
-    public function actionNames(): array
+    public function targetNames(): array
     {
         return array_map(static fn (Target $t) => $t->name(), $this->targets);
     }
 
     public function target(string $actionName): Target
     {
-        if (($targetIndex = array_search($actionName, $this->actionNames(), true)) === false) {
-            throw new ActionDoesNotExist($actionName);
+        if (($targetIndex = array_search($actionName, $this->targetNames(), true)) === false) {
+            throw new TargetDoesNotExist($actionName);
         }
 
         return $this->targets[$targetIndex];

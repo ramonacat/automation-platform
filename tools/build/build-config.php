@@ -12,6 +12,8 @@ return new BuildDefinition([
     new Target('coding-standard', new RunProcess('php vendor/bin/ecs')),
     new Target('type-check', new RunProcess('php vendor/bin/psalm')),
     new Target('tests-unit', new RunProcess('php vendor/bin/phpunit')),
+    // todo set the number of parallel runs dynamically, once it's supported in build
+    new Target('tests-mutation', new RunProcess('php vendor/bin/infection -j6 --min-msi=29 --min-covered-msi=94')),
     new Target(
         'check',
         new NoOp(),
@@ -19,6 +21,7 @@ return new BuildDefinition([
             new TargetId(__DIR__, 'coding-standard'),
             new TargetId(__DIR__, 'type-check'),
             new TargetId(__DIR__, 'tests-unit'),
+            new TargetId(__DIR__, 'tests-mutation'),
         ]
     ),
     new Target('cs-fix', new RunProcess('php vendor/bin/ecs --fix')),

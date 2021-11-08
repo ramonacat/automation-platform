@@ -15,14 +15,17 @@ use Symfony\Component\Process\Process;
  */
 final class RunProcess implements BuildAction
 {
-    public function __construct(private string $command)
+    // todo lower the default timeout once the docker builds get their own action
+    private const DEFAULT_TIMEOUT = 60 * 30;
+
+    public function __construct(private string $command, private int $timeoutSeconds = self::DEFAULT_TIMEOUT)
     {
     }
 
     public function execute(ActionOutput $output, Configuration $configuration): BuildActionResult
     {
         $process = Process::fromShellCommandline($this->command);
-        $process->setTimeout(1500); // todo make the timeout configurable
+        $process->setTimeout($this->timeoutSeconds);
         $process->start();
 
         /** @psalm-var IteratorAggregate<string, string> $process  */
@@ -36,7 +39,6 @@ final class RunProcess implements BuildAction
         }
 
         /** @psalm-var Process $process */
-
         $exitCode = $process->getExitCode();
         return $exitCode === 0
             ? BuildActionResult::ok()

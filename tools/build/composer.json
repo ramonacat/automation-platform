@@ -26,7 +26,8 @@
         "slevomat/coding-standard": "^7.0",
         "vimeo/psalm": "^4.8",
         "phpunit/phpunit": "^9.5",
-        "psalm/plugin-symfony": "^3.0"
+        "psalm/plugin-symfony": "^3.0",
+        "infection/infection": "^0.25.3"
     },
     "bin": [
         "bin/build.php"

@@ -11,7 +11,7 @@ use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 /**
  * @api
  */
-final class ActionGroup implements BuildAction
+final class Group implements BuildAction
 {
     /**
      * @param non-empty-list<BuildAction> $actions

@@ -1,3 +1,5 @@
 composer.lock
 vendor/
 .phpunit.cache
+infection.log
+build/

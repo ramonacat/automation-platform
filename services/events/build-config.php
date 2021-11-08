@@ -1,6 +1,6 @@
 <?php
 
-use Ramona\AutomationPlatformLibBuild\Actions\ActionGroup;
+use Ramona\AutomationPlatformLibBuild\Actions\Group;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
 use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
 use Ramona\AutomationPlatformLibBuild\Actions\CopyFile;
@@ -34,7 +34,7 @@ $override = <<<EOT
 return new BuildDefinition([
     new Target(
         'build-dev',
-        new ActionGroup([
+        new Group([
             new RunProcess('docker build -t ' . $imageWithTag . ' -f docker/Dockerfile ../../'),
             new RunProcess('docker build -t ' . $migrationsImageWithTag . ' -f docker/migrations.Dockerfile .'),
             new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', fn() => $override)
