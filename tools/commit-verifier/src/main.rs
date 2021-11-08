@@ -1,4 +1,4 @@
-use git2::Repository;
+use git2::{BranchType, Repository};
 use std::path::Path;
 
 fn main() {
@@ -7,38 +7,59 @@ fn main() {
     // todo allow checking commits other than HEAD
 
     let head = repository.head().expect("Failed to get repository HEAD");
-    let commit = head.peel_to_commit().expect("Failed to get HEAD commit");
-    let message = commit.message().expect("No commit message");
+    let mut commit = head.peel_to_commit().expect("Failed to get HEAD commit");
+    let message = commit.message().expect("No commit message").to_string();
 
-    println!("HEAD is at {}", commit.id());
-    println!(
-        "Commit message:\n {}",
-        message
-            .trim_end()
-            .lines()
-            .map(|line| String::from("    ") + line)
-            .collect::<String>()
-    );
+    let merge_base = repository
+        .merge_base(
+            commit.id(),
+            repository
+                .find_branch("origin/main", BranchType::Remote)
+                .expect("Failed to get the main branch")
+                .get()
+                .peel_to_commit()
+                .expect("Failed to get the commit on main branch")
+                .id(),
+        )
+        .expect("Failed to get the merge base of the current branch and main");
 
-    if commit.parent_count() > 1 {
-        println!("This is a merge commit, not validating the message");
-        return;
-    }
+    loop {
+        println!("Checking {}", commit.id());
+        println!(
+            "Commit message:\n {}",
+            message
+                .trim_end()
+                .lines()
+                .map(|line| String::from("    ") + line)
+                .collect::<Vec<String>>()
+                .join("\n")
+        );
 
-    let workdir = repository
-        .workdir()
-        .expect("No working directory found for the repository");
+        let workdir = repository
+            .workdir()
+            .expect("No working directory found for the repository");
 
-    let allowed_prefixes = find_allowed_prefixes(workdir);
+        let allowed_prefixes = find_allowed_prefixes(workdir);
 
-    if allowed_prefixes
-        .iter()
-        .any(|prefix| message.starts_with(prefix))
-    {
-        println!("Commit message prefix is VALID");
-    } else {
-        println!("Commit message prefix is INVALID");
-        std::process::exit(1);
+        if allowed_prefixes
+            .iter()
+            .any(|prefix| message.starts_with(prefix))
+        {
+            println!("* Commit message prefix is VALID");
+        } else if commit.parent_count() > 1 {
+            println!("* This is a merge commit, accepting an invalid message");
+        } else {
+            println!("* Commit message prefix is INVALID");
+            std::process::exit(1);
+        }
+
+        if commit.id() == merge_base {
+            break;
+        }
+
+        println!();
+
+        commit = commit.parent(0).expect("Failed to get commit parent");
     }
 }
 
