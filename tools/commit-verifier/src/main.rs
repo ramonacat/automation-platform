@@ -19,6 +19,12 @@ fn main() {
             .map(|line| String::from("    ") + line)
             .collect::<String>()
     );
+
+    if commit.parent_count() > 1 {
+        println!("This is a merge commit, not validating the message");
+        return;
+    }
+
     let workdir = repository
         .workdir()
         .expect("No working directory found for the repository");
