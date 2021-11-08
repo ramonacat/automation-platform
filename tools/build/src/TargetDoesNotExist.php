@@ -7,13 +7,13 @@ namespace Ramona\AutomationPlatformLibBuild;
 use RuntimeException;
 use function sprintf;
 
-final class ActionDoesNotExist extends RuntimeException
+final class TargetDoesNotExist extends RuntimeException
 {
     private string $actionName;
 
     public function __construct(string $actionName)
     {
-        parent::__construct(sprintf('The action "%s" does not exist', $actionName));
+        parent::__construct(sprintf('The target "%s" does not exist', $actionName));
         $this->actionName = $actionName;
     }
 

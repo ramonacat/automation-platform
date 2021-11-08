@@ -46,6 +46,6 @@ final class DefaultBuildDefinitionsLoader implements BuildDefinitionsLoader
      */
     public function getActionNames(string $workingDirectory): array
     {
-        return $this->get($workingDirectory)->actionNames();
+        return $this->get($workingDirectory)->targetNames();
     }
 }
