@@ -13,7 +13,7 @@ use function implode;
 use const PHP_EOL;
 use function sprintf;
 
-final class StyledBuildOutput implements ActionOutput
+final class StyledBuildOutput implements ActionOutput, BuildOutput
 {
     private string $standardOutput = '';
     private string $standardError = '';
@@ -38,6 +38,16 @@ final class StyledBuildOutput implements ActionOutput
         $this->standardOutput = '';
         $this->outputsPrinted = 0;
         $this->targetsExecuted++;
+    }
+
+    public function getCollectedStandardOutput(): string
+    {
+        return $this->standardOutput;
+    }
+
+    public function getCollectedStandardError(): string
+    {
+        return $this->standardError;
     }
 
     public function pushError(string $data): void
@@ -122,10 +132,7 @@ final class StyledBuildOutput implements ActionOutput
         }
     }
 
-    /**
-     * @param TargetId $id
-     */
-    public function writeStartLine(TargetId $id): void
+    private function writeStartLine(TargetId $id): void
     {
         $this
             ->ansi

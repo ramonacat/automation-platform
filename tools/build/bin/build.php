@@ -53,7 +53,7 @@ if ($argc !== 2) {
 }
 
 try {
-    $result = $executor->executeTarget(getcwd(), $argv[1]);
+    $result = $executor->executeTarget(new TargetId(getcwd(), $argv[1]));
 } catch (TargetDoesNotExist $exception) {
     fprintf(STDERR, 'The action "%s" does not exist', $exception->actionName());
     exit(3);
