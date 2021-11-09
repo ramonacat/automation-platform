@@ -49,4 +49,16 @@ final class RunProcessTest extends TestCase
             Configuration::fromJsonString('{}')
         );
     }
+
+    public function testWillReturnSuccessIfTheCommandIsSuccessful(): void
+    {
+        $action = new RunProcess(PHP_BINARY . ' ' . __DIR__ . '/test-scripts/prints-test-to-stdout.php');
+
+        $result = $action->execute(
+            $this->createMock(ActionOutput::class),
+            Configuration::fromJsonString('{}')
+        );
+
+        self::assertTrue($result->hasSucceeded());
+    }
 }

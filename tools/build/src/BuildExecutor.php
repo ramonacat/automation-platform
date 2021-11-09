@@ -6,16 +6,14 @@ namespace Ramona\AutomationPlatformLibBuild;
 
 use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
-use function Safe\chdir;
-use function Safe\getcwd;
 
 final class BuildExecutor
 {
     public function __construct(
-        private LoggerInterface $logger,
-        private StyledBuildOutput $styledBuildOutput,
+        private LoggerInterface        $logger,
+        private BuildOutput            $buildOutput,
         private BuildDefinitionsLoader $buildDefinitions,
-        private Configuration $configuration
+        private Configuration          $configuration
     ) {
     }
 
@@ -57,32 +55,30 @@ final class BuildExecutor
         return $buildQueue;
     }
 
-    public function executeTarget(string $workingDirectory, string $name): BuildActionResult
+    public function executeTarget(TargetId $targetId): BuildActionResult
     {
-        $this->logger->info('Building queue for target...', ['working-directory' => $workingDirectory, 'target-name' => $name]);
-        $queue = $this->buildQueue(new TargetId($workingDirectory, $name));
-        $this->logger->info('Queue built, starting execution...', ['queue-size' => $queue->count()]);
-        $this->styledBuildOutput->setTargetCount($queue->count());
+        $queue = $this->buildQueue($targetId);
+        $this->buildOutput->setTargetCount($queue->count());
 
         while (!$queue->isEmpty()) {
             $targetId = $queue->dequeue();
             $target = $this->buildDefinitions->target($targetId);
 
-            $this->styledBuildOutput->startTarget($targetId);
+            $this->buildOutput->startTarget($targetId);
 
-            $result = $this->inWorkingDirectory(
+            $result = WorkingDirectory::in(
                 $targetId->path(),
                 fn () => $target->execute(
-                    $this->styledBuildOutput,
+                    $this->buildOutput,
                     $this->configuration
                 )
             );
 
             // fixme log these from the callbacks
-            $standardOutput = '';
-            $standardError = '';
+            $standardOutput = $this->buildOutput->getCollectedStandardOutput();
+            $standardError = $this->buildOutput->getCollectedStandardError();
 
-            $this->styledBuildOutput->finalizeTarget($targetId, $result);
+            $this->buildOutput->finalizeTarget($targetId, $result);
 
             if (!$result->hasSucceeded()) {
                 return $result;
@@ -92,24 +88,5 @@ final class BuildExecutor
         }
 
         return BuildActionResult::ok();
-    }
-
-    /**
-     * todo this should probably be placed elsewhere
-     * @template T
-     * @param callable():T $callback
-     * @return T
-     */
-    private function inWorkingDirectory(string $workingDirectory, callable $callback)
-    {
-        $currentWorkingDirectory = getcwd();
-        chdir($workingDirectory);
-        try {
-            $result = ($callback)();
-        } finally {
-            chdir($currentWorkingDirectory);
-        }
-
-        return $result;
     }
 }
