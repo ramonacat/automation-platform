@@ -13,7 +13,7 @@ return new BuildDefinition([
     new Target('type-check', new RunProcess('php vendor/bin/psalm')),
     new Target('tests-unit', new RunProcess('php vendor/bin/phpunit')),
     // todo set the number of parallel runs dynamically, once it's supported in build
-    new Target('tests-mutation', new RunProcess('php vendor/bin/infection -j6 --min-msi=47 --min-covered-msi=98')),
+    new Target('tests-mutation', new RunProcess('php vendor/bin/infection -j6 --min-msi=94 --min-covered-msi=98')),
     new Target(
         'check',
         new NoOp(),
