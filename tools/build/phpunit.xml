@@ -21,5 +21,8 @@
         <include>
             <directory suffix=".php">src</directory>
         </include>
+        <exclude>
+            <file>src/StyledBuildOutput.php</file>
+        </exclude>
     </coverage>
 </phpunit>

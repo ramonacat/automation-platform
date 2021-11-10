@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild;
 
-use function count;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 
@@ -52,10 +51,5 @@ final class Target
     public function dependencies(): array
     {
         return $this->dependencies;
-    }
-
-    public function hasDependencies(): bool
-    {
-        return count($this->dependencies) > 0;
     }
 }
