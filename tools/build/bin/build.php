@@ -15,6 +15,7 @@ use const PHP_EOL;
 use const PHP_SAPI;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Configuration\Locator;
+use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use function Safe\getcwd;
 use function Safe\realpath;
 use const STDERR;
@@ -35,7 +36,9 @@ $workingDirectory = realpath(getcwd());
 $configuration = (new Locator())->locateConfigurationFile();
 
 $logger = new Logger('ap-build');
-$logger->pushHandler(new StreamHandler($workingDirectory . '/build.log'));
+$logHandler = new StreamHandler($workingDirectory . '/build.log');
+$logHandler->setFormatter(new LogFormatter());
+$logger->pushHandler($logHandler);
 $ansi = new Ansi(new StreamWriter('php://stdout'));
 
 $buildDefinitions = new DefaultBuildDefinitionsLoader();
