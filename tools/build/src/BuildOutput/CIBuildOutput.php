@@ -6,10 +6,12 @@ namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
 
 use Bramus\Ansi\Ansi;
 use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
+use function count;
 use function explode;
 use const PHP_EOL;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\TargetId;
+use function str_contains;
 
 final class CIBuildOutput implements BuildOutput
 {
@@ -80,14 +82,20 @@ final class CIBuildOutput implements BuildOutput
      */
     public function writeWithColoredPrefix(string $prefix, array $color, string $data): void
     {
-        foreach (explode("\n", $data) as $line) {
+        if (!str_contains($data, "\n")) {
+            $this->ansi->text($data);
+            return;
+        }
+
+        $lines = explode("\n", $data);
+        foreach ($lines as $key => $line) {
             $this
                 ->ansi
                 ->nostyle()
                 ->color($color)
                 ->text("$prefix ")
                 ->nostyle()
-                ->text($line . PHP_EOL);
+                ->text($line . (($key === count($lines) - 1) ? '' : PHP_EOL));
         }
     }
 }
