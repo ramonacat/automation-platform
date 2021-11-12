@@ -106,8 +106,8 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::platform::events::Event;
     use chrono::Utc;
+    use platform::events::Event;
     use serde::Serialize;
     use serde_json::{to_value, Value};
     use std::path::PathBuf;

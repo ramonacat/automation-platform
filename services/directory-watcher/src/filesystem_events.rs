@@ -124,7 +124,7 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
 mod tests {
     use super::*;
     use crate::file_status_store::FileStatusSyncResult;
-    use crate::platform::events::{Error, Event};
+    use platform::events::{Error, Event};
     use serde::Serialize;
     use serde_json::{to_value, Value};
     use tempdir::TempDir;
