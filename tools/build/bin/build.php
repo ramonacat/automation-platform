@@ -8,11 +8,14 @@ use Bramus\Ansi\Ansi;
 use Bramus\Ansi\Writers\StreamWriter;
 use function file_exists;
 use function fprintf;
+use function getenv;
 use function implode;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use const PHP_EOL;
 use const PHP_SAPI;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\CIBuildOutput;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\StyledBuildOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Configuration\Locator;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
@@ -32,6 +35,8 @@ foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php
     }
 }
 
+$isCi = getenv('CI') !== false;
+
 $workingDirectory = realpath(getcwd());
 $configuration = (new Locator())->locateConfigurationFile();
 
@@ -44,7 +49,7 @@ $ansi = new Ansi(new StreamWriter('php://stdout'));
 $buildDefinitions = new DefaultBuildDefinitionsLoader();
 $executor = new BuildExecutor(
     $logger,
-    new StyledBuildOutput($ansi),
+    $isCi ? new CIBuildOutput($ansi) : new StyledBuildOutput($ansi),
     $buildDefinitions,
     Configuration::fromFile($configuration)
 );

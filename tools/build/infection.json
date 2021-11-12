@@ -10,7 +10,8 @@
         "excludes": [
             "vendor/",
             "bin/",
-            "StyledBuildOutput.php"
+            "BuildOutput/StyledBuildOutput.php",
+            "BuildOutput/CIBuildOutput.php"
         ]
     },
     "mutators": {
