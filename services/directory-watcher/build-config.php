@@ -36,10 +36,10 @@ $override = function (Configuration $configuration) use($imageWithTag, $migratio
 
 return new BuildDefinition([
     new Target('build-dev', new Group([
+        new PutRuntimeConfiguration(__DIR__.'/runtime.configuration.json'),
         new RunProcess('docker build -t ' . $imageWithTag . ' -f docker/Dockerfile ../../'),
         new RunProcess('docker build -t ' . $migrationsImageWithTag . ' -f docker/migrations.Dockerfile .'),
         new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
-        new PutRuntimeConfiguration(__DIR__.'/runtime.configuration.json')
     ]), [
         new TargetId(__DIR__, 'clippy'),
         new TargetId(__DIR__, 'fmt'),
