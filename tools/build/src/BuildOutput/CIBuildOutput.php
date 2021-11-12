@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
 
+use function array_filter;
 use Bramus\Ansi\Ansi;
 use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
 use function count;
@@ -12,6 +13,7 @@ use const PHP_EOL;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\TargetId;
 use function str_contains;
+use function trim;
 
 final class CIBuildOutput implements BuildOutput
 {
@@ -88,6 +90,7 @@ final class CIBuildOutput implements BuildOutput
         }
 
         $lines = explode("\n", $data);
+        $lines = array_filter($lines, static fn (string $line) => trim($line) !== '');
         foreach ($lines as $key => $line) {
             $this
                 ->ansi
