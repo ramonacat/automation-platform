@@ -1,0 +1,5 @@
+*.php eol=lf
+*.sh eol=lf
+*.rs eol=lf
+*.yaml eol=lf
+*.yml eol=lf
