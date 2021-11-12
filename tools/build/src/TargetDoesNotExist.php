@@ -9,16 +9,13 @@ use function sprintf;
 
 final class TargetDoesNotExist extends RuntimeException
 {
-    private string $actionName;
-
-    public function __construct(string $actionName)
+    public function __construct(private TargetId $targetId)
     {
-        parent::__construct(sprintf('The target "%s" does not exist', $actionName));
-        $this->actionName = $actionName;
+        parent::__construct(sprintf('The target "%s" does not exist', $this->targetId->toString()));
     }
 
-    public function actionName(): string
+    public function targetId(): TargetId
     {
-        return $this->actionName;
+        return $this->targetId;
     }
 }
