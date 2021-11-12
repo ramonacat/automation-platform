@@ -36,11 +36,17 @@ $override = function (Configuration $configuration) use($imageWithTag, $migratio
 
 return new BuildDefinition([
     new Target('build-dev', new Group([
+        new PutRuntimeConfiguration(__DIR__.'/runtime.configuration.json'),
         new RunProcess('docker build -t ' . $imageWithTag . ' -f docker/Dockerfile ../../'),
         new RunProcess('docker build -t ' . $migrationsImageWithTag . ' -f docker/migrations.Dockerfile .'),
         new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
-        new PutRuntimeConfiguration(__DIR__.'/runtime.configuration.json')
-    ]), [new TargetId(__DIR__, 'check')]),
-    new Target('check', new RunProcess('cargo clippy')),
-    new Target('deploy-dev', new RunProcess('kubectl --context minikube apply -k k8s/overlays/dev'), [new TargetId(__DIR__, 'build-dev'), new TargetId(__DIR__.'/../events/', 'deploy-dev')])
+    ]), [
+        new TargetId(__DIR__, 'clippy'),
+        new TargetId(__DIR__, 'fmt'),
+        new TargetId(__DIR__, 'tests-unit'),
+    ]),
+    new Target('clippy', new RunProcess('cargo clippy')),
+    new Target('tests-unit', new RunProcess('cargo test')),
+    new Target('deploy-dev', new RunProcess('kubectl --context minikube apply -k k8s/overlays/dev'), [new TargetId(__DIR__, 'build-dev'), new TargetId(__DIR__.'/../events/', 'deploy-dev')]),
+    new Target('fmt', new RunProcess('cargo fmt -- --check')),
 ]);

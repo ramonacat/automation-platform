@@ -1,0 +1,40 @@
+name: build
+on: [push]
+jobs:
+    build-dev:
+        runs-on: ubuntu-20.04
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                toolchain: stable
+            - uses: Swatinem/rust-cache@v1
+              with:
+                working-directory: services/events/
+            - uses: Swatinem/rust-cache@v1
+              with:
+                working-directory: services/directory-watcher/
+            - uses: Swatinem/rust-cache@v1
+              with:
+                working-directory: libraries/rust/platform
+            - uses: Swatinem/rust-cache@v1
+              with:
+                working-directory: tools/commit-verifier
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                php-version: '8.0'
+                tools: composer
+            - name: Get composer cache directory
+              id: composer-cache
+              run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+            - name: Cache dependencies
+              uses: actions/cache@v2
+              with:
+                path: ${{ steps.composer-cache.outputs.dir }}
+                key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/composer.json') }}
+                restore-keys: ${{ runner.os }}-composer-
+            - working-directory: tools/build/
+              run: composer install
+            - run: php tools/build/bin/build.php build-dev

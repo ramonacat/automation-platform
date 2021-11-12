@@ -106,8 +106,8 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::platform::events::Event;
     use chrono::Utc;
+    use platform::events::Event;
     use serde::Serialize;
     use serde_json::{to_value, Value};
     use std::path::PathBuf;
@@ -183,30 +183,43 @@ mod tests {
 
         let events = &sender.lock().await.events;
         assert_eq!(2, events.len());
+        let index = events
+            .iter()
+            .position(|e| {
+                PathBuf::from(e.get("path").unwrap().as_str().unwrap()) == PathBuf::from("a/b")
+            })
+            .unwrap();
         assert_eq!(
             &Value::String("mount_a".into()),
-            events[0].get("mount_id").unwrap()
+            events[index].get("mount_id").unwrap()
         );
         assert_eq!(
             &Value::String("file.status.created".into()),
-            events[0].get("type").unwrap()
+            events[index].get("type").unwrap()
         );
         assert_eq!(
             PathBuf::from("a/b"),
-            PathBuf::from(events[0].get("path").unwrap().as_str().unwrap())
+            PathBuf::from(events[index].get("path").unwrap().as_str().unwrap())
         );
+
+        let index = events
+            .iter()
+            .position(|e| {
+                PathBuf::from(e.get("path").unwrap().as_str().unwrap()) == PathBuf::from("b/c")
+            })
+            .unwrap();
 
         assert_eq!(
             &Value::String("mount_a".into()),
-            events[1].get("mount_id").unwrap()
+            events[index].get("mount_id").unwrap()
         );
         assert_eq!(
             &Value::String("file.status.changed".into()),
-            events[1].get("type").unwrap()
+            events[index].get("type").unwrap()
         );
         assert_eq!(
             PathBuf::from("b/c"),
-            PathBuf::from(events[1].get("path").unwrap().as_str().unwrap())
+            PathBuf::from(events[index].get("path").unwrap().as_str().unwrap())
         );
     }
 }
