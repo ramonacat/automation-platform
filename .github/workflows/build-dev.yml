@@ -8,6 +8,18 @@ jobs:
             - uses: actions-rs/toolchain@v1
               with:
                 toolchain: stable
+            - uses: Swatinem/rust-cache@v1
+              with:
+                working-directory: services/events/
+            - uses: Swatinem/rust-cache@v1
+              with:
+                working-directory: services/directory-watcher/
+            - uses: Swatinem/rust-cache@v1
+              with:
+                working-directory: libraries/rust/platform
+            - uses: Swatinem/rust-cache@v1
+              with:
+                working-directory: tools/commit-verifier
             - name: Setup PHP
               uses: shivammathur/setup-php@v2
               with:

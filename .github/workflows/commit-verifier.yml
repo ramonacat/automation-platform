@@ -10,5 +10,8 @@ jobs:
             - uses: actions-rs/toolchain@v1
               with:
                 toolchain: stable
+            - uses: Swatinem/rust-cache@v1
+              with:
+                working-directory: tools/commit-verifier
             - working-directory: tools/commit-verifier
               run: cargo run

@@ -185,7 +185,8 @@ mod tests {
         assert_eq!(2, events.len());
         let index = events
             .iter()
-            .find(|e| e.get("path").unwrap().as_str().unwrap() == "a/b");
+            .position(|e| PathBuf::from(e.get("path").unwrap().as_str().unwrap()) == PathBuf::from("a/b"))
+            .unwrap();
         assert_eq!(
             &Value::String("mount_a".into()),
             events[index].get("mount_id").unwrap()
@@ -201,7 +202,9 @@ mod tests {
 
         let index = events
             .iter()
-            .find(|e| e.get("path").unwrap().as_str().unwrap() == "b/c");
+            .position(|e| PathBuf::from(e.get("path").unwrap().as_str().unwrap()) == PathBuf::from("b/c"))
+            .unwrap();
+
         assert_eq!(
             &Value::String("mount_a".into()),
             events[index].get("mount_id").unwrap()
