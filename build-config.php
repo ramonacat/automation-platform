@@ -11,6 +11,7 @@ use Ramona\AutomationPlatformLibBuild\TargetId;
 // todo tools should also be included here
 $services = glob(__DIR__.'/services/*');
 $libraries = glob(__DIR__.'/libraries/*/*');
+$tools = glob(__DIR__.'/tools/*');
 
 return new BuildDefinition([
     new Target(
@@ -18,7 +19,7 @@ return new BuildDefinition([
         new NoOp(),
         array_map(
             fn($path) => new TargetId($path, 'build-dev'),
-            array_merge($libraries, $services)
+            array_merge($tools, $libraries, $services)
         )
 
     ),
