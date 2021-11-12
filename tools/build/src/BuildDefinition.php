@@ -6,6 +6,7 @@ namespace Ramona\AutomationPlatformLibBuild;
 
 use function array_map;
 use function array_search;
+use function Safe\getcwd;
 
 final class BuildDefinition
 {
@@ -14,6 +15,7 @@ final class BuildDefinition
      * @var non-empty-list<Target>
      */
     private array $targets;
+    private string $path;
 
     /**
      * @param non-empty-list<Target> $targets
@@ -21,6 +23,7 @@ final class BuildDefinition
     public function __construct(array $targets)
     {
         $this->targets = $targets;
+        $this->path = getcwd();
     }
 
     /**
@@ -31,10 +34,10 @@ final class BuildDefinition
         return array_map(static fn (Target $t) => $t->name(), $this->targets);
     }
 
-    public function target(string $actionName): Target
+    public function target(string $targetNMame): Target
     {
-        if (($targetIndex = array_search($actionName, $this->targetNames(), true)) === false) {
-            throw new TargetDoesNotExist($actionName);
+        if (($targetIndex = array_search($targetNMame, $this->targetNames(), true)) === false) {
+            throw new TargetDoesNotExist(new TargetId($this->path, $targetNMame));
         }
 
         return $this->targets[$targetIndex];

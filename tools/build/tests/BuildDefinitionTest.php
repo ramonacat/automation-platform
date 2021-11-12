@@ -9,6 +9,8 @@ use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\BuildDefinition;
 use Ramona\AutomationPlatformLibBuild\Target;
 use Ramona\AutomationPlatformLibBuild\TargetDoesNotExist;
+use function Safe\getcwd;
+use function sprintf;
 
 final class BuildDefinitionTest extends TestCase
 {
@@ -42,7 +44,8 @@ final class BuildDefinitionTest extends TestCase
             new Target('t3', new NoOp()),
         ]);
 
-        $this->expectExceptionMessage('The target "t4" does not exist');
+        $cwd = getcwd();
+        $this->expectExceptionMessage(sprintf('The target "%s:t4" does not exist', $cwd));
         $this->expectException(TargetDoesNotExist::class);
         $definition->target('t4');
     }
