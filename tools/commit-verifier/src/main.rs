@@ -8,7 +8,6 @@ fn main() {
 
     let head = repository.head().expect("Failed to get repository HEAD");
     let mut commit = head.peel_to_commit().expect("Failed to get HEAD commit");
-    let message = commit.message().expect("No commit message").to_string();
 
     let merge_base = repository
         .merge_base(
@@ -24,6 +23,8 @@ fn main() {
         .expect("Failed to get the merge base of the current branch and main");
 
     loop {
+        let message = commit.message().expect("No commit message").to_string();
+
         println!("Checking {}", commit.id());
         println!(
             "Commit message:\n {}",
