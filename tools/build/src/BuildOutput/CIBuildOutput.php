@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
 
-use function array_filter;
 use Bramus\Ansi\Ansi;
 use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
 use function count;
@@ -90,14 +89,19 @@ final class CIBuildOutput implements BuildOutput
         }
 
         $lines = explode("\n", $data);
-        $lines = array_filter($lines, static fn (string $line) => trim($line) !== '');
+
         foreach ($lines as $key => $line) {
+            if (trim($line) !== '') {
+                $this
+                    ->ansi
+                    ->nostyle()
+                    ->color($color)
+                    ->text("$prefix ")
+                    ->nostyle();
+            }
+
             $this
                 ->ansi
-                ->nostyle()
-                ->color($color)
-                ->text("$prefix ")
-                ->nostyle()
                 ->text($line . (($key === count($lines) - 1) ? '' : PHP_EOL));
         }
     }
