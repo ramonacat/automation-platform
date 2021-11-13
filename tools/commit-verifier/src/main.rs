@@ -49,6 +49,8 @@ fn main() {
             println!("* Commit message prefix is VALID");
         } else if commit.parent_count() > 1 {
             println!("* This is a merge commit, accepting an invalid message");
+        } else if commit.author().name() == Some("dependabot[bot]") {
+            println!("* This commit was made by dependabot, accepting an invalid message");
         } else {
             println!("* Commit message prefix is INVALID");
             std::process::exit(1);
