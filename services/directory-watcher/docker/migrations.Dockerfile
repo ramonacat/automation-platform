@@ -1,7 +1,6 @@
-FROM rust:1.53-alpine
+FROM alpine:3
 
-RUN apk add --no-cache openssl-dev libc-dev curl
-RUN cargo install refinery_cli
+RUN apk add --no-cache curl
 RUN curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/download/v1.12.1/dbmate-linux-amd64
 RUN chmod +x /usr/local/bin/dbmate
 
