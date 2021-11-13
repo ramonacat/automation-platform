@@ -12,7 +12,7 @@ use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\BuildExecutor;
-use Ramona\AutomationPlatformLibBuild\BuildOutput;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\CyclicDependencyFound;
 use Ramona\AutomationPlatformLibBuild\Target;

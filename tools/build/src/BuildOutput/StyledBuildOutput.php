@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild;
+namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
 
 use function array_slice;
 use Bramus\Ansi\Ansi;
@@ -11,6 +11,9 @@ use function count;
 use function explode;
 use function implode;
 use const PHP_EOL;
+use Ramona\AutomationPlatformLibBuild\ActionOutput;
+use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\TargetId;
 use function sprintf;
 
 final class StyledBuildOutput implements ActionOutput, BuildOutput

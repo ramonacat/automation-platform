@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild;
 
 use Psr\Log\LoggerInterface;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 
 final class BuildExecutor

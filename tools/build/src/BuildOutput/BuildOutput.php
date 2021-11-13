@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild;
+namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
+
+use Ramona\AutomationPlatformLibBuild\ActionOutput;
+use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\TargetId;
 
 interface BuildOutput extends ActionOutput
 {
