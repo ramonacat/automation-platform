@@ -37,4 +37,6 @@ jobs:
                 restore-keys: ${{ runner.os }}-composer-
             - working-directory: tools/build/
               run: composer install
+            - uses: satackey/action-docker-layer-caching@v0.0.11
+              continue-on-error: true
             - run: php tools/build/bin/build.php build-dev
