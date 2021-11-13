@@ -44,9 +44,11 @@ return new BuildDefinition([
         new TargetId(__DIR__, 'clippy'),
         new TargetId(__DIR__, 'fmt'),
         new TargetId(__DIR__, 'tests-unit'),
+        new TargetId(__DIR__, 'unused-dependencies'),
     ]),
     new Target('clippy', new RunProcess('cargo clippy')),
     new Target('tests-unit', new RunProcess('cargo test')),
     new Target('deploy-dev', new RunProcess('kubectl --context minikube apply -k k8s/overlays/dev'), [new TargetId(__DIR__, 'build-dev'), new TargetId(__DIR__.'/../events/', 'deploy-dev')]),
     new Target('fmt', new RunProcess('cargo fmt -- --check')),
+    new Target('unused-dependencies', new RunProcess('cargo +nightly udeps --all-targets')),
 ]);
