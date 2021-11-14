@@ -61,6 +61,8 @@ impl From<jsonschema::ErrorIterator<'_>> for Error {
 }
 
 impl Service {
+    /// # Errors
+    /// Will return an error if the TCP connection cannot be established
     pub async fn new(address: SocketAddr) -> Result<Self, Error> {
         Ok(Self {
             socket: TcpSocket::new_v4()?.connect(address).await?,

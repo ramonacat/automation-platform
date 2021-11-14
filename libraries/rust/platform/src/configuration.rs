@@ -19,6 +19,8 @@ pub enum Error {
 }
 
 impl Configuration {
+    /// # Errors
+    /// Will return errors if the configuration file cannot be read or is not valid JSON
     pub fn new() -> Result<Self, Error> {
         let data: Value = serde_json::from_str(&std::fs::read_to_string(
             "/etc/ap/runtime.configuration.json",
@@ -27,6 +29,8 @@ impl Configuration {
         Ok(Self { data })
     }
 
+    /// # Errors
+    /// Will return errors if the structure of the config file is not correct
     pub fn get_string(&self, path: &str) -> Result<String, Error> {
         let value = self.data.clone().path(path).map_err(Error::JsonPath)?;
 
