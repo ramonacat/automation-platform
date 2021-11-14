@@ -5,9 +5,11 @@ jobs:
         runs-on: ubuntu-20.04
         steps:
             - uses: actions/checkout@v2
+
             - uses: actions-rs/toolchain@v1
               with:
                 toolchain: stable
+
             - uses: actions-rs/toolchain@v1
               with:
                 toolchain: nightly
@@ -21,11 +23,13 @@ jobs:
                     ~/.cargo/git/db/
                     **/target/
                 key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
             - name: Setup PHP
               uses: shivammathur/setup-php@v2
               with:
                 php-version: '8.0'
                 tools: composer
+
             - name: Get composer cache directory
               working-directory: tools/build/
               id: composer-cache
@@ -37,9 +41,10 @@ jobs:
                 path: ${{ steps.composer-cache.outputs.dir }}
                 key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/composer.json') }}
                 restore-keys: ${{ runner.os }}-composer-
+
             - run: cargo +nightly install cargo-udeps
+
             - working-directory: tools/build/
               run: composer install
-            - uses: satackey/action-docker-layer-caching@v0.0.11
-              continue-on-error: true
+
             - run: php tools/build/bin/build.php build-dev
