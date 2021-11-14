@@ -6,8 +6,10 @@ namespace Ramona\AutomationPlatformLibBuild;
 
 use Bramus\Ansi\Ansi;
 use Bramus\Ansi\Writers\StreamWriter;
+use Exception;
 use function file_exists;
 use function fprintf;
+use function get_class;
 use function getenv;
 use function implode;
 use Monolog\Handler\StreamHandler;
@@ -65,10 +67,20 @@ try {
 } catch (TargetDoesNotExist $exception) {
     fprintf(STDERR, 'The target "%s" does not exist', $exception->targetId()->toString());
     exit(3);
+} catch (Exception $e) {
+    fprintf(STDERR, 'Unhandled exception of type: %s' . PHP_EOL, get_class($e));
+
+    if ($isCi) {
+        fprintf(STDERR, 'Running in CI, will not print the exception details.' . PHP_EOL);
+    } else {
+        fprintf(STDERR, '%s', (string)$e . PHP_EOL);
+    }
+
+    exit(4);
 }
 
 if (!$result->hasSucceeded()) {
     fprintf(STDERR, 'The build has failed.' . PHP_EOL);
     fprintf(STDERR, $result->getMessage() ?? '<no message>');
-    exit(4);
+    exit(5);
 }
