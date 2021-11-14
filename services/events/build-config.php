@@ -3,10 +3,12 @@
 use Ramona\AutomationPlatformLibBuild\Actions\Group;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
 use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
-use Ramona\AutomationPlatformLibBuild\Actions\CopyFile;
 use Ramona\AutomationPlatformLibBuild\BuildDefinition;
+use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
 use Ramona\AutomationPlatformLibBuild\Target;
 use Ramona\AutomationPlatformLibBuild\TargetId;
+
+$rustTargetGenerator = new TargetGenerator(__DIR__);
 
 $tag = str_replace('.', '', uniqid('', true));
 
@@ -31,24 +33,20 @@ $override = <<<EOT
                   image: {$imageWithTag}
         EOT;
 
-return new BuildDefinition([
-    new Target(
-        'build-dev',
-        new Group([
-            new RunProcess('docker build -t ' . $imageWithTag . ' -f docker/Dockerfile ../../'),
-            new RunProcess('docker build -t ' . $migrationsImageWithTag . ' -f docker/migrations.Dockerfile .'),
-            new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', fn() => $override)
-        ]),
+return new BuildDefinition(
+    array_merge(
         [
-            new TargetId(__DIR__, 'clippy'),
-            new TargetId(__DIR__, 'fmt'),
-            new TargetId(__DIR__, 'tests-unit'),
-            new TargetId(__DIR__, 'unused-dependencies'),
-        ]
-    ),
-    new Target('clippy', new RunProcess('cargo clippy')),
-    new Target('fmt', new RunProcess('cargo fmt -- --check')),
-    new Target('tests-unit', new RunProcess('cargo test')),
-    new Target('deploy-dev', new RunProcess('kubectl --context minikube apply -k k8s/overlays/dev'), [new TargetId(__DIR__, 'build-dev')]),
-    new Target('unused-dependencies', new RunProcess('cargo +nightly udeps --all-targets')),
-]);
+            new Target(
+                'build-dev',
+                new Group([
+                    new RunProcess('docker build -t ' . $imageWithTag . ' -f docker/Dockerfile ../../'),
+                    new RunProcess('docker build -t ' . $migrationsImageWithTag . ' -f docker/migrations.Dockerfile .'),
+                    new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', fn() => $override)
+                ]),
+                $rustTargetGenerator->targetIds()
+            ),
+            new Target('deploy-dev', new RunProcess('kubectl --context minikube apply -k k8s/overlays/dev'), [new TargetId(__DIR__, 'build-dev')]),
+        ],
+        $rustTargetGenerator->targets()
+    )
+);
