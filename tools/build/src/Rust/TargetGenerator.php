@@ -19,7 +19,7 @@ final class TargetGenerator
     public function __construct(private string $projectDirectory)
     {
         $this->targets = [
-            new Target('rust-clippy', new RunProcess('cargo clippy')),
+            new Target('rust-clippy', new RunProcess('cargo clippy -- -D clippy::pedantic -D warnings')),
             new Target('rust-fmt-check', new RunProcess('cargo fmt -- --check')),
             new Target('rust-tests-unit', new RunProcess('cargo test')),
             new Target('rust-unused-dependencies', new RunProcess('cargo +nightly udeps --all-targets')),

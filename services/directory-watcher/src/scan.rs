@@ -182,27 +182,32 @@ mod tests {
             .unwrap();
 
         let events = &sender.lock().await.events;
+
         assert_eq!(2, events.len());
+
         let index = events
             .iter()
             .position(|e| {
                 PathBuf::from(e.get("path").unwrap().as_str().unwrap()) == PathBuf::from("a/b")
             })
             .unwrap();
+
         assert_eq!(
             &Value::String("mount_a".into()),
             events[index].get("mount_id").unwrap()
         );
+
         assert_eq!(
             &Value::String("file.status.created".into()),
             events[index].get("type").unwrap()
         );
+
         assert_eq!(
             PathBuf::from("a/b"),
             PathBuf::from(events[index].get("path").unwrap().as_str().unwrap())
         );
 
-        let index = events
+        let index_b = events
             .iter()
             .position(|e| {
                 PathBuf::from(e.get("path").unwrap().as_str().unwrap()) == PathBuf::from("b/c")
@@ -211,15 +216,17 @@ mod tests {
 
         assert_eq!(
             &Value::String("mount_a".into()),
-            events[index].get("mount_id").unwrap()
+            events[index_b].get("mount_id").unwrap()
         );
+
         assert_eq!(
             &Value::String("file.status.changed".into()),
-            events[index].get("type").unwrap()
+            events[index_b].get("type").unwrap()
         );
+
         assert_eq!(
             PathBuf::from("b/c"),
-            PathBuf::from(events[index].get("path").unwrap().as_str().unwrap())
+            PathBuf::from(events[index_b].get("path").unwrap().as_str().unwrap())
         );
     }
 }

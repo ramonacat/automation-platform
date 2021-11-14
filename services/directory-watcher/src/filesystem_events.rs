@@ -214,7 +214,7 @@ mod tests {
         assert_eq!(
             &Value::String("file.status.created".into()),
             events[0].get("type").unwrap()
-        )
+        );
     }
 
     #[tokio::test]
@@ -230,7 +230,7 @@ mod tests {
         assert_eq!(
             &Value::String("file.status.changed".into()),
             events[0].get("type").unwrap()
-        )
+        );
     }
 
     #[tokio::test]
@@ -246,7 +246,7 @@ mod tests {
         assert_eq!(
             &Value::String("file.status.deleted".into()),
             events[0].get("type").unwrap()
-        )
+        );
     }
 
     #[tokio::test]
@@ -262,6 +262,6 @@ mod tests {
         assert_eq!(
             &Value::String("file.status.moved".into()),
             events[0].get("type").unwrap()
-        )
+        );
     }
 }
