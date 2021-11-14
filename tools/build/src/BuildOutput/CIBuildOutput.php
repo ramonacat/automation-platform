@@ -6,13 +6,10 @@ namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
 
 use Bramus\Ansi\Ansi;
 use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
-use function count;
-use function explode;
 use const PHP_EOL;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\TargetId;
-use function str_contains;
-use function trim;
+use function strlen;
 
 final class CIBuildOutput implements BuildOutput
 {
@@ -74,35 +71,52 @@ final class CIBuildOutput implements BuildOutput
             ->ansi
             ->nostyle()
             ->color($color)
-            ->text($message . PHP_EOL)
+            ->text(PHP_EOL . $message . PHP_EOL)
             ->nostyle();
+    }
+
+    private bool $shouldStartWithPrefix = false;
+
+    /**
+     * @param non-empty-list<string> $color
+     */
+    public function writeWithColoredPrefix(
+        string $prefix,
+        array $color,
+        string $data
+    ): void {
+        $line = '';
+        for ($i = 0, $iMax = strlen($data); $i < $iMax; $i++) {
+            if ($data[$i] === "\n") {
+                $this->writeChunk($line, $color, $prefix);
+                $this->ansi->text(PHP_EOL);
+                $line = '';
+                $this->shouldStartWithPrefix = true;
+            } else {
+                $line .= $data[$i];
+            }
+        }
+
+        if ($line !== '') {
+            $this->writeChunk($line, $color, $prefix);
+        }
     }
 
     /**
      * @param non-empty-list<string> $color
      */
-    public function writeWithColoredPrefix(string $prefix, array $color, string $data): void
+    private function writeChunk(string $line, array $color, string $prefix): void
     {
-        if (!str_contains($data, "\n")) {
-            $this->ansi->text($data);
-            return;
-        }
-
-        $lines = explode("\n", $data);
-
-        foreach ($lines as $key => $line) {
-            if (trim($line) !== '') {
-                $this
-                    ->ansi
-                    ->nostyle()
-                    ->color($color)
-                    ->text("$prefix ")
-                    ->nostyle();
-            }
-
+        if ($this->shouldStartWithPrefix) {
             $this
                 ->ansi
-                ->text($line . (($key === count($lines) - 1) ? '' : PHP_EOL));
+                ->nostyle()
+                ->color($color)
+                ->text("$prefix ")
+                ->nostyle();
+            $this->shouldStartWithPrefix = false;
         }
+
+        $this->ansi->text($line);
     }
 }
