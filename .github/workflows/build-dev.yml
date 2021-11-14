@@ -42,7 +42,7 @@ jobs:
                 key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/composer.json') }}
                 restore-keys: ${{ runner.os }}-composer-
 
-            - run: cargo +nightly install cargo-udeps
+            - run: cargo udeps --version || cargo +nightly install cargo-udeps
 
             - working-directory: tools/build/
               run: composer install
