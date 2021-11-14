@@ -37,7 +37,7 @@ jobs:
                 path: ${{ steps.composer-cache.outputs.dir }}
                 key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/composer.json') }}
                 restore-keys: ${{ runner.os }}-composer-
-            - run: cargo +nightly install --force cargo-udeps
+            - run: cargo +nightly install --no-track cargo-udeps
             - working-directory: tools/build/
               run: composer install
             - uses: satackey/action-docker-layer-caching@v0.0.11
