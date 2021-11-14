@@ -7,7 +7,7 @@ namespace Ramona\AutomationPlatformLibBuild\Actions;
 use Closure;
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
-use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
+use Ramona\AutomationPlatformLibBuild\Context;
 use function Safe\file_put_contents;
 
 /**
@@ -18,17 +18,17 @@ final class PutFile implements BuildAction
     private Closure $generateContents;
 
     /**
-     * @param callable(Configuration):string $generateContents
+     * @param callable(Context):string $generateContents
      */
     public function __construct(private string $path, callable $generateContents)
     {
         $this->generateContents = Closure::fromCallable($generateContents);
     }
 
-    public function execute(ActionOutput $output, Configuration $configuration): BuildActionResult
+    public function execute(ActionOutput $output, Context $context): BuildActionResult
     {
-        file_put_contents($this->path, ($this->generateContents)($configuration));
+        file_put_contents($this->path, ($this->generateContents)($context));
 
-        return BuildActionResult::ok();
+        return BuildActionResult::ok([]);
     }
 }

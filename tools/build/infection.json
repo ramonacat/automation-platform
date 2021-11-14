@@ -12,7 +12,8 @@
             "bin/",
             "BuildOutput/StyledBuildOutput.php",
             "BuildOutput/CIBuildOutput.php",
-            "Rust/TargetGenerator.php"
+            "Rust/TargetGenerator.php",
+            "Artifacts/LogOnlyPublisher.php"
         ]
     },
     "mutators": {

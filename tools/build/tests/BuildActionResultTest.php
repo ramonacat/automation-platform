@@ -11,7 +11,7 @@ final class BuildActionResultTest extends TestCase
 {
     public function testOkWillReturnASuccessfulResult(): void
     {
-        $result = BuildActionResult::ok();
+        $result = BuildActionResult::ok([]);
 
         self::assertTrue($result->hasSucceeded());
     }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild;
 
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
-use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 
 final class Target
 {
@@ -40,9 +39,9 @@ final class Target
         return $this->name;
     }
 
-    public function execute(ActionOutput $output, Configuration $configuration): BuildActionResult
+    public function execute(ActionOutput $output, Context $context): BuildActionResult
     {
-        return $this->action->execute($output, $configuration);
+        return $this->action->execute($output, $context);
     }
 
     /**

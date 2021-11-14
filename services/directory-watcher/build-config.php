@@ -4,7 +4,9 @@ use Ramona\AutomationPlatformLibBuild\Actions\Group;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
 use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
 use Ramona\AutomationPlatformLibBuild\Actions\PutRuntimeConfiguration;
+use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildDefinition;
+use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
 use Ramona\AutomationPlatformLibBuild\Target;
 use Ramona\AutomationPlatformLibBuild\TargetId;
@@ -13,9 +15,10 @@ $rustTargetGenerator = new TargetGenerator(__DIR__);
 
 $tag = str_replace('.', '', uniqid('', true));
 
-$imageWithTag =  'automation-platform-svc-directory-watcher:' . $tag;
-$migrationsImageWithTag =  'automation-platform-svc-migrations:' . $tag;
-$override = static function () use($imageWithTag, $migrationsImageWithTag):string {
+$imageName = 'automation-platform-svc-directory-watcher';
+$migrationsImage = 'automation-platform-svc-migrations';
+
+$override = static function (Context $context):string {
     return <<<EOT
         apiVersion: apps/v1
         kind: Deployment
@@ -29,10 +32,10 @@ $override = static function () use($imageWithTag, $migrationsImageWithTag):strin
             spec:
               initContainers:
                 - name: migrations
-                  image: {$migrationsImageWithTag}
+                  image: {$context->artifactCollector()->getByKey(__DIR__, 'image-migrations')->name()}
               containers:
                 - name: app
-                  image: {$imageWithTag}
+                  image: {$context->artifactCollector()->getByKey(__DIR__, 'image-service')->name()}
         EOT;
     };
 
@@ -41,15 +44,21 @@ return new BuildDefinition(
         [
             new Target(
                 'build-dev',
-                new Group(
+                new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
+                array_merge(
+                    $rustTargetGenerator->targetIds(),
                     [
-                        new PutRuntimeConfiguration(__DIR__.'/runtime.configuration.json'),
-                        new RunProcess('docker build -t ' . $imageWithTag . ' -f docker/Dockerfile ../../'),
-                        new RunProcess('docker build -t ' . $migrationsImageWithTag . ' -f docker/migrations.Dockerfile .'),
-                        new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
+                        new TargetId(__DIR__, 'build-images-dev')
                     ]
-                ),
-                $rustTargetGenerator->targetIds()
+                )
+            ),
+            new Target(
+                'build-images-dev',
+                new Group([
+                    new PutRuntimeConfiguration(__DIR__.'/runtime.configuration.json'),
+                    new RunProcess('docker build -t ' . $imageName . ':' . $tag . ' -f docker/Dockerfile ../../', [new ContainerImage('image-service', $imageName, $tag)]),
+                    new RunProcess('docker build -t ' . $migrationsImage . ':' . $tag . ' -f docker/migrations.Dockerfile .', [new ContainerImage('image-migrations', $migrationsImage, $tag)]),
+                ])
             ),
             new Target(
                 'deploy-dev',

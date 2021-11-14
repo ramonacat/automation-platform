@@ -6,9 +6,9 @@ namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
-use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
+use Ramona\AutomationPlatformLibBuild\Context;
 
 interface BuildAction
 {
-    public function execute(ActionOutput $output, Configuration $configuration): BuildActionResult;
+    public function execute(ActionOutput $output, Context $context): BuildActionResult;
 }
