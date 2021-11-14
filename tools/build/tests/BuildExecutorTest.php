@@ -121,15 +121,15 @@ final class BuildExecutorTest extends TestCase
     public function testThrowsOnCycles(): void
     {
         $this->markTestSkipped('Need to figure out how to do the cyclic check...');
+        /*
+                $this->setupDefinitions([
+                    [new TargetId('.', 'build-dep-1'), new Target('build-dep-1', new NoOp(), [new TargetId('.', 'build')])],
+                    [new TargetId('.', 'build-dep'), new Target('build-dep', new NoOp(), [new TargetId('.', 'build-dep-1')])],
+                    [new TargetId('.', 'build'), new Target('build', new NoOp(), [new TargetId('.', 'build-dep')])],
+                ]);
 
-        $this->setupDefinitions([
-            [new TargetId('.', 'build-dep-1'), new Target('build-dep-1', new NoOp(), [new TargetId('.', 'build')])],
-            [new TargetId('.', 'build-dep'), new Target('build-dep', new NoOp(), [new TargetId('.', 'build-dep-1')])],
-            [new TargetId('.', 'build'), new Target('build', new NoOp(), [new TargetId('.', 'build-dep')])],
-        ]);
-
-        $this->expectException(CyclicDependencyFound::class);
-        $this->buildExecutor->buildQueue(new TargetId('.', 'build'));
+                $this->expectException(CyclicDependencyFound::class);
+                $this->buildExecutor->buildQueue(new TargetId('.', 'build'));*/
     }
 
     public function testWorksOnRepeatingDependencies(): void
