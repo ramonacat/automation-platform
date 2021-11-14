@@ -27,7 +27,8 @@
         "vimeo/psalm": "^4.8",
         "phpunit/phpunit": "^9.5",
         "psalm/plugin-symfony": "^3.0",
-        "infection/infection": "^0.25.3"
+        "infection/infection": "^0.25.3",
+        "psalm/plugin-phpunit": "^0.16.1"
     },
     "bin": [
         "bin/build.php"

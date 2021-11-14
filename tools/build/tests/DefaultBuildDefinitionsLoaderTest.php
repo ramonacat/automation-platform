@@ -13,7 +13,7 @@ use Ramona\AutomationPlatformLibBuild\TargetId;
 
 final class DefaultBuildDefinitionsLoaderTest extends TestCase
 {
-    public function testCanGetADefinitionFromDirectory()
+    public function testCanGetADefinitionFromDirectory(): void
     {
         $loader = new DefaultBuildDefinitionsLoader();
 
@@ -22,7 +22,7 @@ final class DefaultBuildDefinitionsLoaderTest extends TestCase
         self::assertEquals(['a', 'b'], $actionNames);
     }
 
-    public function testWillThrowOnInvalidBuildDefinition()
+    public function testWillThrowOnInvalidBuildDefinition(): void
     {
         $loader = new DefaultBuildDefinitionsLoader();
 
@@ -30,7 +30,7 @@ final class DefaultBuildDefinitionsLoaderTest extends TestCase
         $loader->getActionNames(__DIR__ . '/test-invalid-project-1');
     }
 
-    public function testCanGetTargetById()
+    public function testCanGetTargetById(): void
     {
         $loader = new DefaultBuildDefinitionsLoader();
 

@@ -6,8 +6,9 @@ namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use IteratorAggregate;
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
+use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
-use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
+use Ramona\AutomationPlatformLibBuild\Context;
 use Symfony\Component\Process\Process;
 
 /**
@@ -18,11 +19,17 @@ final class RunProcess implements BuildAction
     // todo lower the default timeout once the docker builds get their own action
     private const DEFAULT_TIMEOUT = 60 * 30;
 
-    public function __construct(private string $command, private int $timeoutSeconds = self::DEFAULT_TIMEOUT)
-    {
+    /**
+     * @param list<Artifact> $artifacts
+     */
+    public function __construct(
+        private string $command,
+        private array $artifacts = [],
+        private int $timeoutSeconds = self::DEFAULT_TIMEOUT
+    ) {
     }
 
-    public function execute(ActionOutput $output, Configuration $configuration): BuildActionResult
+    public function execute(ActionOutput $output, Context $context): BuildActionResult
     {
         $process = Process::fromShellCommandline($this->command);
         $process->setTimeout($this->timeoutSeconds);
@@ -41,7 +48,7 @@ final class RunProcess implements BuildAction
         /** @psalm-var Process $process */
         $exitCode = $process->getExitCode();
         return $exitCode === 0
-            ? BuildActionResult::ok()
+            ? BuildActionResult::ok($this->artifacts)
             : BuildActionResult::fail("Failed to execute command \"{$this->command}\" - exit code {$exitCode}");
     }
 }

@@ -16,6 +16,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use const PHP_EOL;
 use const PHP_SAPI;
+use Ramona\AutomationPlatformLibBuild\Artifacts\LogOnlyPublisher;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\CIBuildOutput;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\StyledBuildOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
@@ -47,6 +48,7 @@ $logHandler = new StreamHandler($workingDirectory . '/build.log');
 $logHandler->setFormatter(new LogFormatter());
 $logger->pushHandler($logHandler);
 $ansi = new Ansi(new StreamWriter('php://stdout'));
+$artifactPublisher = new LogOnlyPublisher($ansi);
 
 $buildDefinitions = new DefaultBuildDefinitionsLoader();
 $executor = new BuildExecutor(
@@ -84,3 +86,9 @@ if (!$result->hasSucceeded()) {
     fprintf(STDERR, $result->getMessage() ?? '<no message>');
     exit(5);
 }
+
+foreach ($result->artifacts() as $artifact) {
+    $artifactPublisher->publish($artifact);
+}
+
+$artifactPublisher->print();

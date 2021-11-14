@@ -43,7 +43,7 @@ final class TargetQueueTest extends TestCase
      * @param list<TargetId> $haystack
      * @dataProvider dataHasId
      */
-    public function testHasId(bool $expectsFound, TargetId $needle, array $haystack)
+    public function testHasId(bool $expectsFound, TargetId $needle, array $haystack): void
     {
         $queue = TargetQueue::fromArray($haystack);
 
@@ -51,7 +51,7 @@ final class TargetQueueTest extends TestCase
     }
 
     /**
-     * @return iterable<array{0:bool,1:TargetId,2:list<TargetId>}>
+     * @return iterable<array-key, array{0:bool,1:TargetId,2:list<TargetId>}>
      */
     public function dataHasId(): iterable
     {

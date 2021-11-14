@@ -4,21 +4,27 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild;
 
+use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
+
 /**
  * @psalm-immutable
  */
 final class BuildActionResult
 {
-    private function __construct(private bool $succeeded, private ?string $message)
+    /**
+     * @param list<Artifact> $artifacts
+     */
+    private function __construct(private bool $succeeded, private ?string $message, private array $artifacts)
     {
     }
 
     /**
      * @psalm-pure
+     * @param list<Artifact> $artifacts
      */
-    public static function ok(): self
+    public static function ok(array $artifacts): self
     {
-        return new self(true, null);
+        return new self(true, null, $artifacts);
     }
 
     /**
@@ -26,7 +32,7 @@ final class BuildActionResult
      */
     public static function fail(string $message): self
     {
-        return new self(false, $message);
+        return new self(false, $message, []);
     }
 
     public function hasSucceeded(): bool
@@ -37,5 +43,13 @@ final class BuildActionResult
     public function getMessage(): ?string
     {
         return $this->message;
+    }
+
+    /**
+     * @return list<Artifact>
+     */
+    public function artifacts(): array
+    {
+        return $this->artifacts;
     }
 }

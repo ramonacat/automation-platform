@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild;
 
 use Psr\Log\LoggerInterface;
+use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 
 final class BuildExecutor
 {
+    private Collector $artifactCollector;
+
     public function __construct(
         private LoggerInterface        $logger,
         private BuildOutput            $buildOutput,
         private BuildDefinitionsLoader $buildDefinitions,
         private Configuration          $configuration
     ) {
+        $this->artifactCollector = new Collector();
     }
 
     /**
@@ -58,6 +62,8 @@ final class BuildExecutor
 
     public function executeTarget(TargetId $targetId): BuildActionResult
     {
+        $context = new Context($this->configuration, $this->artifactCollector);
+
         $queue = $this->buildQueue($targetId);
         $this->buildOutput->setTargetCount($queue->count());
 
@@ -71,7 +77,7 @@ final class BuildExecutor
                 $targetId->path(),
                 fn () => $target->execute(
                     $this->buildOutput,
-                    $this->configuration
+                    $context
                 )
             );
 
@@ -85,9 +91,13 @@ final class BuildExecutor
                 return $result;
             }
 
+            foreach ($result->artifacts() as $artifact) {
+                $this->artifactCollector->collect($targetId, $artifact);
+            }
+
             $this->logger->info('Target built', ['target-id' => $targetId->toString(), 'stdout' => $standardOutput, 'stderr' => $standardError]);
         }
 
-        return BuildActionResult::ok();
+        return BuildActionResult::ok($this->artifactCollector->all());
     }
 }

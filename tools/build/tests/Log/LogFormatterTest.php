@@ -20,6 +20,7 @@ final class LogFormatterTest extends TestCase
             'level_name' => Logger::getLevelName(Logger::INFO),
             'channel' => '',
             'context' => [],
+            'extra' => [],
             'message' => 'test test test'
         ];
 
@@ -38,6 +39,7 @@ final class LogFormatterTest extends TestCase
                 'level_name' => Logger::getLevelName(Logger::INFO),
                 'channel' => '',
                 'context' => [],
+                'extra' => [],
                 'message' => 'test test test'
             ],
             [
@@ -46,6 +48,7 @@ final class LogFormatterTest extends TestCase
                 'level_name' => Logger::getLevelName(Logger::INFO),
                 'channel' => '',
                 'context' => [],
+                'extra' => [],
                 'message' => '123'
             ],
         ];
@@ -75,6 +78,7 @@ final class LogFormatterTest extends TestCase
                 'e' => (object)['a' => 1, 'b' => 2],
                 'f' => 'a' . PHP_EOL . 'b'
             ],
+            'extra' => [],
             'message' => 'test test test'
         ];
 

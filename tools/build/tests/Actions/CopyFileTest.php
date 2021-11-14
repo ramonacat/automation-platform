@@ -7,7 +7,9 @@ namespace Tests\Ramona\AutomationPlatformLibBuild\Actions;
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\CopyFile;
+use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
+use Ramona\AutomationPlatformLibBuild\Context;
 use function Safe\touch;
 use function sys_get_temp_dir;
 use function uniqid;
@@ -22,7 +24,10 @@ final class CopyFileTest extends TestCase
         $targetPath = $tempdir . '/' . uniqid('', true);
 
         $action = new CopyFile($sourcePath, $targetPath);
-        $action->execute($this->createMock(ActionOutput::class), Configuration::fromJsonString('{}'));
+        $action->execute(
+            $this->createMock(ActionOutput::class),
+            new Context(Configuration::fromJsonString('{}'), new Collector())
+        );
 
         self::assertFileExists($targetPath);
     }

@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
+use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\BuildExecutor;
@@ -120,15 +121,15 @@ final class BuildExecutorTest extends TestCase
     public function testThrowsOnCycles(): void
     {
         $this->markTestSkipped('Need to figure out how to do the cyclic check...');
+        /*
+                $this->setupDefinitions([
+                    [new TargetId('.', 'build-dep-1'), new Target('build-dep-1', new NoOp(), [new TargetId('.', 'build')])],
+                    [new TargetId('.', 'build-dep'), new Target('build-dep', new NoOp(), [new TargetId('.', 'build-dep-1')])],
+                    [new TargetId('.', 'build'), new Target('build', new NoOp(), [new TargetId('.', 'build-dep')])],
+                ]);
 
-        $this->setupDefinitions([
-            [new TargetId('.', 'build-dep-1'), new Target('build-dep-1', new NoOp(), [new TargetId('.', 'build')])],
-            [new TargetId('.', 'build-dep'), new Target('build-dep', new NoOp(), [new TargetId('.', 'build-dep-1')])],
-            [new TargetId('.', 'build'), new Target('build', new NoOp(), [new TargetId('.', 'build-dep')])],
-        ]);
-
-        $this->expectException(CyclicDependencyFound::class);
-        $this->buildExecutor->buildQueue(new TargetId('.', 'build'));
+                $this->expectException(CyclicDependencyFound::class);
+                $this->buildExecutor->buildQueue(new TargetId('.', 'build'));*/
     }
 
     public function testWorksOnRepeatingDependencies(): void
@@ -175,7 +176,7 @@ final class BuildExecutorTest extends TestCase
         $targetId = new TargetId(__DIR__ . '/c', 'check');
         $action = $this->createMock(BuildAction::class);
 
-        $action->expects(self::once())->method('execute')->willReturn(BuildActionResult::ok());
+        $action->expects(self::once())->method('execute')->willReturn(BuildActionResult::ok([]));
 
         $this->setupDefinitions([
             [$targetId, new Target('check', $action)],
@@ -247,8 +248,8 @@ final class BuildExecutorTest extends TestCase
         $targetIdA = new TargetId(__DIR__ . '/c', 'a');
         $targetIdB = new TargetId(__DIR__ . '/c', 'b');
 
-        $resultA = BuildActionResult::ok();
-        $resultB = BuildActionResult::ok();
+        $resultA = BuildActionResult::ok([]);
+        $resultB = BuildActionResult::ok([]);
 
         $actionA = $this->createMock(BuildAction::class);
         $actionA
@@ -271,6 +272,36 @@ final class BuildExecutorTest extends TestCase
             ->withConsecutive([$targetIdA, $resultA], [$targetIdB, $resultB]);
 
         $this->buildExecutor->executeTarget($targetIdB);
+    }
+
+    public function testWillCollectAllArtifacts(): void
+    {
+        $artifactA = new ContainerImage('ramona-test-1', 'ramona/test1', 'latest');
+        $artifactB = new ContainerImage('ramona-test-2', 'ramona/test2', 'latest');
+
+        $targetIdA = new TargetId(__DIR__ . '/c', 'a');
+        $targetIdB = new TargetId(__DIR__ . '/c', 'b');
+
+        $resultA = BuildActionResult::ok([$artifactA]);
+        $resultB = BuildActionResult::ok([$artifactB]);
+
+        $actionA = $this->createMock(BuildAction::class);
+        $actionA
+            ->method('execute')
+            ->willReturn($resultA);
+        $actionB = $this->createMock(BuildAction::class);
+        $actionB
+            ->method('execute')
+            ->willReturn($resultB);
+
+        $this->setupDefinitions([
+            [$targetIdA, new Target('a', $actionA)],
+            [$targetIdB, new Target('b', $actionB, [$targetIdA])],
+        ]);
+
+        $result = $this->buildExecutor->executeTarget($targetIdB);
+
+        self::assertEquals([$artifactA, $artifactB], $result->artifacts());
     }
 
     /**
