@@ -31,7 +31,7 @@ RUN cargo build --release
 
 FROM debian:buster-slim
 
-RUN apt-get update && apt-get install -y libssl1.1 pkg-config && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libssl1.1 && rm -rf /var/lib/apt/lists/*
 
 ADD schemas/events.schema.json /etc/svc-directory-watcher/schemas/events.schema.json
 COPY --from=build /opt/directory-watcher/services/directory-watcher/target/release/directory-watcher /opt/directory-watcher/
