@@ -8,6 +8,8 @@ use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
+use function str_replace;
+use function uniqid;
 
 final class BuildExecutor
 {
@@ -62,7 +64,11 @@ final class BuildExecutor
 
     public function executeTarget(TargetId $targetId): BuildActionResult
     {
-        $context = new Context($this->configuration, $this->artifactCollector);
+        $context = new Context(
+            $this->configuration,
+            $this->artifactCollector,
+            new BuildFacts(str_replace('.', '', uniqid('', true)))// todo move this outta here, use something like git tag as the ID
+        );
 
         $queue = $this->buildQueue($targetId);
         $this->buildOutput->setTargetCount($queue->count());

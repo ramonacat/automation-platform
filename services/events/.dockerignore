@@ -1,5 +1,7 @@
-target/
-k8s/
-docker/
-.idea/
-*.iml
+**/target/
+**/k8s/
+**/.idea/
+**/*.iml
+**/vendor
+**/*.log
+**/build-config.php
