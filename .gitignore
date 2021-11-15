@@ -4,3 +4,11 @@ libraries/**/composer.lock
 .idea/*
 *.iml
 build.log
+infection.log
+.phpunit.cache
+*/*/build
+services/*/k8s/overlays/dev/
+!services/*/k8s/overlays/dev/kustomization.yaml
+*.schema.json
+!schemas/*.schema.json
+runtime.configuration.json
