@@ -1,10 +1,10 @@
 <?php
 
+use Ramona\AutomationPlatformLibBuild\Actions\BuildDockerImage;
 use Ramona\AutomationPlatformLibBuild\Actions\Group;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
 use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
 use Ramona\AutomationPlatformLibBuild\Actions\PutRuntimeConfiguration;
-use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildDefinition;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
@@ -12,11 +12,6 @@ use Ramona\AutomationPlatformLibBuild\Target;
 use Ramona\AutomationPlatformLibBuild\TargetId;
 
 $rustTargetGenerator = new TargetGenerator(__DIR__);
-
-$tag = str_replace('.', '', uniqid('', true));
-
-$imageName = 'automation-platform-svc-directory-watcher';
-$migrationsImage = 'automation-platform-svc-migrations';
 
 $override = static function (Context $context):string {
     return <<<EOT
@@ -56,13 +51,13 @@ return new BuildDefinition(
                 'build-images-dev',
                 new Group([
                     new PutRuntimeConfiguration(__DIR__.'/runtime.configuration.json'),
-                    new RunProcess('docker build -t ' . $imageName . ':' . $tag . ' -f docker/Dockerfile ../../', [new ContainerImage('image-service', $imageName, $tag)]),
-                    new RunProcess('docker build -t ' . $migrationsImage . ':' . $tag . ' -f docker/migrations.Dockerfile .', [new ContainerImage('image-migrations', $migrationsImage, $tag)]),
+                    new BuildDockerImage('image-service', 'automation-platform-svc-directory-watcher', '../../', 'docker/Dockerfile'),
+                    new BuildDockerImage('image-migrations', 'automation-platform-svc-migrations', '.', 'docker/migrations.Dockerfile'),
                 ])
             ),
             new Target(
                 'deploy-dev',
-                new RunProcess('kubectl --context minikube apply -k k8s/overlays/dev'),
+                new RunProcess(['kubectl', '--context', 'minikube', 'apply', '-k', 'k8s/overlays/dev']),
                 [new TargetId(__DIR__, 'build-dev'), new TargetId(__DIR__.'/../events/', 'deploy-dev')]
             ),
         ],

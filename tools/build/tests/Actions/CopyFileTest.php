@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\CopyFile;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
+use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
 use function Safe\touch;
@@ -26,7 +27,7 @@ final class CopyFileTest extends TestCase
         $action = new CopyFile($sourcePath, $targetPath);
         $action->execute(
             $this->createMock(ActionOutput::class),
-            new Context(Configuration::fromJsonString('{}'), new Collector())
+            new Context(Configuration::fromJsonString('{}'), new Collector(), new BuildFacts('test'))
         );
 
         self::assertFileExists($targetPath);

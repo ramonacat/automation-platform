@@ -11,6 +11,7 @@ use Ramona\AutomationPlatformLibBuild\Actions\Group;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
 
@@ -28,7 +29,7 @@ final class GroupTest extends TestCase
 
         $group->execute(
             $this->createMock(ActionOutput::class),
-            new Context(Configuration::fromJsonString('{}'), new Collector())
+            $this->createContext()
         );
     }
 
@@ -47,9 +48,18 @@ final class GroupTest extends TestCase
 
         $result = $group->execute(
             $this->createMock(ActionOutput::class),
-            new Context(Configuration::fromJsonString('{}'), new Collector())
+            $this->createContext()
         );
 
         self::assertEquals([$artifact1, $artifact2], $result->artifacts());
+    }
+
+    private function createContext(): Context
+    {
+        return new Context(
+            Configuration::fromJsonString('{}'),
+            new Collector(),
+            new BuildFacts('test')
+        );
     }
 }

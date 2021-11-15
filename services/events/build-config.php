@@ -1,9 +1,9 @@
 <?php
 
+use Ramona\AutomationPlatformLibBuild\Actions\BuildDockerImage;
 use Ramona\AutomationPlatformLibBuild\Actions\Group;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
 use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
-use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildDefinition;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
@@ -11,11 +11,6 @@ use Ramona\AutomationPlatformLibBuild\Target;
 use Ramona\AutomationPlatformLibBuild\TargetId;
 
 $rustTargetGenerator = new TargetGenerator(__DIR__);
-
-$tag = str_replace('.', '', uniqid('', true));
-
-$imageName = 'automation-platform-svc-events';
-$migrationImageName = 'ap-svc-events-migrations';
 
 $override = static fn(Context $context):string => <<<EOT
         apiVersion: apps/v1
@@ -51,12 +46,12 @@ return new BuildDefinition(
                 'build-images-dev',
                 new Group(
                     [
-                        new RunProcess('docker build -t ' . $imageName . ':' . $tag . ' -f docker/Dockerfile ../../', [new ContainerImage('image-service', $imageName, $tag)]),
-                        new RunProcess('docker build -t ' . $migrationImageName . ':' . $tag . ' -f docker/migrations.Dockerfile .', [new ContainerImage('image-migrations', $migrationImageName, $tag)]),
+                        new BuildDockerImage('image-service', 'automation-platform-svc-events', '../../', 'docker/Dockerfile'),
+                        new BuildDockerImage('image-migrations', 'ap-svc-events-migrations', '.', 'docker/migrations.Dockerfile'),
                     ]
                 )
             ),
-            new Target('deploy-dev', new RunProcess('kubectl --context minikube apply -k k8s/overlays/dev'), [new TargetId(__DIR__, 'build-dev')]),
+            new Target('deploy-dev', new RunProcess(['kubectl', '--context', 'minikube', 'apply', '-k', 'k8s/overlays/dev']), [new TargetId(__DIR__, 'build-dev')]),
         ],
         $rustTargetGenerator->targets()
     )

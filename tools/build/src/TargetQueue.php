@@ -78,10 +78,6 @@ final class TargetQueue
 
     public function equals(TargetQueue $other): bool
     {
-        if ($this->count() !== $other->count()) {
-            return false;
-        }
-
         return array_diff($this->__debugInfo(), $other->__debugInfo()) === [];
     }
 }

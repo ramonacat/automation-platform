@@ -4,26 +4,26 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Actions;
 
-use IteratorAggregate;
+use function implode;
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\Context;
-use Symfony\Component\Process\Process;
+use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 
 /**
  * @api
  */
 final class RunProcess implements BuildAction
 {
-    // todo lower the default timeout once the docker builds get their own action
-    private const DEFAULT_TIMEOUT = 60 * 30;
+    private const DEFAULT_TIMEOUT = 30;
 
     /**
+     * @param list<string> $command
      * @param list<Artifact> $artifacts
      */
     public function __construct(
-        private string $command,
+        private array $command,
         private array $artifacts = [],
         private int $timeoutSeconds = self::DEFAULT_TIMEOUT
     ) {
@@ -31,24 +31,11 @@ final class RunProcess implements BuildAction
 
     public function execute(ActionOutput $output, Context $context): BuildActionResult
     {
-        $process = Process::fromShellCommandline($this->command);
-        $process->setTimeout($this->timeoutSeconds);
-        $process->start();
+        $process = new InActionProcess($this->command, $this->timeoutSeconds);
 
-        /** @psalm-var IteratorAggregate<string, string> $process  */
-
-        foreach ($process as $type => $data) {
-            if ($type === Process::OUT) {
-                $output->pushOutput($data);
-            } else {
-                $output->pushError($data);
-            }
-        }
-
-        /** @psalm-var Process $process */
-        $exitCode = $process->getExitCode();
-        return $exitCode === 0
+        $commandName = implode(' ', $this->command);
+        return $process->run($output)
             ? BuildActionResult::ok($this->artifacts)
-            : BuildActionResult::fail("Failed to execute command \"{$this->command}\" - exit code {$exitCode}");
+            : BuildActionResult::fail("Failed to execute command \"{$commandName}\"");
     }
 }
