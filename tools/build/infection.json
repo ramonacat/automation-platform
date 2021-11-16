@@ -14,7 +14,8 @@
             "BuildOutput/CIBuildOutput.php",
             "Rust/TargetGenerator.php",
             "Artifacts/LogOnlyPublisher.php",
-            "Actions/BuildDockerImage.php"
+            "Actions/BuildDockerImage.php",
+            "Commands/Build.php"
         ]
     },
     "mutators": {

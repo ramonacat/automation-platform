@@ -8,10 +8,17 @@ use DateTimeImmutable;
 use Monolog\Logger;
 use const PHP_EOL;
 use PHPUnit\Framework\TestCase;
+use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
+use RuntimeException;
 
 final class LogFormatterTest extends TestCase
 {
+    private function createBuildFacts(): BuildFacts
+    {
+        return new BuildFacts('test', false);
+    }
+
     public function testCanFormatARecordWithEmptyContext(): void
     {
         $record = [
@@ -24,7 +31,7 @@ final class LogFormatterTest extends TestCase
             'message' => 'test test test'
         ];
 
-        $formatter = new LogFormatter();
+        $formatter = new LogFormatter($this->createBuildFacts());
         $formatted = $formatter->format($record);
 
         self::assertEquals('[2021-01-01 00:00:00+00:00][INFO] test test test' . PHP_EOL, $formatted);
@@ -53,7 +60,7 @@ final class LogFormatterTest extends TestCase
             ],
         ];
 
-        $formatter = new LogFormatter();
+        $formatter = new LogFormatter($this->createBuildFacts());
         $formatted = $formatter->formatBatch($records);
 
         self::assertEquals(
@@ -82,7 +89,7 @@ final class LogFormatterTest extends TestCase
             'message' => 'test test test'
         ];
 
-        $formatter = new LogFormatter();
+        $formatter = new LogFormatter($this->createBuildFacts());
         $formatted = $formatter->format($record);
 
         self::assertEquals(
@@ -99,6 +106,53 @@ final class LogFormatterTest extends TestCase
             . 'f:' . PHP_EOL
             . 'a' . PHP_EOL
             . 'b' . PHP_EOL,
+            $formatted
+        );
+    }
+
+    public function testWillPrintExceptionDetailsInLocalMode(): void
+    {
+        $record = [
+            'datetime' => new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
+            'level' => Logger::INFO,
+            'level_name' => Logger::getLevelName(Logger::INFO),
+            'channel' => '',
+            'context' => ['ex' => new RuntimeException('msg')],
+            'extra' => [],
+            'message' => 'test test test'
+        ];
+
+        $formatter = new LogFormatter($this->createBuildFacts());
+        $formatted = $formatter->format($record);
+
+        self::assertStringStartsWith(
+            '[2021-01-01 00:00:00+00:00][INFO] test test test' . PHP_EOL
+            . 'ex:' . PHP_EOL
+            . 'RuntimeException: msg' . PHP_EOL
+            . '#0 ',
+            $formatted
+        );
+    }
+
+    public function testWillHideExceptionDetaisInCIMode(): void
+    {
+        $record = [
+            'datetime' => new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
+            'level' => Logger::INFO,
+            'level_name' => Logger::getLevelName(Logger::INFO),
+            'channel' => '',
+            'context' => ['ex' => new RuntimeException('msg'), 'a' => 'b'],
+            'extra' => [],
+            'message' => 'test test test'
+        ];
+
+        $formatter = new LogFormatter(new BuildFacts('test', true));
+        $formatted = $formatter->format($record);
+
+        self::assertEquals(
+            '[2021-01-01 00:00:00+00:00][INFO] test test test' . PHP_EOL
+            . 'ex: [RuntimeException][running in CI, exception details were redacted]' . PHP_EOL
+            . 'a: b' . PHP_EOL,
             $formatted
         );
     }

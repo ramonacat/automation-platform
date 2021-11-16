@@ -8,9 +8,6 @@ use const PHP_BINARY;
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
-use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
-use Ramona\AutomationPlatformLibBuild\BuildFacts;
-use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 
@@ -67,10 +64,6 @@ final class RunProcessTest extends TestCase
 
     private function createContext(): Context
     {
-        return new Context(
-            Configuration::fromJsonString('{}'),
-            new Collector(),
-            new BuildFacts('test')
-        );
+        return ContextFactory::create();
     }
 }
