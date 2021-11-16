@@ -8,11 +8,8 @@ use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Actions\Group;
-use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
-use Ramona\AutomationPlatformLibBuild\BuildFacts;
-use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
 
 final class GroupTest extends TestCase
@@ -56,10 +53,6 @@ final class GroupTest extends TestCase
 
     private function createContext(): Context
     {
-        return new Context(
-            Configuration::fromJsonString('{}'),
-            new Collector(),
-            new BuildFacts('test')
-        );
+        return ContextFactory::create();
     }
 }

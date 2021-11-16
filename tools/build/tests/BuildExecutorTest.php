@@ -13,6 +13,7 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\BuildExecutor;
+use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\CyclicDependencyFound;
@@ -47,7 +48,8 @@ final class BuildExecutorTest extends TestCase
             $this->logger,
             $this->buildOutput,
             $this->buildDefinitionsLoader,
-            Configuration::fromJsonString('{}')
+            Configuration::fromJsonString('{}'),
+            new BuildFacts('test', false)
         );
     }
 

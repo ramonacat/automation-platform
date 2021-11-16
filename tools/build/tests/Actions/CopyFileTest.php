@@ -27,7 +27,7 @@ final class CopyFileTest extends TestCase
         $action = new CopyFile($sourcePath, $targetPath);
         $action->execute(
             $this->createMock(ActionOutput::class),
-            new Context(Configuration::fromJsonString('{}'), new Collector(), new BuildFacts('test'))
+            new Context(Configuration::fromJsonString('{}'), new Collector(), new BuildFacts('test', false))
         );
 
         self::assertFileExists($targetPath);
