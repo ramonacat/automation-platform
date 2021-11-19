@@ -35,15 +35,15 @@ return new BuildDefinition(
     array_merge(
         [
             new Target(
-                'build-dev',
+                'build',
                 new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
                 array_merge(
                     $rustTargetGenerator->targetIds(),
-                    [new TargetId(__DIR__, 'build-images-dev')]
+                    [new TargetId(__DIR__, 'build-images')]
                 )
             ),
             new Target(
-                'build-images-dev',
+                'build-images',
                 new Group(
                     [
                         new BuildDockerImage('image-service', 'automation-platform-svc-events', '../../', 'docker/Dockerfile'),
@@ -51,7 +51,7 @@ return new BuildDefinition(
                     ]
                 )
             ),
-            new Target('deploy-dev', new RunProcess(['kubectl', '--context', 'minikube', 'apply', '-k', 'k8s/overlays/dev']), [new TargetId(__DIR__, 'build-dev')]),
+            new Target('deploy', new RunProcess(['kubectl', '--context', 'minikube', 'apply', '-k', 'k8s/overlays/dev']), [new TargetId(__DIR__, 'build')]),
         ],
         $rustTargetGenerator->targets()
     )

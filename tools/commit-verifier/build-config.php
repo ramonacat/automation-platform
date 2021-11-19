@@ -11,7 +11,7 @@ return new BuildDefinition(
     array_merge(
         [
             new Target(
-                'build-dev',
+                'build',
                 new NoOp(),
                 $rustTargetGenerator->targetIds()
             ),
