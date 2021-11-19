@@ -18,6 +18,13 @@ final class ConfigurationTest extends TestCase
         self::assertEquals(1, $configuration->getSingleBuildValue('$.a'));
     }
 
+    public function testCanGetSingleValue(): void
+    {
+        $configuration = Configuration::fromJsonString('{"build": {"a" : 1}, "runtime": {}}');
+
+        self::assertSame(1, $configuration->getSingleBuildValue('$.a'));
+    }
+
     public function testWillThrowOnMissingBuildKey(): void
     {
         $configuration = Configuration::fromJsonString('{}');
@@ -34,12 +41,42 @@ final class ConfigurationTest extends TestCase
         $configuration->getSingleBuildValue('$.doesnotexist');
     }
 
-    public function testWillThrowOnMissingRuntimeKey(): void
+    public function testWillGetTheValueFromTheLastOverride(): void
     {
-        $configuration = Configuration::fromJsonString('{}');
+        $configuration = Configuration::fromJsonString('{"build": {"a": 1}}');
+        $configuration = $configuration->merge(Configuration::fromJsonString('{"build": {"a": 2}}'));
 
+        self::assertSame(2, $configuration->getSingleBuildValue('$.a'));
+    }
 
-        $this->expectException(InvalidConfiguration::class);
-        $configuration->getRuntimeConfiguration();
+    public function testCanGetNestedOverrideValue(): void
+    {
+        $configuration = Configuration::fromJsonString('{"build": {"a": {"x": 1}}}');
+        $configuration = $configuration->merge(Configuration::fromJsonString('{"build": {"a": {"x": 7}}}'));
+
+        self::assertSame(7, $configuration->getSingleBuildValue('$.a.x'));
+    }
+
+    public function testCanOverrideNestedRuntimeConfiguration(): void
+    {
+        $configuration = Configuration::fromJsonString('{"runtime": {"a": {"x": 1, "y": 2}}}');
+        $configuration = $configuration->merge(Configuration::fromJsonString('{"runtime": {"a": {"y": 12}}}'));
+
+        self::assertSame(['a' => ['x' => 1, 'y' => 12]], $configuration->getRuntimeConfiguration());
+    }
+
+    public function testGetMultipleValuesInRuntimeConfiguration(): void
+    {
+        $configuration = Configuration::fromJsonString('{"runtime": {"x": 1, "y": 2}}');
+
+        self::assertSame(['x' => 1, 'y' => 2], $configuration->getRuntimeConfiguration());
+    }
+
+    public function testMergeDoesNotMutateTheOriginalConfiguration(): void
+    {
+        $configuration = Configuration::fromJsonString('{"build": {"a": 1}}');
+        $configuration->merge(Configuration::fromJsonString('{"build": {"a": 2}}'));
+
+        self::assertSame(1, $configuration->getSingleBuildValue('$.a'));
     }
 }

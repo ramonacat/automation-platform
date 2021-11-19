@@ -16,4 +16,11 @@ foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php
     }
 }
 
-exit((new Build())(array_values($argv)));
+$options = getopt('', ['environment:'], $restIndex);
+
+if ($options === false) {
+    $options = [];
+}
+
+$restArguments = array_values(array_slice($argv, $restIndex));
+exit((new Build())($argv[0], $options, $restArguments));

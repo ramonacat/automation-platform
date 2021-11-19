@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Configuration;
 
+use function array_reverse;
+use function array_unshift;
+use function is_array;
 use Remorhaz\JSON\Data\Value\EncodedJson\NodeValueFactory;
 use Remorhaz\JSON\Data\Value\NodeValueInterface;
 use Remorhaz\JSON\Path\Processor\Processor;
@@ -11,17 +14,19 @@ use Remorhaz\JSON\Path\Processor\ProcessorInterface;
 use Remorhaz\JSON\Path\Query\QueryFactory;
 use Remorhaz\JSON\Path\Query\QueryFactoryInterface;
 use function Safe\file_get_contents;
+use stdClass;
 
 final class Configuration
 {
     private QueryFactoryInterface $queryFactory;
-    private NodeValueInterface $configuration;
+    /** @var list<NodeValueInterface> */
+    private array $configurations = [];
     private ProcessorInterface $processor;
 
     private function __construct(string $jsonString)
     {
         $this->queryFactory = QueryFactory::create();
-        $this->configuration = NodeValueFactory::create()->createValue($jsonString);
+        $this->configurations = [NodeValueFactory::create()->createValue($jsonString)];
         $this->processor = Processor::create();
     }
 
@@ -42,9 +47,17 @@ final class Configuration
         $query = $this->queryFactory->createQuery($jsonPath);
 
         $buildConfigurationQuery = $this->queryFactory->createQuery('$.build');
-        $buildConfiguration = $this->processor->selectOne($buildConfigurationQuery, $this->configuration);
 
-        if (!$buildConfiguration->exists()) {
+        $buildConfiguration = null;
+        foreach ($this->configurations as $configuration) {
+            $buildConfiguration = $this->processor->selectOne($buildConfigurationQuery, $configuration);
+
+            if ($buildConfiguration->exists()) {
+                break;
+            }
+        }
+
+        if ($buildConfiguration === null || !$buildConfiguration->exists()) {
             throw InvalidConfiguration::missingBuildKey();
         }
 
@@ -65,12 +78,70 @@ final class Configuration
     {
         $query = $this->queryFactory->createQuery('$.runtime');
 
-        $runtimeConfiguration = $this->processor->selectOne($query, $this->configuration);
+        /** @var list<array<mixed>> $allConfigurations */
+        $allConfigurations = [];
 
-        if (!$runtimeConfiguration->exists()) {
-            throw InvalidConfiguration::missingRuntimeKey();
+        foreach ($this->configurations as $configuration) {
+            $runtimeConfiguration = $this->processor->selectOne($query, $configuration);
+
+            if (!$runtimeConfiguration->exists()) {
+                continue;
+            }
+
+            /** @var stdClass $decoded */
+            $decoded = $runtimeConfiguration->decode();
+            $allConfigurations[] = $this->castToArrayRecursively($decoded);
         }
 
-        return $runtimeConfiguration->decode();
+        return $this->mergeRuntimeConfigurations(array_reverse($allConfigurations));
+    }
+
+    /**
+     * @param list<array<array-key, mixed>> $allConfigurations
+     * @return array<array-key, mixed>
+     */
+    private function mergeRuntimeConfigurations(array $allConfigurations): array
+    {
+        /** @psalm-var array<array-key, mixed> $finalConfiguration */
+        $finalConfiguration = [];
+
+        foreach ($allConfigurations as $configuration) {
+            /** @psalm-var mixed $value */
+            foreach ($configuration as $key => $value) {
+                if (isset($finalConfiguration[$key]) && is_array($finalConfiguration[$key]) && is_array($value)) {
+                    $finalConfiguration[$key] = $this->mergeRuntimeConfigurations([$finalConfiguration[$key], $value]);
+                } else {
+                    /** @psalm-suppress MixedAssignment */
+                    $finalConfiguration[$key] = $value;
+                }
+            }
+        }
+
+        return $finalConfiguration;
+    }
+
+    private function castToArrayRecursively(stdClass $in): array
+    {
+        $out = (array)$in;
+
+        /** @var mixed $value */
+        foreach ($out as $key => $value) {
+            if ($value instanceof stdClass) {
+                $out[$key] = $this->castToArrayRecursively($value);
+            }
+        }
+
+        return $out;
+    }
+
+    public function merge(Configuration $other): self
+    {
+        $result = clone $this;
+
+        foreach ($other->configurations as $configuration) {
+            array_unshift($result->configurations, $configuration);
+        }
+
+        return $result;
     }
 }

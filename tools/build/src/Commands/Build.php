@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Commands;
 
+use function assert;
 use Bramus\Ansi\Ansi;
 use Bramus\Ansi\Writers\StreamWriter;
 use function count;
@@ -11,6 +12,7 @@ use Exception;
 use function get_class;
 use function getenv;
 use function implode;
+use function is_string;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use const PHP_EOL;
@@ -40,7 +42,6 @@ final class Build
     private string $workingDirectory;
     private Ansi $ansi;
     private BuildDefinitionsLoader $buildDefinitionsLoader;
-    private BuildExecutor $buildExecutor;
 
     public function __construct()
     {
@@ -53,29 +54,40 @@ final class Build
         $this->workingDirectory = realpath(getcwd());
         $this->ansi = new Ansi(new StreamWriter('php://stdout'));
         $this->buildDefinitionsLoader = new DefaultBuildDefinitionsLoader();
-
-        $this->buildExecutor = new BuildExecutor(
-            $this->createFileLogger(),
-            $this->buildFacts->inPipeline() ? new CIBuildOutput($this->ansi) : new StyledBuildOutput($this->ansi),
-            $this->buildDefinitionsLoader,
-            Configuration::fromFile((new Locator())->locateConfigurationFile()),
-            $this->buildFacts,
-        );
     }
 
     /**
+     * @psalm-param array<string, false|list<mixed>|string> $options
      * @psalm-param list<string> $arguments
      */
-    public function __invoke(array $arguments): int
+    public function __invoke(string $executableName, array $options, array $arguments): int
     {
-        if (count($arguments) !== 2) {
-            $this->printUsage($arguments[0]);
+        if (count($arguments) !== 1) {
+            $this->printUsage($executableName);
 
             return 1;
         }
 
+        $configurationLocator = new Locator();
+        $configuration = Configuration::fromFile($configurationLocator->locateConfigurationFile());
+
+        $subtype = $options['environment'] ?? 'dev';
+        assert(is_string($subtype));
+        $environmentConfigurationFile = $configurationLocator->tryLocateConfigurationFile($subtype);
+        if ($environmentConfigurationFile !== null) {
+            $configuration = $configuration->merge(Configuration::fromFile($environmentConfigurationFile));
+        }
+
+        $buildExecutor = new BuildExecutor(
+            $this->createFileLogger(),
+            $this->buildFacts->inPipeline() ? new CIBuildOutput($this->ansi) : new StyledBuildOutput($this->ansi),
+            $this->buildDefinitionsLoader,
+            $configuration,
+            $this->buildFacts,
+        );
+
         try {
-            $result = $this->buildExecutor->executeTarget(new TargetId(getcwd(), $arguments[1]));
+            $result = $buildExecutor->executeTarget(new TargetId(getcwd(), $arguments[0]));
         } catch (TargetDoesNotExist $exception) {
             $this
                 ->ansi

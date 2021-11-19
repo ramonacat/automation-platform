@@ -25,5 +25,5 @@ return new BuildDefinition([
         ]
     ),
     new Target('cs-fix', new RunProcess(['php', 'vendor/bin/ecs', '--fix'])),
-    new Target('build-dev', new NoOp(), [new TargetId(__DIR__, 'check')]),
+    new Target('build', new NoOp(), [new TargetId(__DIR__, 'check')]),
 ]);
