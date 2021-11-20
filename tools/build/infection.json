@@ -15,6 +15,7 @@
             "Rust/TargetGenerator.php",
             "Artifacts/LogOnlyPublisher.php",
             "Actions/BuildDockerImage.php",
+            "Actions/KustomizeApply.php",
             "Commands/Build.php"
         ]
     },
