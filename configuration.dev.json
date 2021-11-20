@@ -1,0 +1,10 @@
+{
+    "build": {
+        "kubernetes": {
+            "context": "minikube"
+        }
+    },
+    "runtime": {
+        "mounts": "/tmp/a:tmpa"
+    }
+}

@@ -2,7 +2,7 @@
 
 use Ramona\AutomationPlatformLibBuild\Actions\BuildDockerImage;
 use Ramona\AutomationPlatformLibBuild\Actions\Group;
-use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
+use Ramona\AutomationPlatformLibBuild\Actions\KustomizeApply;
 use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
 use Ramona\AutomationPlatformLibBuild\Actions\PutRuntimeConfiguration;
 use Ramona\AutomationPlatformLibBuild\BuildDefinition;
@@ -57,7 +57,7 @@ return new BuildDefinition(
             ),
             new Target(
                 'deploy',
-                new RunProcess(['kubectl', '--context', 'minikube', 'apply', '-k', 'k8s/overlays/dev']),
+                new KustomizeApply('k8s/overlays/dev'),
                 [new TargetId(__DIR__, 'build'), new TargetId(__DIR__.'/../events/', 'deploy')]
             ),
         ],
