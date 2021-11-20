@@ -49,6 +49,14 @@ final class ConfigurationTest extends TestCase
         self::assertSame(2, $configuration->getSingleBuildValue('$.a'));
     }
 
+    public function testWillGetTheValueFromTheLastOverrideForNested(): void
+    {
+        $configuration = Configuration::fromJsonString('{"build": {"a": {"b": 1}}}');
+        $configuration = $configuration->merge(Configuration::fromJsonString('{"build": {"a": {"b": 2}}}'));
+
+        self::assertSame(2, $configuration->getSingleBuildValue('$.a.b'));
+    }
+
     public function testCanGetNestedOverrideValue(): void
     {
         $configuration = Configuration::fromJsonString('{"build": {"a": {"x": 1}}}');
@@ -78,5 +86,21 @@ final class ConfigurationTest extends TestCase
         $configuration->merge(Configuration::fromJsonString('{"build": {"a": 2}}'));
 
         self::assertSame(1, $configuration->getSingleBuildValue('$.a'));
+    }
+
+    public function testAllowsOverridesWithoutTheBuildKey(): void
+    {
+        $configuration = Configuration::fromJsonString('{"build": {"a": 1}}');
+        $configuration = $configuration->merge(Configuration::fromJsonString('{}'));
+
+        self::assertSame(1, $configuration->getSingleBuildValue('$.a'));
+    }
+
+    public function testAllowsGettingValuesFromTheOriginalConfigurationWhenThereIsAnOverride(): void
+    {
+        $configuration = Configuration::fromJsonString('{"build": {"a": 1, "b": 3}}');
+        $configuration = $configuration->merge(Configuration::fromJsonString('{"build": {"a": 2}}'));
+
+        self::assertSame(3, $configuration->getSingleBuildValue('$.b'));
     }
 }

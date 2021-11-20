@@ -6,6 +6,7 @@ namespace Ramona\AutomationPlatformLibBuild\Configuration;
 
 use function array_reverse;
 use function array_unshift;
+use function assert;
 use function is_array;
 use Remorhaz\JSON\Data\Value\EncodedJson\NodeValueFactory;
 use Remorhaz\JSON\Data\Value\NodeValueInterface;
@@ -48,30 +49,31 @@ final class Configuration
 
         $buildConfigurationQuery = $this->queryFactory->createQuery('$.build');
 
-        $buildConfiguration = null;
+        $buildConfigurations = [];
         foreach ($this->configurations as $configuration) {
             $buildConfiguration = $this->processor->selectOne($buildConfigurationQuery, $configuration);
 
             if ($buildConfiguration->exists()) {
-                break;
+                $buildConfigurations[] = $buildConfiguration->get();
             }
         }
 
-        if ($buildConfiguration === null || !$buildConfiguration->exists()) {
+        if ($buildConfigurations === []) {
             throw InvalidConfiguration::missingBuildKey();
         }
 
-        $rootBuildConfiguration = $buildConfiguration->get();
-        if (!$rootBuildConfiguration instanceof NodeValueInterface) {
-            throw InvalidConfiguration::buildNotANode();
-        }
-        $result = $this->processor->selectOne($query, $rootBuildConfiguration);
+        foreach ($buildConfigurations as $buildConfiguration) {
+            assert($buildConfiguration instanceof NodeValueInterface);
+            $result = $this->processor->selectOne($query, $buildConfiguration);
 
-        if (!$result->exists()) {
-            throw ConfigurationValueNotFound::forPath($jsonPath);
+            if (!$result->exists()) {
+                continue;
+            }
+
+            return $result->decode();
         }
 
-        return $result->decode();
+        throw ConfigurationValueNotFound::forPath($jsonPath);
     }
 
     public function getRuntimeConfiguration(): mixed
