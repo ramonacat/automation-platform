@@ -6,6 +6,9 @@ jobs:
         steps:
             - uses: actions/checkout@v2
 
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v1
+
             - uses: actions-rs/toolchain@v1
               with:
                 toolchain: stable
@@ -47,4 +50,4 @@ jobs:
             - working-directory: tools/build/
               run: composer install
 
-            - run: php tools/build/bin/build.php build
+            - run: php tools/build/bin/build.php --environment=github-actions build
