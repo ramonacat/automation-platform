@@ -15,6 +15,9 @@ use function str_replace;
 
 final class ProjectFinder
 {
+    /**
+     * @return list<string>
+     */
     public static function find(): array
     {
         $result = ['/'];
@@ -27,6 +30,9 @@ final class ProjectFinder
         return array_merge($result, self::findIn($root, 'libraries' . DIRECTORY_SEPARATOR . '*'));
     }
 
+    /**
+     * @return list<string>
+     */
     private static function findIn(string $root, string $pattern): array
     {
         $result = [];
