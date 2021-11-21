@@ -1,14 +1,30 @@
 version: 2
 updates:
-  - package-ecosystem: "composer"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "cargo"
     directory: "services/events/"
     schedule:
       interval: "daily"
   - package-ecosystem: "composer"
-    directory: "libraries/build"
+    directory: "tools/build/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "composer"
+    directory: "tools/dependabot-config-checker/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "cargo"
+    directory: "tools/commit-verifier/"
     schedule:
       interval: "daily"
   - package-ecosystem: "cargo"
     directory: "services/directory-watcher/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "cargo"
+    directory: "libraries/rust/platform/"
     schedule:
       interval: "daily"
