@@ -47,6 +47,12 @@ jobs:
 
             - run: cargo udeps --version || cargo +nightly install cargo-udeps
 
+            - working-directory: tools/dependabot-config-checker/
+              run: composer install
+
+            - working-directory: tools/dependabot-config-checker/
+              run: php bin/check.php
+
             - working-directory: tools/build/
               run: composer install
 
