@@ -6,19 +6,20 @@ namespace Tests\Ramona\AutomationPlatformToolDependabotConfigChecker;
 
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformToolDependabotConfigChecker\Checker;
+use Ramona\AutomationPlatformToolDependabotConfigChecker\CheckerOutput;
 
 final class CheckerTest extends TestCase
 {
     public function testWillFailOnMissingUpdatesSection(): void
     {
-        $checker = new Checker([]);
+        $checker = new Checker([], $this->createMock(CheckerOutput::class));
 
         self::assertSame(1, $checker->validate('version: 2'));
     }
 
     public function testWillFailIfUpdatesSectionIsNotAnArray(): void
     {
-        $checker = new Checker([]);
+        $checker = new Checker([], $this->createMock(CheckerOutput::class));
 
         $result = $checker->validate(
             <<<EOC
@@ -31,7 +32,7 @@ final class CheckerTest extends TestCase
 
     public function testWillFailIfUpdatesEntryIsNotAnArray(): void
     {
-        $checker = new Checker([]);
+        $checker = new Checker([], $this->createMock(CheckerOutput::class));
 
         $result = $checker->validate(
             <<<EOC
@@ -45,7 +46,7 @@ final class CheckerTest extends TestCase
 
     public function testWillFailIfUpdatesHasANonIntKey(): void
     {
-        $checker = new Checker([]);
+        $checker = new Checker([], $this->createMock(CheckerOutput::class));
 
         $result = $checker->validate(
             <<<EOC
@@ -58,7 +59,7 @@ final class CheckerTest extends TestCase
 
     public function testWillFailIfUpdatesEntryIsMissingDirectory(): void
     {
-        $checker = new Checker([]);
+        $checker = new Checker([], $this->createMock(CheckerOutput::class));
 
         $result = $checker->validate(
             <<<EOC
@@ -72,7 +73,7 @@ final class CheckerTest extends TestCase
 
     public function testWillFailIfAnEntryDoesNotMatchAProject(): void
     {
-        $checker = new Checker([]);
+        $checker = new Checker([], $this->createMock(CheckerOutput::class));
 
         $result = $checker->validate(
             <<<EOC
@@ -88,7 +89,7 @@ final class CheckerTest extends TestCase
 
     public function testWillFailIfAProjectDoesNotHaveAnEntry(): void
     {
-        $checker = new Checker(['/', '/a/b']);
+        $checker = new Checker(['/', '/a/b'], $this->createMock(CheckerOutput::class));
 
         $result = $checker->validate(
             <<<EOC
@@ -104,7 +105,7 @@ final class CheckerTest extends TestCase
 
     public function testWillPassForAValidConfig(): void
     {
-        $checker = new Checker(['/a/b']);
+        $checker = new Checker(['/a/b'], $this->createMock(CheckerOutput::class));
 
         $result = $checker->validate(
             <<<EOC
