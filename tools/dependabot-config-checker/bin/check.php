@@ -12,4 +12,4 @@ $projects = ProjectFinder::find();
 
 $checker = new Checker($projects);
 
-$checker->validate(file_get_contents(__DIR__ . '/../../../.github/dependabot.yaml'));
+exit($checker->validate(file_get_contents(__DIR__ . '/../../../.github/dependabot.yaml')));
