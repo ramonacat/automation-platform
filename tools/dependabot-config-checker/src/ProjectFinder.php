@@ -9,6 +9,7 @@ use const DIRECTORY_SEPARATOR;
 use function dirname;
 use function glob;
 use const GLOB_ONLYDIR;
+use function ltrim;
 use function Safe\realpath;
 use function str_replace;
 
@@ -33,7 +34,7 @@ final class ProjectFinder
         foreach (glob($root . DIRECTORY_SEPARATOR . $pattern . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR) as $tool) {
             $entry = str_replace([$root, DIRECTORY_SEPARATOR], ['', '/'], realpath($tool)) . '/';
 
-            if($entry !== '/') {
+            if ($entry !== '/') {
                 $entry = ltrim($entry, '/');
             }
 
