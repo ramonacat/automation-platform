@@ -1,0 +1,17 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "logs": {
+        "text": "infection.log"
+    },
+    "source": {
+        "directories": [
+            "src/"
+        ],
+        "excludes": [
+            "ProjectFinder.php"
+        ]
+    },
+    "mutators": {
+        "@default": true
+    }
+}
