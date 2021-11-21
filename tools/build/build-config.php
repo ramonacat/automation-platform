@@ -14,6 +14,8 @@ return new BuildDefinition([
     new Target('tests-unit', new RunProcess(['php', 'vendor/bin/phpunit'])),
     // todo set the number of parallel runs dynamically, once it's supported in build
     new Target('tests-mutation', new RunProcess(['php', 'vendor/bin/infection', '-j6', '--min-msi=94', '--min-covered-msi=98'], timeoutSeconds: 120)),
+    new Target('check-transitive-deps', new RunProcess(['composer-require-checker', 'check', 'composer.json'])),
+    new Target('check-unused-deps', new RunProcess(['composer', 'unused'])),
     new Target(
         'check',
         new NoOp(),
@@ -22,6 +24,8 @@ return new BuildDefinition([
             new TargetId(__DIR__, 'type-check'),
             new TargetId(__DIR__, 'tests-unit'),
             new TargetId(__DIR__, 'tests-mutation'),
+            new TargetId(__DIR__, 'check-transitive-deps'),
+            new TargetId(__DIR__, 'check-unused-deps'),
         ]
     ),
     new Target('cs-fix', new RunProcess(['php', 'vendor/bin/ecs', '--fix'])),
