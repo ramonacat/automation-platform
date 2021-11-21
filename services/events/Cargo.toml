@@ -17,6 +17,6 @@ chrono="0.4.19"
 postgres-native-tls="0.5.0"
 native-tls="0.2.8"
 thiserror = "1.0.30"
-jsonschema="0.12.1"
+jsonschema="0.13.2"
 
 platform = { path = "../../libraries/rust/platform" }
