@@ -28,3 +28,7 @@ updates:
     directory: "libraries/rust/platform/"
     schedule:
       interval: "daily"
+  - package-ecosystem: "composer"
+    directory: "libraries/php/coding-standard/"
+    schedule:
+      interval: "daily"
