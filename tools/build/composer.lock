@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1bf2aaf096097cc0a188fc84e4aecbf8",
+    "content-hash": "c515544934ba412eb25aac6775a5b69b",
     "packages": [
         {
             "name": "bramus/ansi-php",
@@ -1391,16 +1391,16 @@
         },
         {
             "name": "symfony/process",
-            "version": "v5.3.7",
+            "version": "v5.3.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/process.git",
-                "reference": "38f26c7d6ed535217ea393e05634cb0b244a1967"
+                "reference": "6c99204de85d04ca17f16c466fc61896960b0636"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/process/zipball/38f26c7d6ed535217ea393e05634cb0b244a1967",
-                "reference": "38f26c7d6ed535217ea393e05634cb0b244a1967",
+                "url": "https://api.github.com/repos/symfony/process/zipball/6c99204de85d04ca17f16c466fc61896960b0636",
+                "reference": "6c99204de85d04ca17f16c466fc61896960b0636",
                 "shasum": ""
             },
             "require": {
@@ -1433,7 +1433,7 @@
             "description": "Executes commands in sub-processes",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/process/tree/v5.3.7"
+                "source": "https://github.com/symfony/process/tree/v5.3.11"
             },
             "funding": [
                 {
@@ -1449,7 +1449,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-08-04T21:20:46+00:00"
+            "time": "2021-11-17T12:16:12+00:00"
         },
         {
             "name": "symfony/service-contracts",
@@ -3943,31 +3943,24 @@
         },
         {
             "name": "ramona/automation-platform-lib-coding-standard",
-            "version": "dev-build_cargo_cache",
+            "version": "dev-master",
             "dist": {
                 "type": "path",
                 "url": "../../libraries/php/coding-standard",
-                "reference": "1db5fea01cd645409ac502fa0fe09523ed7d64d9"
+                "reference": "5d2d7d255c4c480bbe9492be0fc236a0581639d7"
             },
             "require": {
                 "php": "^8.0",
                 "slevomat/coding-standard": "^7.0",
                 "symplify/easy-coding-standard": "^9.4"
             },
+            "require-dev": {
+                "vimeo/psalm": "^4.13"
+            },
             "bin": [
                 "bin/build.php"
             ],
             "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Ramona\\AutomationPlatformLibCodingStandard\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Tests\\Ramona\\AutomationPlatformLibBuild\\": "tests/"
-                }
-            },
             "transport-options": {
                 "relative": true
             }
