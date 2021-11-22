@@ -16,17 +16,31 @@ final class TargetGenerator
      */
     private array $targets;
 
-    public function __construct(private string $projectDirectory, int $minMsi = 100, int $minCoveredMsi = 100)
+    public function __construct(private string $projectDirectory, Configuration $configuration)
     {
         $this->targets = [
-            new Target('php-coding-standard', new RunProcess(['php', 'vendor/bin/ecs'])),
             new Target('php-type-check', new RunProcess(['php', 'vendor/bin/psalm'])),
-            new Target('php-tests-unit', new RunProcess(['php', 'vendor/bin/phpunit'])),
-            // todo set the number of parallel runs dynamically, once it's supported in build
-            new Target('php-tests-mutation', new RunProcess(['php', 'vendor/bin/infection', '-j6', '--min-msi=' . (string)$minMsi, '--min-covered-msi=' . (string)$minCoveredMsi], timeoutSeconds: 120)),
+            new Target('php-coding-standard', new RunProcess(['php', 'vendor/bin/ecs'])),
             new Target('php-check-transitive-deps', new RunProcess(['composer-require-checker', 'check', 'composer.json'])),
             new Target('php-check-unused-deps', new RunProcess(['composer', 'unused'])),
             new Target('php-cs-fix', new RunProcess(['php', 'vendor/bin/ecs', '--fix'])),
+
+            new Target('php-tests-unit', new RunProcess(['php', 'vendor/bin/phpunit'])),
+            new Target(
+                'php-tests-mutation',
+                new RunProcess(
+                    [
+                        'php',
+                        'vendor/bin/infection',
+                        // todo set the number of parallel runs dynamically, once it's supported in build
+                        '-j6',
+                        '--min-msi=' . (string)$configuration->minMsi(),
+                        '--min-covered-msi=' . (string)$configuration->minCoveredMsi()
+                    ],
+                    timeoutSeconds: 120
+                ),
+                [new TargetId($this->projectDirectory, 'php-tests-unit')]
+            ),
         ];
     }
 

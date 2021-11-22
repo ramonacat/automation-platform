@@ -103,4 +103,13 @@ final class ConfigurationTest extends TestCase
 
         self::assertSame(3, $configuration->getSingleBuildValue('$.b'));
     }
+
+    public function testAllowsOverridesWithoutTheRuntimeKey(): void
+    {
+        $configuration = Configuration::fromJsonString('{"runtime": {"a": 1}}');
+        $configuration = $configuration->merge(Configuration::fromJsonString("{}"));
+        $configuration = $configuration->merge(Configuration::fromJsonString('{"runtime": {"a": 2}}'));
+
+        self::assertSame(['a' => 2], $configuration->getRuntimeConfiguration());
+    }
 }
