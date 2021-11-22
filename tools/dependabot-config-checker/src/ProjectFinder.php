@@ -20,7 +20,7 @@ final class ProjectFinder
      */
     public static function find(): array
     {
-        $result = ['/'];
+        $result = [];
 
         $root = realpath(dirname(__DIR__, 3));
 
