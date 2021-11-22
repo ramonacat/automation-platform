@@ -8,8 +8,7 @@
             "src/"
         ],
         "excludes": [
-            "ProjectFinder.php",
-            "DockerfileFinder.php"
+            "ProjectFinder.php"
         ]
     },
     "mutators": {

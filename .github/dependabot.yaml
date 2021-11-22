@@ -34,21 +34,7 @@ updates:
       interval: "daily"
 
   - package-ecosystem: "docker"
-    directory: "services/directory-watcher/docker/Dockerfile"
+    directory: "/"
     schedule:
       interval: "daily"
 
-  - package-ecosystem: "docker"
-    directory: "services/directory-watcher/docker/migrations.Dockerfile"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "docker"
-    directory: "services/events/docker/Dockerfile"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "docker"
-    directory: "services/events/docker/migrations.Dockerfile"
-    schedule:
-      interval: "daily"
