@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "161eaea31e86f75cb566e339339c21a8",
+    "content-hash": "24821d9096c7687b9feae228ea3ebdc6",
     "packages": [
         {
             "name": "symfony/deprecation-contracts",
@@ -2587,6 +2587,30 @@
                 "source": "https://github.com/php-fig/log/tree/2.0.0"
             },
             "time": "2021-07-14T16:41:46+00:00"
+        },
+        {
+            "name": "ramona/automation-platform-lib-coding-standard",
+            "version": "dev-build_cargo_cache",
+            "dist": {
+                "type": "path",
+                "url": "../../libraries/php/coding-standard",
+                "reference": "5d2d7d255c4c480bbe9492be0fc236a0581639d7"
+            },
+            "require": {
+                "php": "^8.0",
+                "slevomat/coding-standard": "^7.0",
+                "symplify/easy-coding-standard": "^9.4"
+            },
+            "require-dev": {
+                "vimeo/psalm": "^4.13"
+            },
+            "bin": [
+                "bin/build.php"
+            ],
+            "type": "library",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "sanmai/later",

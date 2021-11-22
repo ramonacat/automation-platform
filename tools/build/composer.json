@@ -11,6 +11,12 @@
             "Tests\\Ramona\\AutomationPlatformLibBuild\\": "tests/"
         }
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../libraries/php/*/"
+        }
+    ],
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
@@ -26,7 +32,7 @@
     },
     "require-dev": {
         "symplify/easy-coding-standard": "^9.4",
-        "slevomat/coding-standard": "^7.0",
+        "ramona/automation-platform-lib-coding-standard": "*",
         "vimeo/psalm": "^4.8",
         "phpunit/phpunit": "^9.5",
         "psalm/plugin-symfony": "^3.0",

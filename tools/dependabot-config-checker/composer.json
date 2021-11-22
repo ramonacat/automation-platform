@@ -11,6 +11,12 @@
             "Tests\\Ramona\\AutomationPlatformToolDependabotConfigChecker\\": "tests/"
         }
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../libraries/php/*/"
+        }
+    ],
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
@@ -20,6 +26,7 @@
         "thecodingmachine/safe": "^1.3"
     },
     "require-dev": {
+        "ramona/automation-platform-lib-coding-standard": "*",
         "symplify/easy-coding-standard": "^9.4",
         "vimeo/psalm": "^4.13",
         "phpunit/phpunit": "^9.5",

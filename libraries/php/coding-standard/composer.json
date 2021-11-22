@@ -1,0 +1,17 @@
+{
+  "name": "ramona/automation-platform-lib-coding-standard",
+  "type": "library",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "php": "^8.0",
+    "symplify/easy-coding-standard": "^9.4",
+    "slevomat/coding-standard": "^7.0"
+  },
+  "require-dev": {
+    "vimeo/psalm": "^4.13"
+  },
+  "bin": [
+    "bin/build.php"
+  ]
+}

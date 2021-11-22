@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0c7447bb012be286ffb125bb6b7b0d7e",
+    "content-hash": "1bf2aaf096097cc0a188fc84e4aecbf8",
     "packages": [
         {
             "name": "bramus/ansi-php",
@@ -3940,6 +3940,37 @@
                 "source": "https://github.com/php-fig/event-dispatcher/tree/1.0.0"
             },
             "time": "2019-01-08T18:20:26+00:00"
+        },
+        {
+            "name": "ramona/automation-platform-lib-coding-standard",
+            "version": "dev-build_cargo_cache",
+            "dist": {
+                "type": "path",
+                "url": "../../libraries/php/coding-standard",
+                "reference": "1db5fea01cd645409ac502fa0fe09523ed7d64d9"
+            },
+            "require": {
+                "php": "^8.0",
+                "slevomat/coding-standard": "^7.0",
+                "symplify/easy-coding-standard": "^9.4"
+            },
+            "bin": [
+                "bin/build.php"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Ramona\\AutomationPlatformLibCodingStandard\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Tests\\Ramona\\AutomationPlatformLibBuild\\": "tests/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "sanmai/later",
