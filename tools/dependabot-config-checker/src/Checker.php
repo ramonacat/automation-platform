@@ -34,6 +34,7 @@ final class Checker
         }
 
         $projectPathsLeft = array_flip($this->projectPaths);
+        $projectPaths = $projectPathsLeft;
 
         /**
          * @var mixed $index
@@ -55,7 +56,7 @@ final class Checker
                 return 1;
             }
 
-            if (!isset($projectPathsLeft[$item['directory']])) {
+            if (!isset($projectPaths[$item['directory']])) {
                 $this->output->invalid('This "updates" entry does not correspond to a project, directory: ' . $item['directory']);
                 return 1;
             }
