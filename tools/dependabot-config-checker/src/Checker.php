@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformToolDependabotConfigChecker;
 
+use function array_keys;
 use function count;
 use function is_array;
 use function is_int;
@@ -63,7 +64,7 @@ final class Checker
         }
 
         if (count($projectPathsLeft) > 0) {
-            $this->output->invalid('Some projects are missing "updates" entries: ' . json_encode($projectPathsLeft, JSON_PRETTY_PRINT));
+            $this->output->invalid('Some "updates" section entries are missing: ' . json_encode(array_keys($projectPathsLeft), JSON_PRETTY_PRINT));
             return 1;
         }
 

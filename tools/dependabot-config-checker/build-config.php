@@ -8,7 +8,7 @@ use Ramona\AutomationPlatformLibBuild\PHP\Configuration;
 use Ramona\AutomationPlatformLibBuild\PHP\TargetGenerator;
 use Ramona\AutomationPlatformLibBuild\Target;
 
-$phpTargetGenerator = new TargetGenerator(__DIR__, new Configuration(minMsi: 53, minCoveredMsi: 66));
+$phpTargetGenerator = new TargetGenerator(__DIR__, new Configuration(minMsi: 52, minCoveredMsi: 65));
 
 return new BuildDefinition(
     array_merge(
