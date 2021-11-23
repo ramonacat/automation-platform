@@ -14,7 +14,7 @@ return new BuildDefinition(
     array_merge(
         $phpTargetGenerator->targets(),
         [
-            new Target('build', new NoOp(), $phpTargetGenerator->targetIds()),
+            new Target('build', new NoOp(), $phpTargetGenerator->buildTargetIds()),
         ]
     )
 );

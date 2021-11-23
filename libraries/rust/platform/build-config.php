@@ -13,7 +13,7 @@ return new BuildDefinition(
             new Target(
                 'build',
                 new NoOp(),
-                $rustTargetGenerator->targetIds()
+                $rustTargetGenerator->buildTargetIds()
             ),
         ],
         $rustTargetGenerator->targets()
