@@ -28,7 +28,14 @@ fn main() {
         },
         |raw_ref| {
             repository
-                .find_commit(repository.revparse(raw_ref).expect("Invalid commit sha").from().expect("No \"to\" for the specified reference").id())
+                .find_commit(
+                    repository
+                        .revparse(raw_ref)
+                        .expect("Invalid commit sha")
+                        .from()
+                        .expect("No \"to\" for the specified reference")
+                        .id(),
+                )
                 .expect("Failed to find the supplied commit")
                 .id()
         },
@@ -74,7 +81,9 @@ fn main() {
 
         println!();
 
-        commit = commit.parent(0).expect("Failed to get commit parent");
+        commit = commit
+            .parent(commit.parent_count() - 1)
+            .expect("Failed to get commit parent");
     }
 }
 

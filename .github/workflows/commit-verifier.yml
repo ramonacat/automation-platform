@@ -14,4 +14,4 @@ jobs:
               with:
                 working-directory: tools/commit-verifier
             - working-directory: tools/commit-verifier
-              run: cargo run ${{ github.event.pull_request.base.sha }}
+              run: cargo run -- ${{ github.event.pull_request.base.sha }}
