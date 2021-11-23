@@ -9,18 +9,37 @@ fn main() {
     let head = repository.head().expect("Failed to get repository HEAD");
     let mut commit = head.peel_to_commit().expect("Failed to get HEAD commit");
 
-    let merge_base = repository
-        .merge_base(
-            commit.id(),
+    let arguments: Vec<String> = std::env::args().collect();
+
+    let merge_base = arguments.get(1).map_or_else(
+        || {
             repository
-                .find_branch("origin/main", BranchType::Remote)
-                .expect("Failed to get the main branch")
-                .get()
-                .peel_to_commit()
-                .expect("Failed to get the commit on main branch")
-                .id(),
-        )
-        .expect("Failed to get the merge base of the current branch and main");
+                .merge_base(
+                    commit.id(),
+                    repository
+                        .find_branch("origin/main", BranchType::Remote)
+                        .expect("Failed to get the main branch")
+                        .get()
+                        .peel_to_commit()
+                        .expect("Failed to get the commit on main branch")
+                        .id(),
+                )
+                .expect("Failed to get the merge base of the current branch and main")
+        },
+        |raw_ref| {
+            repository
+                .find_commit(
+                    repository
+                        .revparse(raw_ref)
+                        .expect("Invalid commit sha")
+                        .from()
+                        .expect("No \"to\" for the specified reference")
+                        .id(),
+                )
+                .expect("Failed to find the supplied commit")
+                .id()
+        },
+    );
 
     loop {
         let message = commit.message().expect("No commit message").to_string();
@@ -62,7 +81,9 @@ fn main() {
 
         println!();
 
-        commit = commit.parent(0).expect("Failed to get commit parent");
+        commit = commit
+            .parent(commit.parent_count() - 1)
+            .expect("Failed to get commit parent");
     }
 }
 
