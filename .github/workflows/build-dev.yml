@@ -12,10 +12,12 @@ jobs:
             - uses: actions-rs/toolchain@v1
               with:
                 toolchain: stable
+                default: true
 
             - uses: actions-rs/toolchain@v1
               with:
                 toolchain: nightly
+                default: false
 
             - uses: actions/cache@v2
               with:
