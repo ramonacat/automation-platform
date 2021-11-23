@@ -38,7 +38,7 @@ return new BuildDefinition(
                 'build',
                 new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
                 array_merge(
-                    $rustTargetGenerator->targetIds(),
+                    $rustTargetGenerator->buildTargetIds(),
                     [new TargetId(__DIR__, 'build-images')]
                 )
             ),

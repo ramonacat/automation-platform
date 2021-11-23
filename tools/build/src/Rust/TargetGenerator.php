@@ -37,7 +37,7 @@ final class TargetGenerator
     /**
      * @return non-empty-list<TargetId>
      */
-    public function targetIds(): array
+    public function buildTargetIds(): array
     {
         return array_map(fn (Target $t) => new TargetId($this->projectDirectory, $t->name()), $this->targets);
     }
