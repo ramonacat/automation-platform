@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PhpCsFixer\Fixer\ClassNotation\FinalClassFixer;
 use SlevomatCodingStandard\Sniffs\Namespaces\AlphabeticallySortedUsesSniff;
 use SlevomatCodingStandard\Sniffs\Namespaces\ReferenceUsedNamesOnlySniff;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -32,4 +33,5 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $containerConfigurator->import(SetList::CLEAN_CODE);
     $containerConfigurator->import(SetList::STRICT);
     $services->remove(AlphabeticallySortedUsesSniff::class);
+    $services->set(FinalClassFixer::class);
 };
