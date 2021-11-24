@@ -32,4 +32,13 @@ final class LocatorTest extends TestCase
             $locator->locateConfigurationFile();
         });
     }
+
+    public function testTryLocateWillReturnNullIfTheConfigurationFileDoesNotExist(): void
+    {
+        $locator = new Locator();
+
+        $result = WorkingDirectory::in(sys_get_temp_dir(), static fn () => $locator->tryLocateConfigurationFile());
+
+        self::assertNull($result);
+    }
 }

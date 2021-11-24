@@ -15,7 +15,7 @@ final class ContextFactory
     {
         $configuration = $configuration ?? Configuration::fromJsonString('{}');
         $artifactCollector = $artifactCollector ?? new Collector();
-        $buildFacts = $buildFacts ?? new BuildFacts('test', false);
+        $buildFacts = $buildFacts ?? new BuildFacts('test', false, 1, 1);
 
         return new Context($configuration, $artifactCollector, $buildFacts);
     }

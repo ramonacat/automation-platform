@@ -68,6 +68,9 @@ jobs:
             - working-directory: tools/build/
               run: composer install
 
+            - working-directory: tools/machine-info
+              run: cargo build --release
+
             - run: php tools/build/bin/build.php --environment=github-actions build
 
             -

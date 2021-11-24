@@ -11,7 +11,7 @@ final class BuildFactsTest extends TestCase
 {
     public function testHasBuildId(): void
     {
-        $facts = new BuildFacts('test', false);
+        $facts = new BuildFacts('test', false, 1, 1);
 
         self::assertSame('test', $facts->buildId());
     }

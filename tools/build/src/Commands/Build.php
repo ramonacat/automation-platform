@@ -6,6 +6,7 @@ namespace Ramona\AutomationPlatformLibBuild\Commands;
 
 use function assert;
 use Bramus\Ansi\Ansi;
+use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
 use Bramus\Ansi\Writers\StreamWriter;
 use function count;
 use Exception;
@@ -28,6 +29,7 @@ use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Configuration\Locator;
 use Ramona\AutomationPlatformLibBuild\DefaultBuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
+use Ramona\AutomationPlatformLibBuild\MachineInfo;
 use Ramona\AutomationPlatformLibBuild\TargetDoesNotExist;
 use Ramona\AutomationPlatformLibBuild\TargetId;
 use function Safe\getcwd;
@@ -45,10 +47,14 @@ final class Build
 
     public function __construct()
     {
+        $machineInfo = new MachineInfo();
+
         $this->buildFacts = new BuildFacts(
             // todo use something like git tag as the ID
             str_replace('.', '', uniqid('', true)),
-            getenv('CI') !== false
+            getenv('CI') !== false,
+            $machineInfo->logicalCores(),
+            $machineInfo->physicalCores(),
         );
 
         $this->workingDirectory = realpath(getcwd());
@@ -85,6 +91,8 @@ final class Build
             $configuration,
             $this->buildFacts,
         );
+
+        $this->printBuildFacts();
 
         try {
             $result = $buildExecutor->executeTarget(new TargetId(getcwd(), $arguments[0]));
@@ -154,5 +162,27 @@ final class Build
             ->ansi
             ->text(sprintf('Usage: %s [action-name]%s', $executableName, PHP_EOL))
             ->text(sprintf('Supported actions: %s%s', implode(', ', $this->buildDefinitionsLoader->getActionNames($this->workingDirectory)), PHP_EOL));
+    }
+
+    private function printBuildFacts(): void
+    {
+        $this
+            ->ansi
+            ->color([SGR::COLOR_FG_CYAN_BRIGHT])
+            ->text('Build facts:')
+            ->text(PHP_EOL)
+            ->nostyle()
+            ->text('    CI: ')
+            ->text($this->buildFacts->inPipeline() ? '✔' : '❌')
+            ->text(PHP_EOL)
+            ->text('    Build ID: ')
+            ->text($this->buildFacts->buildId())
+            ->text(PHP_EOL)
+            ->text('    Physical cores: ')
+            ->text((string)$this->buildFacts->physicalCores())
+            ->text(PHP_EOL)
+            ->text('    Logical cores: ')
+            ->text((string)$this->buildFacts->logicalCores())
+            ->text(PHP_EOL);
     }
 }

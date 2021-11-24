@@ -49,7 +49,7 @@ final class BuildExecutorTest extends TestCase
             $this->buildOutput,
             $this->buildDefinitionsLoader,
             Configuration::fromJsonString('{}'),
-            new BuildFacts('test', false)
+            new BuildFacts('test', false, 1, 1)
         );
     }
 

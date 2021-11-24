@@ -17,7 +17,7 @@ final class ContextTest extends TestCase
         $context = new Context(
             $config = Configuration::fromJsonString('{}'),
             new Collector(),
-            new BuildFacts('test', false)
+            $this->createBuildFacts()
         );
 
         self::assertSame($config, $context->configuration());
@@ -27,7 +27,7 @@ final class ContextTest extends TestCase
         $context = new Context(
             Configuration::fromJsonString('{}'),
             $collector = new Collector(),
-            new BuildFacts('test', false)
+            $this->createBuildFacts()
         );
 
         self::assertSame($collector, $context->artifactCollector());
@@ -37,9 +37,14 @@ final class ContextTest extends TestCase
         $context = new Context(
             Configuration::fromJsonString('{}'),
             new Collector(),
-            $facts = new BuildFacts('test', false)
+            $facts = $this->createBuildFacts()
         );
 
         self::assertSame($facts, $context->buildFacts());
+    }
+
+    private function createBuildFacts(): BuildFacts
+    {
+        return new BuildFacts('test', false, 1, 1);
     }
 }
