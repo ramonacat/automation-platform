@@ -21,6 +21,10 @@ updates:
     schedule:
       interval: "daily"
   - package-ecosystem: "cargo"
+    directory: "tools/machine-info/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "cargo"
     directory: "services/directory-watcher/"
     schedule:
       interval: "daily"

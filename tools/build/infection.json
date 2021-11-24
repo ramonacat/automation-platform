@@ -17,7 +17,8 @@
             "Artifacts/LogOnlyPublisher.php",
             "Actions/BuildDockerImage.php",
             "Actions/KustomizeApply.php",
-            "Commands/Build.php"
+            "Commands/Build.php",
+            "MachineInfo.php"
         ]
     },
     "mutators": {

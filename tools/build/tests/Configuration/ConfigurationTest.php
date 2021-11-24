@@ -30,6 +30,7 @@ final class ConfigurationTest extends TestCase
         $configuration = Configuration::fromJsonString('{}');
 
         $this->expectException(InvalidConfiguration::class);
+        $this->expectExceptionMessage('The "build" key is missing');
         $configuration->getSingleBuildValue('$.a');
     }
 
@@ -111,5 +112,14 @@ final class ConfigurationTest extends TestCase
         $configuration = $configuration->merge(Configuration::fromJsonString('{"runtime": {"a": 2}}'));
 
         self::assertSame(['a' => 2], $configuration->getRuntimeConfiguration());
+    }
+
+    public function testWillKeepNonOverridenRuntimeKeys(): void
+    {
+        $configuration = Configuration::fromJsonString('{"runtime": {"a": 1, "b": 3}}');
+        $configuration = $configuration->merge(Configuration::fromJsonString("{}"));
+        $configuration = $configuration->merge(Configuration::fromJsonString('{"runtime": {"a": 2}}'));
+
+        self::assertSame(['a' => 2, 'b' => 3], $configuration->getRuntimeConfiguration());
     }
 }

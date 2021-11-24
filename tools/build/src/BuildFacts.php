@@ -6,7 +6,7 @@ namespace Ramona\AutomationPlatformLibBuild;
 
 final class BuildFacts
 {
-    public function __construct(private string $buildId, private bool $inPipeline)
+    public function __construct(private string $buildId, private bool $inPipeline, private int $logicalCores, private int $physicalCores)
     {
     }
 
@@ -18,5 +18,15 @@ final class BuildFacts
     public function inPipeline(): bool
     {
         return $this->inPipeline;
+    }
+
+    public function logicalCores(): int
+    {
+        return $this->logicalCores;
+    }
+
+    public function physicalCores(): int
+    {
+        return $this->physicalCores;
     }
 }

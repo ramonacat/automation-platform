@@ -16,7 +16,7 @@ final class LogFormatterTest extends TestCase
 {
     private function createBuildFacts(): BuildFacts
     {
-        return new BuildFacts('test', false);
+        return new BuildFacts('test', false, 1, 1);
     }
 
     public function testCanFormatARecordWithEmptyContext(): void
@@ -146,7 +146,7 @@ final class LogFormatterTest extends TestCase
             'message' => 'test test test'
         ];
 
-        $formatter = new LogFormatter(new BuildFacts('test', true));
+        $formatter = new LogFormatter(new BuildFacts('test', true, 1, 1));
         $formatted = $formatter->format($record);
 
         self::assertEquals(
