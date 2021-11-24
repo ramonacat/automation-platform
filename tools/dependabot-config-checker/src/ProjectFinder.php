@@ -9,7 +9,6 @@ use const DIRECTORY_SEPARATOR;
 use function dirname;
 use function glob;
 use const GLOB_ONLYDIR;
-use function is_dir;
 use function ltrim;
 use function Safe\realpath;
 use function str_replace;
@@ -43,11 +42,6 @@ final class ProjectFinder
 
             if ($entry !== '/') {
                 $entry = ltrim($entry, '/');
-            }
-
-            // todo this is a temporary solution, in the future we should include all dirs that have a Dockerfile
-            if (is_dir($tool . DIRECTORY_SEPARATOR . 'docker')) {
-                $result[] = $entry . 'docker/';
             }
 
             $result[] = $entry;
