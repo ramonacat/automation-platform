@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild;
+namespace Ramona\AutomationPlatformLibBuild\Definition;
 
 use function array_map;
 use function array_search;
+use Ramona\AutomationPlatformLibBuild\Target;
+use Ramona\AutomationPlatformLibBuild\TargetDoesNotExist;
+use Ramona\AutomationPlatformLibBuild\TargetId;
 use function Safe\getcwd;
 
 final class BuildDefinition

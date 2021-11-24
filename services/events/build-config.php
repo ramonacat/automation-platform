@@ -10,9 +10,11 @@ use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
 use Ramona\AutomationPlatformLibBuild\Target;
 use Ramona\AutomationPlatformLibBuild\TargetId;
 
-$rustTargetGenerator = new TargetGenerator(__DIR__);
 
-$override = static fn(Context $context):string => <<<EOT
+return static function (\Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder $builder) {
+    $rustTargetGenerator = new TargetGenerator(__DIR__);
+
+    $override = static fn(Context $context):string => <<<EOT
         apiVersion: apps/v1
         kind: Deployment
         metadata:
@@ -31,32 +33,38 @@ $override = static fn(Context $context):string => <<<EOT
                   image: {$context->artifactCollector()->getByKey(__DIR__, 'image-service')->name()}
         EOT;
 
-return new BuildDefinition(
-    array_merge(
-        [
-            new Target(
-                'build',
-                new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
-                array_merge(
-                    $rustTargetGenerator->buildTargetIds(),
-                    [new TargetId(__DIR__, 'build-images')]
-                )
-            ),
-            new Target(
-                'build-images',
-                new Group(
-                    [
-                        new BuildDockerImage('image-service', 'automation-platform-svc-events', '../../', 'docker/Dockerfile'),
-                        new BuildDockerImage('image-migrations', 'ap-svc-events-migrations', '.', 'docker/migrations.Dockerfile'),
-                    ]
-                )
-            ),
-            new Target(
-                'deploy',
-                new KustomizeApply('k8s/overlays/dev'),
-                [new TargetId(__DIR__, 'build')]
-            ),
-        ],
-        $rustTargetGenerator->targets()
-    )
-);
+    foreach ($rustTargetGenerator->targets() as $target) {
+        $builder->addTarget($target);
+    }
+
+    $builder->addTarget(
+        new Target(
+            'build',
+            new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
+            array_merge(
+                $rustTargetGenerator->buildTargetIds(),
+                [new TargetId(__DIR__, 'build-images')]
+            )
+        )
+    );
+
+    $builder->addTarget(
+        new Target(
+            'build-images',
+            new Group(
+                [
+                    new BuildDockerImage('image-service', 'automation-platform-svc-events', '../../', 'docker/Dockerfile'),
+                    new BuildDockerImage('image-migrations', 'ap-svc-events-migrations', '.', 'docker/migrations.Dockerfile'),
+                ]
+            )
+        )
+    );
+
+    $builder->addTarget(
+        new Target(
+            'deploy',
+            new KustomizeApply('k8s/overlays/dev'),
+            [new TargetId(__DIR__, 'build')]
+        )
+    );
+};
