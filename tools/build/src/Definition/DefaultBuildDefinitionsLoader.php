@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild;
+namespace Ramona\AutomationPlatformLibBuild\Definition;
 
+use Closure;
 use const DIRECTORY_SEPARATOR;
+use Ramona\AutomationPlatformLibBuild\InvalidBuildDefinition;
+use Ramona\AutomationPlatformLibBuild\Target;
+use Ramona\AutomationPlatformLibBuild\TargetId;
 use function Safe\realpath;
 
 final class DefaultBuildDefinitionsLoader implements BuildDefinitionsLoader
@@ -18,11 +22,13 @@ final class DefaultBuildDefinitionsLoader implements BuildDefinitionsLoader
         /** @psalm-suppress UnresolvableInclude */
         $buildDefinition = require $path . DIRECTORY_SEPARATOR . 'build-config.php';
 
-        if (!$buildDefinition instanceof BuildDefinition) {
+        if (!$buildDefinition instanceof Closure) {
             throw InvalidBuildDefinition::atPath($path);
         }
 
-        $this->definitions[$path] = $buildDefinition;
+        $buildDefinitionBuilder = new BuildDefinitionBuilder();
+        ($buildDefinition)($buildDefinitionBuilder);
+        $this->definitions[$path] = $buildDefinitionBuilder->build();
     }
 
     private function get(string $path): BuildDefinition

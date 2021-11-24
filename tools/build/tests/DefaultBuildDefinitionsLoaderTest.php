@@ -6,7 +6,7 @@ namespace Tests\Ramona\AutomationPlatformLibBuild;
 
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
-use Ramona\AutomationPlatformLibBuild\DefaultBuildDefinitionsLoader;
+use Ramona\AutomationPlatformLibBuild\Definition\DefaultBuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\InvalidBuildDefinition;
 use Ramona\AutomationPlatformLibBuild\Target;
 use Ramona\AutomationPlatformLibBuild\TargetId;

@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild;
+namespace Ramona\AutomationPlatformLibBuild\Definition;
+
+use Ramona\AutomationPlatformLibBuild\Target;
+use Ramona\AutomationPlatformLibBuild\TargetId;
 
 interface BuildDefinitionsLoader
 {
