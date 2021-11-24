@@ -34,7 +34,11 @@ updates:
       interval: "daily"
 
   - package-ecosystem: "docker"
-    directory: "/"
+    directory: "services/directory-watcher/docker/"
     schedule:
       interval: "daily"
 
+  - package-ecosystem: "docker"
+    directory: "services/events/docker/"
+    schedule:
+      interval: "daily"
