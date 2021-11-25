@@ -25,6 +25,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->property('allowFallbackGlobalConstants', false);
 
     $parameters = $containerConfigurator->parameters();
+    $parameters->set(Option::LINE_ENDING, "\n");
     $parameters->set(Option::PATHS, [
         'build-config.php',
         'ecs.php',
