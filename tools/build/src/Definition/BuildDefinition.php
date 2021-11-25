@@ -6,9 +6,9 @@ namespace Ramona\AutomationPlatformLibBuild\Definition;
 
 use function array_map;
 use function array_search;
-use Ramona\AutomationPlatformLibBuild\Target;
-use Ramona\AutomationPlatformLibBuild\TargetDoesNotExist;
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetDoesNotExist;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use function Safe\getcwd;
 
 final class BuildDefinition

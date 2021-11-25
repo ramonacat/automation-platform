@@ -3,14 +3,12 @@
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
 use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
-use Ramona\AutomationPlatformLibBuild\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\Target;
 
 return static function (BuildDefinitionBuilder $builder) {
     $rustTargetGenerator = new TargetGenerator(__DIR__);
 
-    foreach ($rustTargetGenerator->targets() as $target) {
-        $builder->addTarget($target);
-    }
+    $builder->addTargetGenerator($rustTargetGenerator);
 
     $builder->addTarget(
         new Target(

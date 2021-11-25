@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild;
+namespace Ramona\AutomationPlatformLibBuild\Targets;
 
+use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
+use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\Context;
 
 final class Target
 {

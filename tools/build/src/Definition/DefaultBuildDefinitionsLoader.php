@@ -6,15 +6,21 @@ namespace Ramona\AutomationPlatformLibBuild\Definition;
 
 use Closure;
 use const DIRECTORY_SEPARATOR;
+use Ramona\AutomationPlatformLibBuild\BuildFacts;
+use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\InvalidBuildDefinition;
-use Ramona\AutomationPlatformLibBuild\Target;
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use function Safe\realpath;
 
 final class DefaultBuildDefinitionsLoader implements BuildDefinitionsLoader
 {
     /** @var array<string, BuildDefinition> */
     private array $definitions = [];
+
+    public function __construct(private BuildFacts $buildFacts, private Configuration $configuration)
+    {
+    }
 
     private function load(string $path): void
     {
@@ -28,7 +34,7 @@ final class DefaultBuildDefinitionsLoader implements BuildDefinitionsLoader
 
         $buildDefinitionBuilder = new BuildDefinitionBuilder();
         ($buildDefinition)($buildDefinitionBuilder);
-        $this->definitions[$path] = $buildDefinitionBuilder->build();
+        $this->definitions[$path] = $buildDefinitionBuilder->build($this->buildFacts, $this->configuration);
     }
 
     private function get(string $path): BuildDefinition
