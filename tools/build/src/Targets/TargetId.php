@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild;
+namespace Ramona\AutomationPlatformLibBuild\Targets;
 
 use function Safe\realpath;
 

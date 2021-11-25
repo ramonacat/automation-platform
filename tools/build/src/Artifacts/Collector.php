@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Artifacts;
 
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 final class Collector
 {

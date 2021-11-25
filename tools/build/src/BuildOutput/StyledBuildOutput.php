@@ -13,7 +13,7 @@ use function implode;
 use const PHP_EOL;
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use function sprintf;
 
 final class StyledBuildOutput implements ActionOutput, BuildOutput

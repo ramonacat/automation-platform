@@ -30,8 +30,8 @@ use Ramona\AutomationPlatformLibBuild\Definition\BuildExecutor;
 use Ramona\AutomationPlatformLibBuild\Definition\DefaultBuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use Ramona\AutomationPlatformLibBuild\MachineInfo;
-use Ramona\AutomationPlatformLibBuild\TargetDoesNotExist;
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetDoesNotExist;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use function Safe\getcwd;
 use function Safe\realpath;
 use function sprintf;
@@ -43,7 +43,6 @@ final class Build
     private BuildFacts $buildFacts;
     private string $workingDirectory;
     private Ansi $ansi;
-    private BuildDefinitionsLoader $buildDefinitionsLoader;
 
     public function __construct()
     {
@@ -59,7 +58,6 @@ final class Build
 
         $this->workingDirectory = realpath(getcwd());
         $this->ansi = new Ansi(new StreamWriter('php://stdout'));
-        $this->buildDefinitionsLoader = new DefaultBuildDefinitionsLoader();
     }
 
     /**
@@ -68,12 +66,6 @@ final class Build
      */
     public function __invoke(string $executableName, array $options, array $arguments): int
     {
-        if (count($arguments) !== 1) {
-            $this->printUsage($executableName);
-
-            return 1;
-        }
-
         $configurationLocator = new Locator();
         $configuration = Configuration::fromFile($configurationLocator->locateConfigurationFile());
 
@@ -84,10 +76,18 @@ final class Build
             $configuration = $configuration->merge(Configuration::fromFile($environmentConfigurationFile));
         }
 
+        $buildDefinitionsLoader = new DefaultBuildDefinitionsLoader($this->buildFacts, $configuration);
+
+        if (count($arguments) !== 1) {
+            $this->printUsage($executableName, $buildDefinitionsLoader);
+
+            return 1;
+        }
+
         $buildExecutor = new BuildExecutor(
             $this->createFileLogger(),
             $this->buildFacts->inPipeline() ? new CIBuildOutput($this->ansi) : new StyledBuildOutput($this->ansi),
-            $this->buildDefinitionsLoader,
+            $buildDefinitionsLoader,
             $configuration,
             $this->buildFacts,
         );
@@ -156,12 +156,12 @@ final class Build
         }
     }
 
-    private function printUsage(string $executableName): void
+    private function printUsage(string $executableName, BuildDefinitionsLoader $buildDefinitionsLoader): void
     {
         $this
             ->ansi
             ->text(sprintf('Usage: %s [action-name]%s', $executableName, PHP_EOL))
-            ->text(sprintf('Supported actions: %s%s', implode(', ', $this->buildDefinitionsLoader->getActionNames($this->workingDirectory)), PHP_EOL));
+            ->text(sprintf('Supported actions: %s%s', implode(', ', $buildDefinitionsLoader->getActionNames($this->workingDirectory)), PHP_EOL));
     }
 
     private function printBuildFacts(): void

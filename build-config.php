@@ -1,11 +1,9 @@
 <?php
 
-use Ramona\AutomationPlatformLibBuild\Actions\ActionGroup;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
-use Ramona\AutomationPlatformLibBuild\BuildDefinition;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
-use Ramona\AutomationPlatformLibBuild\Target;
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 return static function (BuildDefinitionBuilder $builder) {
     $services = glob(__DIR__ . '/services/*');
@@ -17,7 +15,7 @@ return static function (BuildDefinitionBuilder $builder) {
             'build',
             new NoOp(),
             array_map(
-                fn($path) => new TargetId($path, 'build'),
+                fn(string $path) => new TargetId($path, 'build'),
                 array_merge($tools, $libraries, $services)
             )
         )
@@ -30,7 +28,7 @@ return static function (BuildDefinitionBuilder $builder) {
             array_merge(
                 [new TargetId(__DIR__, 'build')],
                 array_map(
-                    fn($path) => new TargetId($path, 'deploy'),
+                    fn(string $path) => new TargetId($path, 'deploy'),
                     $services
                 )
             )

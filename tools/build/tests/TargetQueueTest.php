@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Ramona\AutomationPlatformLibBuild;
 
 use PHPUnit\Framework\TestCase;
-use Ramona\AutomationPlatformLibBuild\TargetId;
-use Ramona\AutomationPlatformLibBuild\TargetQueue;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetQueue;
 use function Safe\realpath;
 
 final class TargetQueueTest extends TestCase

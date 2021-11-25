@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Definition;
 
-use Ramona\AutomationPlatformLibBuild\Target;
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 interface BuildDefinitionsLoader
 {

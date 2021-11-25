@@ -6,7 +6,7 @@ namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
 
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 interface BuildOutput extends ActionOutput
 {
