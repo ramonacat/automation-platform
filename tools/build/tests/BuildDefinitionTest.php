@@ -7,8 +7,8 @@ namespace Tests\Ramona\AutomationPlatformLibBuild;
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinition;
-use Ramona\AutomationPlatformLibBuild\Target;
-use Ramona\AutomationPlatformLibBuild\TargetDoesNotExist;
+use Ramona\AutomationPlatformLibBuild\Targets\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetDoesNotExist;
 use function Safe\getcwd;
 use function sprintf;
 

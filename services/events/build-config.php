@@ -4,14 +4,14 @@ use Ramona\AutomationPlatformLibBuild\Actions\BuildDockerImage;
 use Ramona\AutomationPlatformLibBuild\Actions\Group;
 use Ramona\AutomationPlatformLibBuild\Actions\KustomizeApply;
 use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
-use Ramona\AutomationPlatformLibBuild\BuildDefinition;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
 use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
-use Ramona\AutomationPlatformLibBuild\Target;
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 
-return static function (\Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder $builder) {
+return static function (BuildDefinitionBuilder $builder) {
     $rustTargetGenerator = new TargetGenerator(__DIR__);
 
     $override = static fn(Context $context):string => <<<EOT
@@ -33,9 +33,7 @@ return static function (\Ramona\AutomationPlatformLibBuild\Definition\BuildDefin
                   image: {$context->artifactCollector()->getByKey(__DIR__, 'image-service')->name()}
         EOT;
 
-    foreach ($rustTargetGenerator->targets() as $target) {
-        $builder->addTarget($target);
-    }
+    $builder->addTargetGenerator($rustTargetGenerator);
 
     $builder->addTarget(
         new Target(

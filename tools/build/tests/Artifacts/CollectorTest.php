@@ -9,7 +9,7 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\ArtifactKeyAlreadyUsed;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ArtifactNotFound;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 final class CollectorTest extends TestCase
 {

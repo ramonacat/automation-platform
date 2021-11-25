@@ -6,19 +6,23 @@ namespace Ramona\AutomationPlatformLibBuild\PHP;
 
 use function array_filter;
 use function array_map;
+use function array_merge;
 use function array_values;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
-use Ramona\AutomationPlatformLibBuild\Target;
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\BuildFacts;
+use Ramona\AutomationPlatformLibBuild\Configuration\Configuration as TargetConfiguration;
+use Ramona\AutomationPlatformLibBuild\Targets\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetGenerator as TargetGeneratorInterface;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
-final class TargetGenerator
+final class TargetGenerator implements TargetGeneratorInterface
 {
     /**
      * @var non-empty-list<Target>
      */
     private array $targets;
 
-    public function __construct(private string $projectDirectory, Configuration $configuration)
+    public function __construct(private string $projectDirectory, private Configuration $configuration)
     {
         $this->targets = [
             new Target('php-type-check', new RunProcess(['php', 'vendor/bin/psalm'])),
@@ -28,30 +32,27 @@ final class TargetGenerator
             new Target('php-cs-fix', new RunProcess(['php', 'vendor/bin/ecs', '--fix'])),
 
             new Target('php-tests-unit', new RunProcess(['php', 'vendor/bin/phpunit'])),
-            new Target(
-                'php-tests-mutation',
-                new RunProcess(
-                    [
-                        'php',
-                        'vendor/bin/infection',
-                        // todo set the number of parallel runs dynamically, once it's supported in build
-                        '-j6',
-                        '--min-msi=' . (string)$configuration->minMsi(),
-                        '--min-covered-msi=' . (string)$configuration->minCoveredMsi()
-                    ],
-                    timeoutSeconds: 120
-                ),
-                [new TargetId($this->projectDirectory, 'php-tests-unit')]
-            ),
+
         ];
     }
 
-    /**
-     * @return non-empty-list<Target>
-     */
-    public function targets(): array
+    public function targets(BuildFacts $facts, TargetConfiguration $configuration): array
     {
-        return $this->targets;
+        return array_merge($this->targets, [new Target(
+            'php-tests-mutation',
+            new RunProcess(
+                [
+                    'php',
+                    'vendor/bin/infection',
+                    // todo set the number of parallel runs dynamically, once it's supported in build
+                    '-j' . (string)$facts->logicalCores(),
+                    '--min-msi=' . (string)$this->configuration->minMsi(),
+                    '--min-covered-msi=' . (string)$this->configuration->minCoveredMsi()
+                ],
+                timeoutSeconds: 120
+            ),
+            [new TargetId($this->projectDirectory, 'php-tests-unit')]
+        )]);
     }
 
     /**

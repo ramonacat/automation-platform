@@ -6,10 +6,13 @@ namespace Ramona\AutomationPlatformLibBuild\Rust;
 
 use function array_map;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
-use Ramona\AutomationPlatformLibBuild\Target;
-use Ramona\AutomationPlatformLibBuild\TargetId;
+use Ramona\AutomationPlatformLibBuild\BuildFacts;
+use Ramona\AutomationPlatformLibBuild\Configuration\Configuration as TargetConfiguration;
+use Ramona\AutomationPlatformLibBuild\Targets\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetGenerator as TargetGeneratorInterface;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
-final class TargetGenerator
+final class TargetGenerator implements TargetGeneratorInterface
 {
     /**
      * @var non-empty-list<Target>
@@ -29,7 +32,7 @@ final class TargetGenerator
     /**
      * @return non-empty-list<Target>
      */
-    public function targets(): array
+    public function targets(BuildFacts $facts, TargetConfiguration $configuration): array
     {
         return $this->targets;
     }

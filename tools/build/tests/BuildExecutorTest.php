@@ -17,9 +17,9 @@ use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\CyclicDependencyFound;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildExecutor;
-use Ramona\AutomationPlatformLibBuild\Target;
-use Ramona\AutomationPlatformLibBuild\TargetId;
-use Ramona\AutomationPlatformLibBuild\TargetQueue;
+use Ramona\AutomationPlatformLibBuild\Targets\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetQueue;
 use RuntimeException;
 use function sprintf;
 
