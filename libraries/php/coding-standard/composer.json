@@ -6,7 +6,8 @@
   "require": {
     "php": "^8.0",
     "symplify/easy-coding-standard": "^9.4",
-    "slevomat/coding-standard": "^7.0"
+    "slevomat/coding-standard": "^7.0",
+    "roave/security-advisories": "dev-latest"
   },
   "require-dev": {
     "vimeo/psalm": "^4.13"
