@@ -2,12 +2,12 @@ use crate::events::{FileChanged, FileCreated, FileDeleted, FileMoved};
 use crate::file_status_store::FileStatusStore;
 use crate::mount::{Mount, PathInside};
 use crate::HandleEventsError;
-use chrono::{DateTime, Utc};
 use notify::DebouncedEvent;
 use platform::events::EventSender;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
+use time::OffsetDateTime;
 use tokio::sync::Mutex;
 
 pub struct FilesystemEventHandler<'a, T: EventSender + Sync + Send> {
@@ -114,9 +114,9 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
         Ok(())
     }
 
-    fn modified_date(x: PathBuf) -> DateTime<Utc> {
+    fn modified_date(x: PathBuf) -> OffsetDateTime {
         // todo do not panic here
-        DateTime::from(std::fs::metadata(x).unwrap().modified().unwrap())
+        OffsetDateTime::from(std::fs::metadata(x).unwrap().modified().unwrap())
     }
 }
 
@@ -127,7 +127,7 @@ mod tests {
     use platform::events::{Error, Event};
     use serde::Serialize;
     use serde_json::{to_value, Value};
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     struct MockEventSender {
         events: Vec<Value>,
@@ -169,7 +169,7 @@ mod tests {
         async fn sync(
             &mut self,
             _path: &PathInside<'_>,
-            _modified_at: DateTime<Utc>,
+            _modified_at: OffsetDateTime,
         ) -> Result<FileStatusSyncResult, crate::file_status_store::Error> {
             Ok(self.sync_result)
         }
@@ -203,7 +203,7 @@ mod tests {
 
     #[tokio::test]
     async fn can_handle_file_creation() {
-        let temp = TempDir::new("tmp").unwrap();
+        let temp = TempDir::new().unwrap();
         let events = setup(
             &temp,
             DebouncedEvent::Create(temp.path().join("b/1")),
@@ -219,7 +219,7 @@ mod tests {
 
     #[tokio::test]
     async fn can_handle_file_change() {
-        let temp = TempDir::new("tmp").unwrap();
+        let temp = TempDir::new().unwrap();
         let events = setup(
             &temp,
             DebouncedEvent::Write(temp.path().join("b/1")),
@@ -235,7 +235,7 @@ mod tests {
 
     #[tokio::test]
     async fn can_handle_file_removal() {
-        let temp = TempDir::new("tmp").unwrap();
+        let temp = TempDir::new().unwrap();
         let events = setup(
             &temp,
             DebouncedEvent::Remove(temp.path().join("b/1")),
@@ -251,7 +251,7 @@ mod tests {
 
     #[tokio::test]
     async fn can_handle_file_rename() {
-        let temp = TempDir::new("tmp").unwrap();
+        let temp = TempDir::new().unwrap();
         let events = setup(
             &temp,
             DebouncedEvent::Rename(temp.path().join("b/0"), temp.path().join("b/1")),

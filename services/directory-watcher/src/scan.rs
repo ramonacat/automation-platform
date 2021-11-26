@@ -2,11 +2,11 @@ use crate::events::{FileChanged, FileCreated};
 use crate::file_status_store::{FileStatusStore, FileStatusSyncResult};
 use crate::mount::{Mount, PathInside};
 use async_walkdir::{DirEntry, WalkDir};
-use chrono::DateTime;
 use futures_lite::stream::StreamExt;
 use platform::events::EventSender;
 use std::fs::Metadata;
 use std::sync::Arc;
+use time::OffsetDateTime;
 use tokio::sync::Mutex;
 
 #[derive(Error, Debug)]
@@ -77,7 +77,10 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
             .file_status_store
             .lock()
             .await
-            .sync(&mount_relative_path, DateTime::from(metadata.modified()?))
+            .sync(
+                &mount_relative_path,
+                OffsetDateTime::from(metadata.modified()?),
+            )
             .await?;
 
         info!("Found file: {} ({:?})", path.to_string_lossy(), sync_status);
@@ -106,12 +109,10 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Utc;
     use platform::events::Event;
     use serde::Serialize;
     use serde_json::{to_value, Value};
     use std::path::PathBuf;
-    use tempdir::TempDir;
 
     struct MockEventSender {
         events: Vec<Value>,
@@ -149,7 +150,7 @@ mod tests {
         async fn sync(
             &mut self,
             path: &PathInside<'_>,
-            _modified_at: DateTime<Utc>,
+            _modified_at: OffsetDateTime,
         ) -> Result<FileStatusSyncResult, crate::file_status_store::Error> {
             if path.path().ends_with("a/b") {
                 Ok(FileStatusSyncResult::Created)
@@ -165,7 +166,7 @@ mod tests {
     pub async fn will_mark_preexisting_file_as_not_changed() {
         let sender = Arc::new(Mutex::new(MockEventSender { events: vec![] }));
         let mut scanner = Scanner::new(sender.clone(), Arc::new(Mutex::new(MockFileStatusStore)));
-        let tempdir = TempDir::new("tmp").unwrap();
+        let tempdir = tempfile::TempDir::new().unwrap();
         let temp = tempdir.path();
 
         std::fs::create_dir(temp.join("a")).unwrap();

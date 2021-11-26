@@ -22,9 +22,6 @@ mod mount;
 mod scan;
 
 #[macro_use]
-extern crate serde;
-
-#[macro_use]
 extern crate thiserror;
 
 #[macro_use]

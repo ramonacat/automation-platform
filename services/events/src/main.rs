@@ -10,15 +10,15 @@ use tracing::{error, info};
 
 use tokio_postgres::Client;
 
-use chrono::{DateTime, Utc};
 use jsonschema::{ErrorIterator, JSONSchema, ValidationError};
 use platform::events::{Response, Status};
 use postgres_native_tls::MakeTlsConnector;
 use serde_json::Value;
 use std::fmt::{Debug, Formatter};
-use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
+use time::format_description::well_known::Rfc3339;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[tokio::main]
@@ -159,8 +159,8 @@ enum MessageHandlingError {
     InvalidKeyType(String),
     #[error("Invalid UUID: {0}")]
     InvalidUuid(#[from] uuid::Error),
-    #[error("Invalid date/time: {0}")]
-    InvalidDateTime(#[from] chrono::ParseError),
+    #[error("Invalid Date/Time: {0}")]
+    InvalidDateTime(#[from] time::error::Parse),
 }
 
 impl From<jsonschema::ErrorIterator<'_>> for MessageHandlingError {
@@ -200,9 +200,12 @@ impl<'a> EventsClient<'a> {
         while let Some(line) = lines.next_line().await? {
             let response = match Self::handle_message(line, self.postgres, &self.schema).await {
                 Ok(_) => Response { status: Status::Ok },
-                Err(_) => Response {
-                    status: Status::Failed,
-                },
+                Err(e) => {
+                    error!("Request processing failed: {:?}", e);
+                    Response {
+                        status: Status::Failed,
+                    }
+                }
             };
             info!("Sending response: {:?}", response);
             writer.write_all(&serde_json::to_vec(&response)?).await?;
@@ -240,7 +243,7 @@ impl<'a> EventsClient<'a> {
                                 MessageHandlingError::InvalidKeyType(ID_FIELD.to_string())
                             })?,
                     )?,
-                    &DateTime::<Utc>::from_str(
+                    &OffsetDateTime::parse(
                         parsed
                             .get(CREATED_TIMESTAMP_FIELD)
                             .ok_or_else(|| {
@@ -254,6 +257,7 @@ impl<'a> EventsClient<'a> {
                                     CREATED_TIMESTAMP_FIELD.to_string(),
                                 )
                             })?,
+                        &Rfc3339,
                     )?,
                     &parsed
                         .get(TYPE_FIELD)
