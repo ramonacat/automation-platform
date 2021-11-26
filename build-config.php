@@ -15,7 +15,18 @@ return static function (BuildDefinitionBuilder $builder) {
             'build',
             new NoOp(),
             array_map(
-                fn(string $path) => new TargetId($path, 'build'),
+                static fn(string $path) => new TargetId($path, 'build'),
+                array_merge($tools, $libraries, $services)
+            )
+        )
+    );
+
+    $builder->addTarget(
+        new Target(
+            'fix',
+            new NoOp(),
+            array_map(
+                static fn(string $path) => new TargetId($path, 'fix'),
                 array_merge($tools, $libraries, $services)
             )
         )
@@ -28,7 +39,7 @@ return static function (BuildDefinitionBuilder $builder) {
             array_merge(
                 [new TargetId(__DIR__, 'build')],
                 array_map(
-                    fn(string $path) => new TargetId($path, 'deploy'),
+                    static fn(string $path) => new TargetId($path, 'deploy'),
                     $services
                 )
             )

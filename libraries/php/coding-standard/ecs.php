@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use PhpCsFixer\Fixer\ClassNotation\FinalClassFixer;
+use PhpCsFixer\Fixer\ControlStructure\SwitchCaseSemicolonToColonFixer;
 use SlevomatCodingStandard\Sniffs\Namespaces\AlphabeticallySortedUsesSniff;
 use SlevomatCodingStandard\Sniffs\Namespaces\ReferenceUsedNamesOnlySniff;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -24,6 +25,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->property('allowFallbackGlobalFunctions', false)
         ->property('allowFallbackGlobalConstants', false);
 
+    $services->set(FinalClassFixer::class);
+
     $parameters = $containerConfigurator->parameters();
     $parameters->set(Option::LINE_ENDING, "\n");
     $parameters->set(Option::PATHS, [
@@ -33,6 +36,10 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $containerConfigurator->import(SetList::PSR_12);
     $containerConfigurator->import(SetList::CLEAN_CODE);
     $containerConfigurator->import(SetList::STRICT);
+
+    // This one conflicts with something else and results in the usings being never fixable
     $services->remove(AlphabeticallySortedUsesSniff::class);
-    $services->set(FinalClassFixer::class);
+
+    // This one is bizzare and also breaks enums
+    $services->remove(SwitchCaseSemicolonToColonFixer::class);
 };
