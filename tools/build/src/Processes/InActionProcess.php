@@ -21,6 +21,8 @@ final class InActionProcess
     public function run(ActionOutput $output): bool
     {
         $process = new Process($this->command);
+        // todo nicely formatted time interval, once we have the infra for that
+        $output->pushSeparator('Running: ' . $process->getCommandLine() . ' with a timeout of ' . (string)$this->timeout . 's');
         $process->setTimeout($this->timeout);
         $process->start();
 
