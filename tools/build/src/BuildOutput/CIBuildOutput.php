@@ -17,6 +17,7 @@ final class CIBuildOutput implements BuildOutput
     private string $standardError = '';
     private int $targetCount = 0;
     private int $currentTarget = 0;
+    private bool $hadASeparator = false;
 
     public function __construct(private Ansi $ansi)
     {
@@ -32,6 +33,16 @@ final class CIBuildOutput implements BuildOutput
     {
         $this->writeWithColoredPrefix('[O]', [SGR::COLOR_FG_CYAN], $data);
         $this->standardOutput .= $data;
+    }
+
+    public function pushSeparator(string $name): void
+    {
+        if ($this->hadASeparator) {
+            $this->ansi->text('::endgroup::');
+        }
+
+        $this->ansi->text(PHP_EOL . '::group::' . $name . PHP_EOL);
+        $this->hadASeparator = true;
     }
 
     public function setTargetCount(int $count): void
@@ -50,6 +61,7 @@ final class CIBuildOutput implements BuildOutput
             ->nostyle();
 
         $this->currentTarget++;
+        $this->hadASeparator = false;
     }
 
     public function getCollectedStandardOutput(): string
@@ -64,6 +76,13 @@ final class CIBuildOutput implements BuildOutput
 
     public function finalizeTarget(TargetId $targetId, BuildActionResult $result): void
     {
+        if ($this->hadASeparator) {
+            $this
+                ->ansi
+                ->text(PHP_EOL)
+                ->text('::endgroup::')
+                ->text(PHP_EOL);
+        }
         $color = $result->hasSucceeded() ? [SGR::COLOR_FG_GREEN] : [SGR::COLOR_FG_RED];
         $message = $result->hasSucceeded() ? "succeeded" : "failed: " . ($result->getMessage() ?? '');
 

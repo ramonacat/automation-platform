@@ -20,6 +20,7 @@ final class StyledBuildOutput implements ActionOutput, BuildOutput
 {
     private string $standardOutput = '';
     private string $standardError = '';
+    private string $output = '';
     private int $outputsPrinted = 0;
     private ?int $totalTargets = null;
     private int $targetsExecuted = 0;
@@ -56,6 +57,7 @@ final class StyledBuildOutput implements ActionOutput, BuildOutput
     public function pushError(string $data): void
     {
         $this->standardError .= $data;
+        $this->output .= $data;
 
         $this->printOutputs();
     }
@@ -63,14 +65,20 @@ final class StyledBuildOutput implements ActionOutput, BuildOutput
     public function pushOutput(string $data): void
     {
         $this->standardOutput .= $data;
+        $this->output .= $data;
 
         $this->printOutputs();
     }
 
+    public function pushSeparator(string $name): void
+    {
+        // todo figure out how to make it styled
+        $this->output .= PHP_EOL . '--> ' . $name . PHP_EOL;
+    }
+
     private function printOutputs(): void
     {
-        $standardOutputLines = array_slice(explode("\n", $this->standardOutput), -5);
-        $standardErrorLines = array_slice(explode("\n", $this->standardError), -5);
+        $outputLines = array_slice(explode("\n", $this->output), -10);
 
         if ($this->outputsPrinted > 0) {
             $this
@@ -78,7 +86,7 @@ final class StyledBuildOutput implements ActionOutput, BuildOutput
                 ->cursorUp($this->outputsPrinted);
         }
 
-        $this->outputsPrinted = count($standardOutputLines) + count($standardErrorLines) + 2;
+        $this->outputsPrinted = count($outputLines);
 
         $this
             ->ansi
@@ -86,14 +94,15 @@ final class StyledBuildOutput implements ActionOutput, BuildOutput
             ->eraseDisplayDown()
             ->eraseLine()
             ->color([SGR::COLOR_FG_CYAN])
-            ->text('>> STDOUT' . PHP_EOL)
             ->nostyle()
-            ->text(implode(PHP_EOL, $standardOutputLines) . PHP_EOL)
+            ->text(implode(PHP_EOL, $outputLines) . PHP_EOL)
             ->color([SGR::COLOR_FG_CYAN])
-            ->text('>> STDERR' . PHP_EOL)
-            ->nostyle()
-            ->text(implode(PHP_EOL, $standardErrorLines) . PHP_EOL)
             ->nostyle();
+    }
+
+    public function setTargetCount(int $count): void
+    {
+        $this->totalTargets = $count;
     }
 
     public function finalizeTarget(TargetId $targetId, BuildActionResult $result): void
@@ -116,16 +125,7 @@ final class StyledBuildOutput implements ActionOutput, BuildOutput
 
             $this
                 ->ansi
-                ->color([SGR::COLOR_FG_CYAN])
-                ->text('>> STDOUT' . PHP_EOL)
-                ->nostyle()
-                ->text($this->standardOutput . PHP_EOL)
-                ->nostyle()
-                ->color([SGR::COLOR_FG_CYAN])
-                ->text('>> STDERR' . PHP_EOL)
-                ->nostyle()
-                ->text($this->standardError . PHP_EOL)
-                ->nostyle();
+                ->text($this->output . PHP_EOL);
         } else {
             $this
                 ->ansi
@@ -140,10 +140,5 @@ final class StyledBuildOutput implements ActionOutput, BuildOutput
         $this
             ->ansi
             ->text('> Running target ' . $id->target() . ' from ' . $id->path() . '... ');
-    }
-
-    public function setTargetCount(int $count): void
-    {
-        $this->totalTargets = $count;
     }
 }
