@@ -30,6 +30,7 @@ final class TargetGenerator implements TargetGeneratorInterface
             new Target('rust-fmt', new RunProcess(['cargo', 'fmt'], timeoutSeconds: 300)),
             new Target('rust-tests-unit', new RunProcess(['cargo', 'test'], timeoutSeconds: 300)),
             new Target('rust-unused-dependencies', new RunProcess(['cargo', '+nightly', 'udeps', '--all-targets'], timeoutSeconds: 300)),
+            new Target('rust-cargo-audit', new RunProcess(['cargo', 'audit'], timeoutSeconds: 300)),
         ];
     }
 

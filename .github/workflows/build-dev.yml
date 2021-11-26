@@ -57,7 +57,8 @@ jobs:
                 key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/composer.json') }}
                 restore-keys: ${{ runner.os }}-composer-
 
-            - run: cargo udeps --version || cargo +nightly install cargo-udeps
+            - run: cargo +nightly install --force cargo-udeps
+            - run: cargo install --force cargo-audit
 
             - working-directory: tools/dependabot-config-checker/
               run: composer install
