@@ -9,7 +9,6 @@ use function array_search;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetDoesNotExist;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
-use function Safe\getcwd;
 
 final class BuildDefinition
 {
@@ -23,10 +22,10 @@ final class BuildDefinition
     /**
      * @param non-empty-list<Target> $targets
      */
-    public function __construct(array $targets)
+    public function __construct(string $path, array $targets)
     {
         $this->targets = $targets;
-        $this->path = getcwd();
+        $this->path = $path;
     }
 
     /**
@@ -37,10 +36,10 @@ final class BuildDefinition
         return array_map(static fn (Target $t) => $t->name(), $this->targets);
     }
 
-    public function target(string $targetNMame): Target
+    public function target(string $targetName): Target
     {
-        if (($targetIndex = array_search($targetNMame, $this->targetNames(), true)) === false) {
-            throw new TargetDoesNotExist(new TargetId($this->path, $targetNMame));
+        if (($targetIndex = array_search($targetName, $this->targetNames(), true)) === false) {
+            throw new TargetDoesNotExist(new TargetId($this->path, $targetName));
         }
 
         return $this->targets[$targetIndex];

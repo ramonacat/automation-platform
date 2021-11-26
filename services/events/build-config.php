@@ -7,6 +7,7 @@ use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
 use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
+use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
@@ -37,12 +38,9 @@ return static function (BuildDefinitionBuilder $builder) {
 
     $builder->addTarget(
         new Target(
-            'build',
+            'generate-kustomize-override',
             new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
-            array_merge(
-                $rustTargetGenerator->buildTargetIds(),
-                [new TargetId(__DIR__, 'build-images')]
-            )
+            [new TargetId(__DIR__, 'build-images')]
         )
     );
 
@@ -64,5 +62,17 @@ return static function (BuildDefinitionBuilder $builder) {
             new KustomizeApply('k8s/overlays/dev'),
             [new TargetId(__DIR__, 'build')]
         )
+    );
+
+    $builder->addDefaultTarget(
+        DefaultTargetKind::Build,
+        [
+            new TargetId(__DIR__, 'generate-kustomize-override'),
+            new TargetId(__DIR__, 'build-images'),
+        ]
+    );
+
+    $builder->addDefaultTarget(
+        DefaultTargetKind::Fix
     );
 };

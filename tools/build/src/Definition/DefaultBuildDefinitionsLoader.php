@@ -32,7 +32,7 @@ final class DefaultBuildDefinitionsLoader implements BuildDefinitionsLoader
             throw InvalidBuildDefinition::atPath($path);
         }
 
-        $buildDefinitionBuilder = new BuildDefinitionBuilder();
+        $buildDefinitionBuilder = new BuildDefinitionBuilder($path);
         ($buildDefinition)($buildDefinitionBuilder);
         $this->definitions[$path] = $buildDefinitionBuilder->build($this->buildFacts, $this->configuration);
     }

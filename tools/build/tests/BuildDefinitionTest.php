@@ -9,14 +9,13 @@ use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinition;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetDoesNotExist;
-use function Safe\getcwd;
 use function sprintf;
 
 final class BuildDefinitionTest extends TestCase
 {
     public function testCanGetTargetNames(): void
     {
-        $definition = new BuildDefinition([
+        $definition = new BuildDefinition(__DIR__, [
             new Target('t1', new NoOp()),
             new Target('t2', new NoOp()),
             new Target('t3', new NoOp()),
@@ -28,7 +27,7 @@ final class BuildDefinitionTest extends TestCase
     public function testCanGetTargetByName(): void
     {
         $target2 = new Target('t2', new NoOp());
-        $definition = new BuildDefinition([
+        $definition = new BuildDefinition(__DIR__, [
             new Target('t1', new NoOp()),
             $target2,
         ]);
@@ -38,14 +37,13 @@ final class BuildDefinitionTest extends TestCase
 
     public function testGettingTargetThrowsIfATargetDoesNotExist(): void
     {
-        $definition = new BuildDefinition([
+        $definition = new BuildDefinition(__DIR__, [
             new Target('t1', new NoOp()),
             new Target('t2', new NoOp()),
             new Target('t3', new NoOp()),
         ]);
 
-        $cwd = getcwd();
-        $this->expectExceptionMessage(sprintf('The target "%s:t4" does not exist', $cwd));
+        $this->expectExceptionMessage(sprintf('The target "%s:t4" does not exist', __DIR__));
         $this->expectException(TargetDoesNotExist::class);
         $definition->target('t4');
     }

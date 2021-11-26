@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Rust;
 
+use function array_filter;
 use function array_map;
+use function array_values;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration as TargetConfiguration;
+use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetGenerator as TargetGeneratorInterface;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
@@ -24,6 +27,7 @@ final class TargetGenerator implements TargetGeneratorInterface
         $this->targets = [
             new Target('rust-clippy', new RunProcess(['cargo', 'clippy', '--', '-D', 'clippy::pedantic', '-D', 'warnings'], timeoutSeconds: 300)),
             new Target('rust-fmt-check', new RunProcess(['cargo', 'fmt', '--', '--check'], timeoutSeconds: 300)),
+            new Target('rust-fmt', new RunProcess(['cargo', 'fmt'], timeoutSeconds: 300)),
             new Target('rust-tests-unit', new RunProcess(['cargo', 'test'], timeoutSeconds: 300)),
             new Target('rust-unused-dependencies', new RunProcess(['cargo', '+nightly', 'udeps', '--all-targets'], timeoutSeconds: 300)),
         ];
@@ -38,10 +42,24 @@ final class TargetGenerator implements TargetGeneratorInterface
     }
 
     /**
-     * @return non-empty-list<TargetId>
+     * @return list<TargetId>
      */
-    public function buildTargetIds(): array
+    private function buildTargetIds(): array
     {
-        return array_map(fn (Target $t) => new TargetId($this->projectDirectory, $t->name()), $this->targets);
+        return array_values(array_map(
+            fn (Target $t) => new TargetId($this->projectDirectory, $t->name()),
+            array_filter(
+                $this->targets,
+                static fn (Target $t) => $t->name() !== 'rust-fix'
+            )
+        ));
+    }
+
+    public function defaultTargetIds(DefaultTargetKind $kind): array
+    {
+        return match ($kind) {
+            DefaultTargetKind::Build => $this->buildTargetIds(),
+            DefaultTargetKind::Fix => [new TargetId($this->projectDirectory, 'rust-fmt')],
+        };
     }
 }

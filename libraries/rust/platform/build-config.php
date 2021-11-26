@@ -1,19 +1,12 @@
 <?php
 
-use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
 use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
-use Ramona\AutomationPlatformLibBuild\Targets\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
 
 return static function (BuildDefinitionBuilder $builder) {
-    $rustTargetGenerator = new TargetGenerator(__DIR__);
+    $builder->addTargetGenerator(new TargetGenerator(__DIR__));
 
-    $builder->addTargetGenerator($rustTargetGenerator);
-    $builder->addTarget(
-        new Target(
-            'build',
-            new NoOp(),
-            $rustTargetGenerator->buildTargetIds()
-        )
-    );
+    $builder->addDefaultTarget(DefaultTargetKind::Build);
+    $builder->addDefaultTarget(DefaultTargetKind::Fix);
 };

@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Definition;
 
+use function array_merge;
 use function count;
+use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
+use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetGenerator;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 final class BuildDefinitionBuilder
 {
@@ -25,7 +29,7 @@ final class BuildDefinitionBuilder
     /**
      * @internal
      */
-    public function __construct()
+    public function __construct(private string $path)
     {
     }
 
@@ -54,11 +58,25 @@ final class BuildDefinitionBuilder
             throw InvalidBuildDefinitionBuilder::noTargets();
         }
 
-        return new BuildDefinition($this->targets);
+        return new BuildDefinition($this->path, $this->targets);
     }
 
     public function addTargetGenerator(TargetGenerator $targetGenerator): void
     {
         $this->targetGenerators[] = $targetGenerator;
+    }
+
+    /**
+     * @param list<TargetId> $additionalDependencies
+     */
+    public function addDefaultTarget(DefaultTargetKind $kind, array $additionalDependencies = []): void
+    {
+        $dependencies = $additionalDependencies;
+
+        foreach ($this->targetGenerators as $generator) {
+            $dependencies = array_merge($dependencies, $generator->defaultTargetIds($kind));
+        }
+
+        $this->targets[] = new Target($kind->targetName(), new NoOp(), $dependencies);
     }
 }

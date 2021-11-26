@@ -8,9 +8,12 @@ use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_values;
+use const DIRECTORY_SEPARATOR;
+use function file_exists;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration as TargetConfiguration;
+use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetGenerator as TargetGeneratorInterface;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
@@ -24,10 +27,28 @@ final class TargetGenerator implements TargetGeneratorInterface
 
     public function __construct(private string $projectDirectory, private Configuration $configuration)
     {
+        $composerRequireCheckerConfigPath = $this->projectDirectory . DIRECTORY_SEPARATOR . 'composer-require-checker.json';
         $this->targets = [
             new Target('php-type-check', new RunProcess(['php', 'vendor/bin/psalm'])),
             new Target('php-coding-standard', new RunProcess(['php', 'vendor/bin/ecs'])),
-            new Target('php-check-transitive-deps', new RunProcess(['composer-require-checker', 'check', 'composer.json'])),
+            // The config file here is a temporary solution until https://github.com/maglnet/ComposerRequireChecker/pull/320 is done and merged
+            new Target(
+                'php-check-transitive-deps',
+                new RunProcess(
+                    file_exists($composerRequireCheckerConfigPath)
+                        ? [
+                            'composer-require-checker',
+                            'check',
+                            '--config-file=' . $composerRequireCheckerConfigPath,
+                            'composer.json',
+                        ]
+                        : [
+                            'composer-require-checker',
+                            'check',
+                            'composer.json',
+                        ]
+                )
+            ),
             new Target('php-check-unused-deps', new RunProcess(['composer', 'unused'])),
             new Target('php-cs-fix', new RunProcess(['php', 'vendor/bin/ecs', '--fix'])),
 
@@ -58,7 +79,7 @@ final class TargetGenerator implements TargetGeneratorInterface
     /**
      * @return list<TargetId>
      */
-    public function buildTargetIds(): array
+    private function buildTargetIds(): array
     {
         return array_values(
             array_map(
@@ -69,5 +90,13 @@ final class TargetGenerator implements TargetGeneratorInterface
                 )
             )
         );
+    }
+
+    public function defaultTargetIds(DefaultTargetKind $kind): array
+    {
+        return match ($kind) {
+            DefaultTargetKind::Build => $this->buildTargetIds(),
+            DefaultTargetKind::Fix => [new TargetId($this->projectDirectory, 'php-cs-fix')],
+        };
     }
 }
