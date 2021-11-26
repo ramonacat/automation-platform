@@ -1,6 +1,6 @@
 use crate::mount::PathInside;
-use chrono::{DateTime, Utc};
 use std::sync::Arc;
+use time::OffsetDateTime;
 use tokio::sync::Mutex;
 use tokio_postgres::Client;
 
@@ -24,7 +24,7 @@ pub trait FileStatusStore {
     async fn sync(
         &mut self,
         path: &PathInside<'_>,
-        modified_at: DateTime<Utc>,
+        modified_at: OffsetDateTime,
     ) -> Result<FileStatusSyncResult, Error>;
 }
 
@@ -76,7 +76,7 @@ impl FileStatusStore for Postgres {
     async fn sync(
         &mut self,
         path: &PathInside<'_>,
-        modified_at: DateTime<Utc>,
+        modified_at: OffsetDateTime,
     ) -> Result<FileStatusSyncResult, Error> {
         let mut postgres = self.pg_client.lock().await;
         let transaction = postgres.transaction().await?;
@@ -89,7 +89,7 @@ impl FileStatusStore for Postgres {
             .await?;
 
         if let Some(row) = rows.get(0) {
-            let current_modified_at = row.get::<_, DateTime<Utc>>(0);
+            let current_modified_at = row.get::<_, OffsetDateTime>(0);
             if current_modified_at != modified_at {
                 transaction
                     .execute(

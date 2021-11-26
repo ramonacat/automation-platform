@@ -1,11 +1,25 @@
 use crate::mount::PathInside;
-use chrono::{DateTime, Utc};
+use serde::ser::Error;
+use serde::{Serialize, Serializer};
+use time::format_description::well_known::Rfc3339;
+use time::OffsetDateTime;
 use uuid::Uuid;
+
+fn serialize_timestamp<S>(x: &OffsetDateTime, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    s.serialize_str(
+        &x.format(&Rfc3339)
+            .map_err(|e| S::Error::custom(format!("DateTime formatting failed: {:?}", e)))?,
+    )
+}
 
 #[derive(Serialize, Copy, Clone, Debug)]
 pub struct FileCreated<'a> {
     id: Uuid,
-    created_timestamp: DateTime<Utc>,
+    #[serde(serialize_with = "serialize_timestamp")]
+    created_timestamp: OffsetDateTime,
     #[serde(rename = "type")]
     type_name: &'a str,
     path: &'a str,
@@ -16,7 +30,7 @@ impl<'a> FileCreated<'a> {
     pub fn new(path: &'a PathInside) -> Self {
         Self {
             id: Uuid::new_v4(),
-            created_timestamp: Utc::now(),
+            created_timestamp: OffsetDateTime::now_utc(),
             type_name: "file.status.created",
             path: path
                 .path()
@@ -30,7 +44,8 @@ impl<'a> FileCreated<'a> {
 #[derive(Serialize, Copy, Clone, Debug)]
 pub struct FileChanged<'a> {
     id: Uuid,
-    created_timestamp: DateTime<Utc>,
+    #[serde(serialize_with = "serialize_timestamp")]
+    created_timestamp: OffsetDateTime,
     #[serde(rename = "type")]
     type_name: &'a str,
     path: &'a str,
@@ -41,7 +56,7 @@ impl<'a> FileChanged<'a> {
     pub fn new(path: &'a PathInside) -> Self {
         Self {
             id: Uuid::new_v4(),
-            created_timestamp: Utc::now(),
+            created_timestamp: OffsetDateTime::now_utc(),
             type_name: "file.status.changed",
             path: path
                 .path()
@@ -55,7 +70,8 @@ impl<'a> FileChanged<'a> {
 #[derive(Serialize, Copy, Clone, Debug)]
 pub struct FileDeleted<'a> {
     id: Uuid,
-    created_timestamp: DateTime<Utc>,
+    #[serde(serialize_with = "serialize_timestamp")]
+    created_timestamp: OffsetDateTime,
     #[serde(rename = "type")]
     type_name: &'a str,
     path: &'a str,
@@ -66,7 +82,7 @@ impl<'a> FileDeleted<'a> {
     pub fn new(path: &'a PathInside) -> Self {
         Self {
             id: Uuid::new_v4(),
-            created_timestamp: Utc::now(),
+            created_timestamp: OffsetDateTime::now_utc(),
             type_name: "file.status.deleted",
             path: path
                 .path()
@@ -80,7 +96,8 @@ impl<'a> FileDeleted<'a> {
 #[derive(Serialize, Copy, Clone, Debug)]
 pub struct FileMoved<'a> {
     id: Uuid,
-    created_timestamp: DateTime<Utc>,
+    #[serde(serialize_with = "serialize_timestamp")]
+    created_timestamp: OffsetDateTime,
     #[serde(rename = "type")]
     type_name: &'a str,
     from: &'a str,
@@ -94,7 +111,7 @@ impl<'a> FileMoved<'a> {
 
         Self {
             id: Uuid::new_v4(),
-            created_timestamp: Utc::now(),
+            created_timestamp: OffsetDateTime::now_utc(),
             type_name: "file.status.moved",
             from: from
                 .path()
