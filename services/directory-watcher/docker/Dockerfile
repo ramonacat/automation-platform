@@ -10,12 +10,14 @@ RUN cargo chef prepare --recipe-path recipe.json
 FROM rust:1.56-slim-buster AS cacher
 
 RUN cargo install cargo-chef
+
 RUN apt-get update && apt-get install --no-install-recommends -y libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/directory-watcher/services/directory-watcher/
 
 COPY --from=planner /opt/directory-watcher/services/directory-watcher/recipe.json recipe.json
 COPY libraries/rust/platform/ /opt/directory-watcher/libraries/rust/platform
+
 RUN cargo chef cook --release --recipe-path recipe.json
 
 FROM rust:1.56-slim-buster AS build
