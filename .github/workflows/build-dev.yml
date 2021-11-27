@@ -63,4 +63,8 @@ jobs:
             - working-directory: tools/machine-info
               run: cargo build --release
 
+            -
+              name: Expose GitHub Runtime
+              uses: crazy-max/ghaction-github-runtime@v1
+
             - run: php tools/build/bin/build.php --environment=github-actions build
