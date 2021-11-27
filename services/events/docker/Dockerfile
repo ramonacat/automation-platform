@@ -22,11 +22,11 @@ FROM rust:1.56-slim-buster AS build
 
 RUN apt-get update && apt-get install --no-install-recommends  -y libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
 
-COPY --from=cacher /opt/events/services/events/target target
-COPY --from=cacher /usr/local/cargo /usr/local/cargo
-
 ADD . /opt/events/
 WORKDIR /opt/events/services/events/
+
+COPY --from=cacher /opt/events/services/events/target target
+COPY --from=cacher /usr/local/cargo /usr/local/cargo
 
 RUN cargo build --release
 

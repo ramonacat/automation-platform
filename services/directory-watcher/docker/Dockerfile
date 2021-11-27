@@ -22,11 +22,11 @@ FROM rust:1.56-slim-buster AS build
 
 RUN apt-get update && apt-get install --no-install-recommends -y libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
 
-COPY --from=cacher /usr/local/cargo /usr/local/cargo
-COPY --from=cacher /opt/directory-watcher/services/directory-watcher/target target
-
 ADD . /opt/directory-watcher/
 WORKDIR /opt/directory-watcher/services/directory-watcher/
+
+COPY --from=cacher /usr/local/cargo /usr/local/cargo
+COPY --from=cacher /opt/directory-watcher/services/directory-watcher/target target
 
 RUN cargo build --release
 
