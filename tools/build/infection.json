@@ -14,8 +14,10 @@
             "BuildOutput/CIBuildOutput.php",
             "Rust/TargetGenerator.php",
             "PHP/TargetGenerator.php",
+            "Docker/TargetGenerator.php",
             "Artifacts/LogOnlyPublisher.php",
-            "Actions/BuildDockerImage.php",
+            "Actions/Docker/BuildDockerImage.php",
+            "Actions/Docker/LintDockerfile.php",
             "Actions/KustomizeApply.php",
             "Commands/Build.php",
             "MachineInfo.php"

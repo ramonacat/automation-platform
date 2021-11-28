@@ -15,4 +15,18 @@ final class BuildFactsTest extends TestCase
 
         self::assertSame('test', $facts->buildId());
     }
+
+    public function testHasLogicalCores(): void
+    {
+        $facts = new BuildFacts('test', false, 1, 2);
+
+        self::assertSame(1, $facts->logicalCores());
+    }
+
+    public function testHasPhysicalCores(): void
+    {
+        $facts = new BuildFacts('test', false, 1, 2);
+
+        self::assertSame(2, $facts->physicalCores());
+    }
 }

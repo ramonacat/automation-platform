@@ -24,6 +24,14 @@ final class BuildDefinition
      */
     public function __construct(string $path, array $targets)
     {
+        $namesSeen = [];
+        foreach ($targets as $target) {
+            if (isset($namesSeen[$target->name()])) {
+                throw new DuplicateTarget(new TargetId($path, $target->name()));
+            }
+            $namesSeen[$target->name()] = true;
+        }
+
         $this->targets = $targets;
         $this->path = $path;
     }

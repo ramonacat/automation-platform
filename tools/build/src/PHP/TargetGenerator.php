@@ -51,7 +51,6 @@ final class TargetGenerator implements TargetGeneratorInterface
             ),
             new Target('php-check-unused-deps', new RunProcess(['composer', 'unused'])),
             new Target('php-cs-fix', new RunProcess(['php', 'vendor/bin/ecs', '--fix'])),
-
             new Target('php-tests-unit', new RunProcess(['php', 'vendor/bin/phpunit'])),
 
         ];
@@ -59,21 +58,26 @@ final class TargetGenerator implements TargetGeneratorInterface
 
     public function targets(BuildFacts $facts, TargetConfiguration $configuration): array
     {
-        return array_merge($this->targets, [new Target(
-            'php-tests-mutation',
-            new RunProcess(
-                [
-                    'php',
-                    'vendor/bin/infection',
-                    // todo set the number of parallel runs dynamically, once it's supported in build
-                    '-j' . (string)$facts->logicalCores(),
-                    '--min-msi=' . (string)$this->configuration->minMsi(),
-                    '--min-covered-msi=' . (string)$this->configuration->minCoveredMsi()
-                ],
-                timeoutSeconds: 120
-            ),
-            [new TargetId($this->projectDirectory, 'php-tests-unit')]
-        )]);
+        return array_merge(
+            $this->targets,
+            [
+                new Target(
+                    'php-tests-mutation',
+                    new RunProcess(
+                        [
+                            'php',
+                            'vendor/bin/infection',
+                            // todo set the number of parallel runs dynamically, once it's supported in build
+                            '-j' . (string)$facts->logicalCores(),
+                            '--min-msi=' . (string)$this->configuration->minMsi(),
+                            '--min-covered-msi=' . (string)$this->configuration->minCoveredMsi()
+                        ],
+                        timeoutSeconds: 300
+                    ),
+                    [new TargetId($this->projectDirectory, 'php-tests-unit')]
+                )
+            ]
+        );
     }
 
     /**
@@ -81,12 +85,15 @@ final class TargetGenerator implements TargetGeneratorInterface
      */
     private function buildTargetIds(): array
     {
-        return array_values(
-            array_map(
-                fn (Target $t) => new TargetId($this->projectDirectory, $t->name()),
-                array_filter(
-                    $this->targets,
-                    static fn (Target $target) => $target->name() !== 'php-cs-fix'
+        return array_merge(
+            [new TargetId($this->projectDirectory, 'php-tests-mutation')],
+            array_values(
+                array_map(
+                    fn (Target $t) => new TargetId($this->projectDirectory, $t->name()),
+                    array_filter(
+                        $this->targets,
+                        static fn (Target $target) => $target->name() !== 'php-cs-fix'
+                    )
                 )
             )
         );

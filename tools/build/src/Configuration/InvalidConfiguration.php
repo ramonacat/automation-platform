@@ -17,9 +17,4 @@ final class InvalidConfiguration extends RuntimeException
     {
         return new self('The "build" key is missing');
     }
-
-    public static function buildNotANode(): self
-    {
-        return new self('The "build" key is not a node');
-    }
 }
