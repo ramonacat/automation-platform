@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Definition;
 
+use Fiber;
 use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
@@ -83,7 +84,17 @@ final class BuildExecutor
 
             $this->buildOutput->startTarget($targetId);
 
-            $result = $target->execute($this->buildOutput, $context, $targetId->path());
+            $fiber = new Fiber(function () use ($target, $context, $targetId) {
+                $result = $target->execute($this->buildOutput, $context, $targetId->path());
+                Fiber::suspend($result);
+            });
+            /** @var BuildActionResult|null $result */
+            $result = $fiber->start();
+
+            while ($result === null) {
+                /** @var BuildActionResult|null $result */
+                $result = $fiber->resume();
+            }
 
             $standardOutput = $this->buildOutput->getCollectedStandardOutput();
             $standardError = $this->buildOutput->getCollectedStandardError();

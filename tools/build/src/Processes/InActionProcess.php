@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Processes;
 
+use Fiber;
 use IteratorAggregate;
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Symfony\Component\Process\Process;
@@ -29,6 +30,8 @@ final class InActionProcess
         }
         $process->start();
 
+        Fiber::suspend();
+
         /** @psalm-var IteratorAggregate<string, string> $process  */
 
         foreach ($process as $type => $data) {
@@ -37,6 +40,8 @@ final class InActionProcess
             } else {
                 $output->pushError($data);
             }
+
+            Fiber::suspend();
         }
 
         /** @psalm-var Process $process */

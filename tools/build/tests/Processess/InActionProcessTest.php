@@ -8,12 +8,14 @@ use const PHP_BINARY;
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
+use Tests\Ramona\AutomationPlatformLibBuild\DumbFiberRunner;
 
 final class InActionProcessTest extends TestCase
 {
     public function testCanPassStandardInput(): void
     {
         $process = new InActionProcess(
+            __DIR__,
             [
                 PHP_BINARY,
                 __DIR__ . '/test-scripts/stdin_to_stdout.php',
@@ -23,6 +25,9 @@ final class InActionProcessTest extends TestCase
 
         $output = $this->createMock(ActionOutput::class);
         $output->expects(self::once())->method('pushOutput')->with('abc');
-        $process->run($output, 'abc');
+
+        DumbFiberRunner::run(
+            fn () => $process->run($output, 'abc')
+        );
     }
 }
