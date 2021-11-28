@@ -26,9 +26,6 @@ final class BuildDefinitionBuilder
      */
     private array $targetGenerators = [];
 
-    /**
-     * @internal
-     */
     public function __construct(private string $path)
     {
     }
@@ -43,9 +40,6 @@ final class BuildDefinitionBuilder
         return $this;
     }
 
-    /**
-     * @internal
-     */
     public function build(BuildFacts $buildFacts, Configuration $configuration): BuildDefinition
     {
         foreach ($this->targetGenerators as $generator) {
