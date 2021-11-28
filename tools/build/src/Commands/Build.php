@@ -32,10 +32,12 @@ use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use Ramona\AutomationPlatformLibBuild\MachineInfo;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetDoesNotExist;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
+use Ramona\AutomationPlatformLibBuild\TerminalSize;
 use function Safe\getcwd;
 use function Safe\realpath;
 use function sprintf;
 use function str_replace;
+use Symfony\Component\Console\Terminal;
 use function uniqid;
 
 final class Build
@@ -43,17 +45,18 @@ final class Build
     private BuildFacts $buildFacts;
     private string $workingDirectory;
     private Ansi $ansi;
+    private MachineInfo $machineInfo;
 
     public function __construct()
     {
-        $machineInfo = new MachineInfo();
+        $this->machineInfo = new MachineInfo();
 
         $this->buildFacts = new BuildFacts(
             // todo use something like git tag as the ID
             str_replace('.', '', uniqid('', true)),
             getenv('CI') !== false,
-            $machineInfo->logicalCores(),
-            $machineInfo->physicalCores(),
+            $this->machineInfo->logicalCores(),
+            $this->machineInfo->physicalCores(),
         );
 
         $this->workingDirectory = realpath(getcwd());
@@ -66,6 +69,9 @@ final class Build
      */
     public function __invoke(string $executableName, array $options, array $arguments): int
     {
+        $terminal = new Terminal();
+        $terminalSize = new TerminalSize($terminal->getWidth(), $terminal->getHeight());
+
         $configurationLocator = new Locator();
         $configuration = Configuration::fromFile($configurationLocator->locateConfigurationFile());
 
@@ -86,7 +92,7 @@ final class Build
 
         $buildExecutor = new BuildExecutor(
             $this->createFileLogger(),
-            $this->buildFacts->inPipeline() ? new CIBuildOutput($this->ansi) : new StyledBuildOutput($this->ansi),
+            $this->buildFacts->inPipeline() ? new CIBuildOutput($this->ansi) : new StyledBuildOutput($this->ansi, $terminalSize),
             $buildDefinitionsLoader,
             $configuration,
             $this->buildFacts,
