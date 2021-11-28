@@ -6,7 +6,6 @@ namespace Ramona\AutomationPlatformLibBuild;
 
 use const PHP_OS;
 use Symfony\Component\Process\Process;
-use function trim;
 
 final class MachineInfo
 {
@@ -22,10 +21,17 @@ final class MachineInfo
 
     private function getInt(string $action): int
     {
+        // todo validate the int instead of just casting
+        return (int)$this->getString($action);
+    }
+
+    private function getString(string $action): string
+    {
         $process = new Process([__DIR__ . '/../../machine-info/target/release/machine-info' . (PHP_OS === 'Windows' ? '.exe' : ''), $action]);
+        $process->setPty(true);
+
         $process->mustRun();
 
-        // todo validate the int instead of just casting
-        return (int)trim($process->getOutput());
+        return $process->getOutput();
     }
 }
