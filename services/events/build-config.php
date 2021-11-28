@@ -1,6 +1,6 @@
 <?php
 
-use Ramona\AutomationPlatformLibBuild\Actions\BuildDockerImage;
+use Ramona\AutomationPlatformLibBuild\Actions\Docker\BuildDockerImage;
 use Ramona\AutomationPlatformLibBuild\Actions\Group;
 use Ramona\AutomationPlatformLibBuild\Actions\KustomizeApply;
 use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
@@ -36,26 +36,21 @@ return static function (BuildDefinitionBuilder $builder) {
 
     $builder->addTargetGenerator($rustTargetGenerator);
 
+    $dockerTargetGenerator = new \Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator(__DIR__, 'image-service', 'automation-platform-svc-events', [], '../../', 'docker/Dockerfile');
+    $builder->addTargetGenerator($dockerTargetGenerator);
+    $dockerMigrationsTargetGenerator = new \Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator(__DIR__, 'image-migrations', 'ap-svc-events-migrations', [], '.', 'docker/migrations.Dockerfile');
+    $builder->addTargetGenerator($dockerMigrationsTargetGenerator);
+
     $builder->addTarget(
         new Target(
             'generate-kustomize-override',
             new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
-            [new TargetId(__DIR__, 'build-images')]
-        )
-    );
-
-    $builder->addTarget(
-        new Target(
-            'build-images',
-            new Group(
-                [
-                    new BuildDockerImage('image-service', 'automation-platform-svc-events', '../../', 'docker/Dockerfile'),
-                    new BuildDockerImage('image-migrations', 'ap-svc-events-migrations', '.', 'docker/migrations.Dockerfile'),
-                ]
+            array_merge(
+                $dockerTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
+                $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
             )
         )
     );
-
     $builder->addTarget(
         new Target(
             'deploy',
@@ -68,7 +63,6 @@ return static function (BuildDefinitionBuilder $builder) {
         DefaultTargetKind::Build,
         [
             new TargetId(__DIR__, 'generate-kustomize-override'),
-            new TargetId(__DIR__, 'build-images'),
         ]
     );
 

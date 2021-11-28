@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild\Actions;
+namespace Ramona\AutomationPlatformLibBuild\Actions\Docker;
 
 use function array_merge;
 use function array_values;
@@ -10,6 +10,7 @@ use function assert;
 use function is_array;
 use function is_string;
 use Ramona\AutomationPlatformLibBuild\ActionOutput;
+use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\Context;

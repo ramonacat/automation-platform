@@ -1,7 +1,6 @@
 <?php
 
 use Ramona\AutomationPlatformLibBuild\Actions\BuildDockerImage;
-use Ramona\AutomationPlatformLibBuild\Actions\Group;
 use Ramona\AutomationPlatformLibBuild\Actions\KustomizeApply;
 use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
 use Ramona\AutomationPlatformLibBuild\Actions\PutRuntimeConfiguration;
@@ -11,6 +10,7 @@ use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
 use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
+use Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator as DockerTargetGenerator;
 
 return static function (BuildDefinitionBuilder $builder) {
     $rustTargetGenerator = new TargetGenerator(__DIR__);
@@ -38,26 +38,38 @@ return static function (BuildDefinitionBuilder $builder) {
 
     $builder->addTargetGenerator($rustTargetGenerator);
 
+    $builder->addTarget(new Target('put-runtime-config', new PutRuntimeConfiguration(__DIR__.'/runtime.configuration.json')));
+
+    $dockerTargetGenerator = new DockerTargetGenerator(
+        __DIR__,
+        'image-service',
+        'automation-platform-svc-directory-watcher',
+        [
+            new TargetId(__DIR__, 'put-runtime-config')
+        ],
+        '../../',
+        'docker/Dockerfile'
+    );
+    $builder->addTargetGenerator($dockerTargetGenerator);
+
+    $dockerMigrationsTargetGenerator = new DockerTargetGenerator(
+        __DIR__,
+        'image-migrations',
+        'automation-platform-svc-migrations',
+        [],
+        '.',
+        'docker/migrations.Dockerfile'
+    );
+    $builder->addTargetGenerator($dockerMigrationsTargetGenerator);
+
     $builder->addTarget(
         new Target(
             'generate-kustomize-override',
             new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
             array_merge(
-                [
-                    new TargetId(__DIR__, 'build-images')
-                ]
+                $dockerTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
+                $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
             )
-        )
-    );
-
-    $builder->addTarget(
-        new Target(
-            'build-images',
-            new Group([
-                new PutRuntimeConfiguration(__DIR__.'/runtime.configuration.json'),
-                new BuildDockerImage('image-service', 'automation-platform-svc-directory-watcher', '../../', 'docker/Dockerfile'),
-                new BuildDockerImage('image-migrations', 'automation-platform-svc-migrations', '.', 'docker/migrations.Dockerfile'),
-            ])
         )
     );
 
@@ -65,7 +77,7 @@ return static function (BuildDefinitionBuilder $builder) {
         new Target(
             'deploy',
             new KustomizeApply('k8s/overlays/dev'),
-            [new TargetId(__DIR__, 'build'), new TargetId(__DIR__.'/../events/', 'deploy')]
+            array_merge([new TargetId(__DIR__.'/../events/', 'deploy')], $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build))
         )
     );
 
@@ -73,7 +85,6 @@ return static function (BuildDefinitionBuilder $builder) {
         DefaultTargetKind::Build,
         [
             new TargetId(__DIR__, 'generate-kustomize-override'),
-            new TargetId(__DIR__, 'build-images'),
         ]
     );
 
