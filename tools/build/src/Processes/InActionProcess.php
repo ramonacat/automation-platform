@@ -18,12 +18,15 @@ final class InActionProcess
     {
     }
 
-    public function run(ActionOutput $output): bool
+    public function run(ActionOutput $output, string $standardIn = ''): bool
     {
         $process = new Process($this->command);
         // todo nicely formatted time interval, once we have the infra for that
         $output->pushSeparator('Running: ' . $process->getCommandLine() . ' with a timeout of ' . (string)$this->timeout . 's');
         $process->setTimeout($this->timeout);
+        if ($standardIn !== '') {
+            $process->setInput($standardIn);
+        }
         $process->start();
 
         /** @psalm-var IteratorAggregate<string, string> $process  */
