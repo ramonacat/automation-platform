@@ -17,9 +17,9 @@ final class LintDockerfile implements BuildAction
     {
     }
 
-    public function execute(ActionOutput $output, Context $context): BuildActionResult
+    public function execute(ActionOutput $output, Context $context, string $workingDirectory): BuildActionResult
     {
-        $process = new InActionProcess(['docker', 'run', '--rm', '-i', 'hadolint/hadolint'], 30);
+        $process = new InActionProcess($workingDirectory, ['docker', 'run', '--rm', '-i', 'hadolint/hadolint'], 30);
         return $process->run($output, file_get_contents($this->dockerfilePath))
             ? BuildActionResult::ok([])
             : BuildActionResult::fail('Dockerfile linting failed');

@@ -29,9 +29,9 @@ final class RunProcess implements BuildAction
     ) {
     }
 
-    public function execute(ActionOutput $output, Context $context): BuildActionResult
+    public function execute(ActionOutput $output, Context $context, string $workingDirectory): BuildActionResult
     {
-        $process = new InActionProcess($this->command, $this->timeoutSeconds);
+        $process = new InActionProcess($workingDirectory, $this->command, $this->timeoutSeconds);
 
         $commandName = implode(' ', $this->command);
         return $process->run($output)

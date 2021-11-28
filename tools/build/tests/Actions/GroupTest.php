@@ -26,7 +26,8 @@ final class GroupTest extends TestCase
 
         $group->execute(
             $this->createMock(ActionOutput::class),
-            $this->createContext()
+            $this->createContext(),
+            __DIR__
         );
     }
 
@@ -45,7 +46,8 @@ final class GroupTest extends TestCase
 
         $result = $group->execute(
             $this->createMock(ActionOutput::class),
-            $this->createContext()
+            $this->createContext(),
+            __DIR__
         );
 
         self::assertEquals([$artifact1, $artifact2], $result->artifacts());

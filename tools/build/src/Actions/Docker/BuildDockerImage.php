@@ -26,7 +26,8 @@ final class BuildDockerImage implements BuildAction
 
     public function execute(
         ActionOutput $output,
-        Context $context
+        Context $context,
+        string $workingDirectory
     ): BuildActionResult {
         $dockerBuildCommand = $context->configuration()->getSingleBuildValue('$.docker.build-command');
 
@@ -39,6 +40,7 @@ final class BuildDockerImage implements BuildAction
         }
 
         $process = new InActionProcess(
+            $workingDirectory,
             array_values(array_merge($cleanDockerBuildCommand, ['-t', $this->imageName . ':' . $context->buildFacts()->buildId(), '-f', $this->dockerFilePath, $this->contextPath])),
             self::DEFAULT_TIMEOUT
         );

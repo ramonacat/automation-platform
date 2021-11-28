@@ -14,13 +14,13 @@ final class InActionProcess
      * @param list<string> $command
      * @param int $timeout
      */
-    public function __construct(private array $command, private int $timeout)
+    public function __construct(private string $workingDirectory, private array $command, private int $timeout)
     {
     }
 
     public function run(ActionOutput $output, string $standardIn = ''): bool
     {
-        $process = new Process($this->command);
+        $process = new Process($this->command, $this->workingDirectory);
         // todo nicely formatted time interval, once we have the infra for that
         $output->pushSeparator('Running: ' . $process->getCommandLine() . ' with a timeout of ' . (string)$this->timeout . 's');
         $process->setTimeout($this->timeout);

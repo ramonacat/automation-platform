@@ -13,7 +13,7 @@ use Ramona\AutomationPlatformLibBuild\Context;
  */
 final class NoOp implements BuildAction
 {
-    public function execute(ActionOutput $output, Context $context): BuildActionResult
+    public function execute(ActionOutput $output, Context $context, string $workingDirectory): BuildActionResult
     {
         return BuildActionResult::ok([]);
     }

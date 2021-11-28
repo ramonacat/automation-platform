@@ -42,9 +42,9 @@ final class Target
         return $this->name;
     }
 
-    public function execute(ActionOutput $output, Context $context): BuildActionResult
+    public function execute(ActionOutput $output, Context $context, string $workingDirectory): BuildActionResult
     {
-        return $this->action->execute($output, $context);
+        return $this->action->execute($output, $context, $workingDirectory);
     }
 
     /**

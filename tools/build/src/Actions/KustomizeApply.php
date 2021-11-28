@@ -18,7 +18,7 @@ final class KustomizeApply implements BuildAction
     {
     }
 
-    public function execute(ActionOutput $output, Context $context): BuildActionResult
+    public function execute(ActionOutput $output, Context $context, string $workingDirectory): BuildActionResult
     {
         /** @var mixed $context */
         $context = $context->configuration()->getSingleBuildValue('$.kubernetes.context');
@@ -26,6 +26,7 @@ final class KustomizeApply implements BuildAction
         assert(is_string($context));
 
         $process = new InActionProcess(
+            $workingDirectory,
             [
                 'kubectl',
                 '--context',

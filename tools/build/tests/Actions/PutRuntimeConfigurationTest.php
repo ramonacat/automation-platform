@@ -16,13 +16,16 @@ final class PutRuntimeConfigurationTest extends TestCase
 {
     public function testCanPutRuntimeConfigurationAtSpecifiedPath(): void
     {
-        $path = sys_get_temp_dir() . '/' . uniqid('', true);
+        $tempDirectory = sys_get_temp_dir();
+        $filename = uniqid('', true);
+        $path = $tempDirectory . '/' . $filename;
 
-        $action = new PutRuntimeConfiguration($path);
+        $action = new PutRuntimeConfiguration($filename);
 
         $action->execute(
             $this->createMock(ActionOutput::class),
-            ContextFactory::create(Configuration::fromJsonString('{"runtime": {"a": 1}}'))
+            ContextFactory::create(Configuration::fromJsonString('{"runtime": {"a": 1}}')),
+            $tempDirectory
         );
 
         $this->assertJsonStringEqualsJsonString('{"a": 1}', file_get_contents($path));

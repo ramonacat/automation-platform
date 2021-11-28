@@ -13,7 +13,6 @@ use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetQueue;
-use Ramona\AutomationPlatformLibBuild\WorkingDirectory;
 
 final class BuildExecutor
 {
@@ -84,15 +83,8 @@ final class BuildExecutor
 
             $this->buildOutput->startTarget($targetId);
 
-            $result = WorkingDirectory::in(
-                $targetId->path(),
-                fn () => $target->execute(
-                    $this->buildOutput,
-                    $context
-                )
-            );
+            $result = $target->execute($this->buildOutput, $context, $targetId->path());
 
-            // fixme log these from the callbacks
             $standardOutput = $this->buildOutput->getCollectedStandardOutput();
             $standardError = $this->buildOutput->getCollectedStandardError();
 

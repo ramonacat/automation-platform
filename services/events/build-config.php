@@ -44,7 +44,7 @@ return static function (BuildDefinitionBuilder $builder) {
     $builder->addTarget(
         new Target(
             'generate-kustomize-override',
-            new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
+            new PutFile('k8s/overlays/dev/deployment.yaml', $override),
             array_merge(
                 $dockerTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
                 $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),

@@ -20,7 +20,8 @@ final class RunProcessTest extends TestCase
         $this->expectException(ProcessTimedOutException::class);
         $action->execute(
             $this->createMock(ActionOutput::class),
-            $this->createContext()
+            $this->createContext(),
+            __DIR__
         );
     }
 
@@ -33,7 +34,8 @@ final class RunProcessTest extends TestCase
 
         $action->execute(
             $output,
-            $this->createContext()
+            $this->createContext(),
+            __DIR__
         );
     }
 
@@ -46,7 +48,8 @@ final class RunProcessTest extends TestCase
 
         $action->execute(
             $output,
-            $this->createContext()
+            $this->createContext(),
+            __DIR__
         );
     }
 
@@ -56,7 +59,8 @@ final class RunProcessTest extends TestCase
 
         $result = $action->execute(
             $this->createMock(ActionOutput::class),
-            $this->createContext()
+            $this->createContext(),
+            __DIR__
         );
 
         self::assertTrue($result->hasSucceeded());

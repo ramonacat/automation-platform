@@ -20,11 +20,11 @@ final class Group implements BuildAction
     {
     }
 
-    public function execute(ActionOutput $output, Context $context): BuildActionResult
+    public function execute(ActionOutput $output, Context $context, string $workingDirectory): BuildActionResult
     {
         $artifacts = [];
         foreach ($this->actions as $action) {
-            $result = $action->execute($output, $context);
+            $result = $action->execute($output, $context, $workingDirectory);
 
             if (!$result->hasSucceeded()) {
                 return $result;
