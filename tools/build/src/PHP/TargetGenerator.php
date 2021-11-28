@@ -72,7 +72,7 @@ final class TargetGenerator implements TargetGeneratorInterface
                             '--min-msi=' . (string)$this->configuration->minMsi(),
                             '--min-covered-msi=' . (string)$this->configuration->minCoveredMsi()
                         ],
-                        timeoutSeconds: 120
+                        timeoutSeconds: 300
                     ),
                     [new TargetId($this->projectDirectory, 'php-tests-unit')]
                 )
