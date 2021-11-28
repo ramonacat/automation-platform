@@ -6,8 +6,8 @@ namespace Tests\Ramona\AutomationPlatformLibBuild\Actions;
 
 use const PHP_BINARY;
 use PHPUnit\Framework\TestCase;
-use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Tests\Ramona\AutomationPlatformLibBuild\DumbFiberRunner;
@@ -22,7 +22,7 @@ final class RunProcessTest extends TestCase
         DumbFiberRunner::run(
             fn () =>
                 $action->execute(
-                    $this->createMock(ActionOutput::class),
+                    $this->createMock(TargetOutput::class),
                     $this->createContext(),
                     __DIR__
                 )
@@ -33,7 +33,7 @@ final class RunProcessTest extends TestCase
     {
         $action = new RunProcess([PHP_BINARY, __DIR__ . '/test-scripts/prints-test-to-stdout.php']);
 
-        $output = $this->createMock(ActionOutput::class);
+        $output = $this->createMock(TargetOutput::class);
         $output->expects(self::once())->method('pushOutput')->with('test');
 
         DumbFiberRunner::run(
@@ -50,7 +50,7 @@ final class RunProcessTest extends TestCase
     {
         $action = new RunProcess([PHP_BINARY, __DIR__ . '/test-scripts/prints-test-to-stderr.php']);
 
-        $output = $this->createMock(ActionOutput::class);
+        $output = $this->createMock(TargetOutput::class);
         $output->expects(self::once())->method('pushError')->with('test');
 
         DumbFiberRunner::run(
@@ -70,7 +70,7 @@ final class RunProcessTest extends TestCase
         $result = DumbFiberRunner::run(
             fn () =>
                 $action->execute(
-                    $this->createMock(ActionOutput::class),
+                    $this->createMock(TargetOutput::class),
                     $this->createContext(),
                     __DIR__
                 )

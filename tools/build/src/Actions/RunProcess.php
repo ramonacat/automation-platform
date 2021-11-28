@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use function implode;
-use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 
@@ -29,7 +29,7 @@ final class RunProcess implements BuildAction
     ) {
     }
 
-    public function execute(ActionOutput $output, Context $context, string $workingDirectory): BuildActionResult
+    public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildActionResult
     {
         $process = new InActionProcess($workingDirectory, $this->command, $this->timeoutSeconds);
 

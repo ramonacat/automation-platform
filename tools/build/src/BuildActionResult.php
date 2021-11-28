@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild;
 
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 /**
  * @psalm-immutable
@@ -33,6 +34,11 @@ final class BuildActionResult
     public static function fail(string $message): self
     {
         return new self(false, $message, []);
+    }
+
+    public static function dependencyFailed(TargetId $dependencyId): self
+    {
+        return new self(false, "Not executed due to dependency failure: {$dependencyId->toString()}", []);
     }
 
     public function hasSucceeded(): bool

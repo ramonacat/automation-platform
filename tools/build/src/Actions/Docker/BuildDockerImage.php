@@ -9,10 +9,10 @@ use function array_values;
 use function assert;
 use function is_array;
 use function is_string;
-use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 
@@ -25,7 +25,7 @@ final class BuildDockerImage implements BuildAction
     }
 
     public function execute(
-        ActionOutput $output,
+        TargetOutput $output,
         Context $context,
         string $workingDirectory
     ): BuildActionResult {

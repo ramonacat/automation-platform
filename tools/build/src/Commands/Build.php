@@ -21,7 +21,6 @@ use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\Artifacts\LogOnlyPublisher;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\CIBuildOutput;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\StyledBuildOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Configuration\Locator;
@@ -32,12 +31,10 @@ use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use Ramona\AutomationPlatformLibBuild\MachineInfo;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetDoesNotExist;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
-use Ramona\AutomationPlatformLibBuild\TerminalSize;
 use function Safe\getcwd;
 use function Safe\realpath;
 use function sprintf;
 use function str_replace;
-use Symfony\Component\Console\Terminal;
 use function uniqid;
 
 final class Build
@@ -69,9 +66,6 @@ final class Build
      */
     public function __invoke(string $executableName, array $options, array $arguments): int
     {
-        $terminal = new Terminal();
-        $terminalSize = new TerminalSize($terminal->getWidth(), $terminal->getHeight());
-
         $configurationLocator = new Locator();
         $configuration = Configuration::fromFile($configurationLocator->locateConfigurationFile());
 
@@ -92,7 +86,7 @@ final class Build
 
         $buildExecutor = new BuildExecutor(
             $this->createFileLogger(),
-            $this->buildFacts->inPipeline() ? new CIBuildOutput($this->ansi) : new StyledBuildOutput($this->ansi, $terminalSize),
+            new StyledBuildOutput($this->ansi),
             $buildDefinitionsLoader,
             $configuration,
             $this->buildFacts,

@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
 
-use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
-interface BuildOutput extends ActionOutput
+interface BuildOutput
 {
-    public function setTargetCount(int $count): void;
-    public function startTarget(TargetId $id): void;
-    public function getCollectedStandardOutput(): string;
-    public function getCollectedStandardError(): string;
-    public function finalizeTarget(TargetId $targetId, BuildActionResult $result): void;
+    public function startTarget(TargetId $id): TargetOutput;
+
+    /**
+     * @param array<string, array{0:BuildActionResult,1:TargetOutput}> $results
+     */
+    public function finalizeBuild(array $results): void;
 }

@@ -187,18 +187,6 @@ final class BuildExecutorTest extends TestCase
         $this->buildExecutor->executeTarget($targetId);
     }
 
-    public function testWillSetTargetCountOnTheOutput(): void
-    {
-        $this->buildOutput->expects(self::once())->method('setTargetCount')->with(1);
-        $targetId = new TargetId(__DIR__ . '/c', 'check');
-
-        $this->setupDefinitions([
-            [$targetId, new Target('check', new NoOp())],
-        ]);
-
-        $this->buildExecutor->executeTarget($targetId);
-    }
-
     public function testWillStartEachTarget(): void
     {
         $targetIdA = new TargetId(__DIR__ . '/c', 'a');
@@ -214,64 +202,6 @@ final class BuildExecutorTest extends TestCase
             ->expects(self::exactly(2))
             ->method('startTarget')
             ->withConsecutive([$targetIdA], [$targetIdB]);
-
-        $this->buildExecutor->executeTarget($targetIdB);
-    }
-
-    public function testWillLogEachFinalizedTarget(): void
-    {
-        $targetId = new TargetId(__DIR__ . '/c', 'a');
-
-        $this->setupDefinitions([
-            [$targetId, new Target('a', new NoOp())],
-        ]);
-
-        $this
-            ->buildOutput
-            ->method('getCollectedStandardOutput')
-            ->willReturn('output');
-
-        $this
-            ->buildOutput
-            ->method('getCollectedStandardError')
-            ->willReturn('error');
-
-        $this
-            ->logger
-            ->expects(self::once())
-            ->method('info')
-            ->with('Target built', ['target-id' => $targetId->toString(), 'stdout' => 'output', 'stderr' => 'error']);
-
-        $this->buildExecutor->executeTarget($targetId);
-    }
-
-    public function testWillFinalizeEachTarget(): void
-    {
-        $targetIdA = new TargetId(__DIR__ . '/c', 'a');
-        $targetIdB = new TargetId(__DIR__ . '/c', 'b');
-
-        $resultA = BuildActionResult::ok([]);
-        $resultB = BuildActionResult::ok([]);
-
-        $actionA = $this->createMock(BuildAction::class);
-        $actionA
-            ->method('execute')
-            ->willReturn($resultA);
-        $actionB = $this->createMock(BuildAction::class);
-        $actionB
-            ->method('execute')
-            ->willReturn($resultB);
-
-        $this->setupDefinitions([
-            [$targetIdA, new Target('a', $actionA)],
-            [$targetIdB, new Target('b', $actionB, [$targetIdA])],
-        ]);
-
-        $this
-            ->buildOutput
-            ->expects(self::exactly(2))
-            ->method('finalizeTarget')
-            ->withConsecutive([$targetIdA, $resultA], [$targetIdB, $resultB]);
 
         $this->buildExecutor->executeTarget($targetIdB);
     }

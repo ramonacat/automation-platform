@@ -51,7 +51,7 @@ final class TargetGenerator implements TargetGeneratorInterface
             ),
             new Target('php-check-unused-deps', new RunProcess(['composer', 'unused'])),
             new Target('php-cs-fix', new RunProcess(['php', 'vendor/bin/ecs', '--fix'])),
-            new Target('php-tests-unit', new RunProcess(['php', 'vendor/bin/phpunit'])),
+            new Target('php-tests-unit', new RunProcess(['php', 'vendor/bin/phpunit']), [new TargetId($this->projectDirectory, 'php-type-check')]),
 
         ];
     }

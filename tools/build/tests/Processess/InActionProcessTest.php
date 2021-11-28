@@ -6,7 +6,7 @@ namespace Tests\Ramona\AutomationPlatformLibBuild\Processess;
 
 use const PHP_BINARY;
 use PHPUnit\Framework\TestCase;
-use Ramona\AutomationPlatformLibBuild\ActionOutput;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 use Tests\Ramona\AutomationPlatformLibBuild\DumbFiberRunner;
 
@@ -23,7 +23,7 @@ final class InActionProcessTest extends TestCase
             30
         );
 
-        $output = $this->createMock(ActionOutput::class);
+        $output = $this->createMock(TargetOutput::class);
         $output->expects(self::once())->method('pushOutput')->with('abc');
 
         DumbFiberRunner::run(

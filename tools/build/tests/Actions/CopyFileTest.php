@@ -6,10 +6,10 @@ namespace Tests\Ramona\AutomationPlatformLibBuild\Actions;
 
 use const DIRECTORY_SEPARATOR;
 use PHPUnit\Framework\TestCase;
-use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\CopyFile;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
 use function Safe\touch;
@@ -33,7 +33,7 @@ final class CopyFileTest extends TestCase
 
         $action = new CopyFile($sourceFilename, $targetFilename);
         $action->execute(
-            $this->createMock(ActionOutput::class),
+            $this->createMock(TargetOutput::class),
             new Context(Configuration::fromJsonString('{}'), new Collector(), new BuildFacts('test', false, 1, 1)),
             $tempdir
         );
