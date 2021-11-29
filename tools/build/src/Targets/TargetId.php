@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Targets;
 
-use function assert;
 use function Safe\realpath;
 use function strrpos;
 use function substr;
@@ -23,7 +22,10 @@ final class TargetId
     public static function fromString(string $raw): self
     {
         $lastColonIndex = strrpos($raw, ':');
-        assert($lastColonIndex !== false);
+
+        if ($lastColonIndex === false) {
+            throw FailedToParseTargetId::fromRaw($raw);
+        }
 
         $path = substr($raw, 0, $lastColonIndex);
         $target = substr($raw, $lastColonIndex + 1);

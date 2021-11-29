@@ -20,11 +20,14 @@ final class InActionProcessTest extends TestCase
                 PHP_BINARY,
                 __DIR__ . '/test-scripts/stdin_to_stdout.php',
             ],
-            30
+            1
         );
 
         $output = $this->createMock(TargetOutput::class);
-        $output->expects(self::once())->method('pushOutput')->with('abc');
+        $output
+            ->expects(self::once())
+            ->method('pushOutput')
+            ->with('abc');
 
         DumbFiberRunner::run(
             fn () => $process->run($output, 'abc')

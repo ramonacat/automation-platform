@@ -11,7 +11,7 @@ use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
-use Ramona\AutomationPlatformLibBuild\Targets\Parallel\TargetFiberStack;
+use Ramona\AutomationPlatformLibBuild\Targets\Parallel\FiberTargetExecutor;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetQueue;
 
@@ -77,13 +77,13 @@ final class BuildExecutor
 
         $queue = $this->buildQueue($targetId);
 
-        $targetFiberStack = new TargetFiberStack($this->buildFacts->logicalCores(), $this->artifactCollector);
+        $targetFiberStack = new FiberTargetExecutor($this->buildFacts->logicalCores(), $this->artifactCollector);
 
         while (!$queue->isEmpty()) {
             $targetId = $queue->dequeue();
             $target = $this->buildDefinitions->target($targetId);
 
-            $targetFiberStack->addFiber($targetId, $target, $this->buildOutput->startTarget($targetId), $context);
+            $targetFiberStack->addTarget($targetId, $target, $this->buildOutput->startTarget($targetId), $context);
         }
 
         $results = $targetFiberStack->waitForAll();

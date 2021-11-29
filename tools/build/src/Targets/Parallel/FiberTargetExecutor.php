@@ -13,7 +13,7 @@ use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
-final class TargetFiberStack
+final class FiberTargetExecutor
 {
     /**
      * @var array<string, Fiber>
@@ -34,7 +34,7 @@ final class TargetFiberStack
     {
     }
 
-    public function addFiber(TargetId $targetId, Target $target, TargetOutput $output, Context $context): void
+    public function addTarget(TargetId $targetId, Target $target, TargetOutput $output, Context $context): void
     {
         foreach ($target->dependencies() as $dependency) {
             if (!isset($this->results[$dependency->toString()])) {
@@ -61,7 +61,7 @@ final class TargetFiberStack
         }
     }
 
-    public function waitForAny(): void
+    private function waitForAny(): void
     {
         while (count($this->runningFibers) > 0) {
             foreach ($this->runningFibers as $fiberTargetId => $fiber) {

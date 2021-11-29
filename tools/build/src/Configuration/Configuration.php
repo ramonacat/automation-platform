@@ -6,7 +6,6 @@ namespace Ramona\AutomationPlatformLibBuild\Configuration;
 
 use function array_reverse;
 use function array_unshift;
-use function assert;
 use function is_array;
 use Remorhaz\JSON\Data\Value\EncodedJson\NodeValueFactory;
 use Remorhaz\JSON\Data\Value\NodeValueInterface;
@@ -21,7 +20,7 @@ final class Configuration
 {
     private QueryFactoryInterface $queryFactory;
     /** @var list<NodeValueInterface> */
-    private array $configurations = [];
+    private array $configurations;
     private ProcessorInterface $processor;
 
     private function __construct(string $jsonString)
@@ -63,7 +62,9 @@ final class Configuration
         }
 
         foreach ($buildConfigurations as $buildConfiguration) {
-            assert($buildConfiguration instanceof NodeValueInterface);
+            if (!$buildConfiguration instanceof NodeValueInterface) {
+                throw InvalidConfiguration::buildNotANode();
+            }
             $result = $this->processor->selectOne($query, $buildConfiguration);
 
             if (!$result->exists()) {

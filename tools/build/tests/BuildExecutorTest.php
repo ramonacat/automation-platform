@@ -13,6 +13,7 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\CyclicDependencyFound;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionsLoader;
@@ -234,6 +235,77 @@ final class BuildExecutorTest extends TestCase
         $result = $this->buildExecutor->executeTarget($targetIdB);
 
         self::assertEquals([$artifactA, $artifactB], $result->artifacts());
+    }
+
+    public function testWillFinalizeTheBuild(): void
+    {
+        $targetIdA = new TargetId(__DIR__ . '/c', 'a');
+        $targetIdB = new TargetId(__DIR__ . '/c', 'b');
+
+        $resultA = BuildActionResult::ok([]);
+        $resultB = BuildActionResult::fail('boo');
+
+        $actionA = $this->createMock(BuildAction::class);
+        $actionA
+            ->method('execute')
+            ->willReturn($resultA);
+        $actionB = $this->createMock(BuildAction::class);
+        $actionB
+            ->method('execute')
+            ->willReturn($resultB);
+
+        $this->setupDefinitions([
+            [$targetIdA, new Target('a', $actionA)],
+            [$targetIdB, new Target('b', $actionB, [$targetIdA])],
+        ]);
+
+        $targetOutputA = $this->createMock(TargetOutput::class);
+        $targetOutputB = $this->createMock(TargetOutput::class);
+
+        $this
+            ->buildOutput
+            ->method('startTarget')
+            ->willReturnOnConsecutiveCalls(
+                $targetOutputA,
+                $targetOutputB
+            );
+
+        $this
+            ->buildOutput
+            ->expects(self::once())
+            ->method('finalizeBuild')
+            ->with([
+                $targetIdA->toString() => [$resultA, $targetOutputA],
+                $targetIdB->toString() => [$resultB, $targetOutputB]
+            ]);
+
+        $this->buildExecutor->executeTarget($targetIdB);
+    }
+
+    public function testWillFailIfAnyTargetFailed(): void
+    {
+        $targetIdA = new TargetId(__DIR__ . '/c', 'a');
+        $targetIdB = new TargetId(__DIR__ . '/c', 'b');
+
+        $resultA = BuildActionResult::ok([]);
+        $resultB = BuildActionResult::fail('boo');
+
+        $actionA = $this->createMock(BuildAction::class);
+        $actionA
+            ->method('execute')
+            ->willReturn($resultA);
+        $actionB = $this->createMock(BuildAction::class);
+        $actionB
+            ->method('execute')
+            ->willReturn($resultB);
+
+        $this->setupDefinitions([
+            [$targetIdA, new Target('a', $actionA)],
+            [$targetIdB, new Target('b', $actionB, [$targetIdA])],
+        ]);
+
+        $result = $this->buildExecutor->executeTarget($targetIdB);
+        self::assertFalse($result->hasSucceeded());
     }
 
     /**
