@@ -6,10 +6,11 @@ namespace Tests\Ramona\AutomationPlatformLibBuild\Actions;
 
 use const PHP_BINARY;
 use PHPUnit\Framework\TestCase;
-use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Tests\Ramona\AutomationPlatformLibBuild\DumbFiberRunner;
 
 final class RunProcessTest extends TestCase
 {
@@ -18,9 +19,13 @@ final class RunProcessTest extends TestCase
         $action = new RunProcess([PHP_BINARY,  __DIR__ . '/test-scripts/runs-for-3-seconds.php'], [], 1);
 
         $this->expectException(ProcessTimedOutException::class);
-        $action->execute(
-            $this->createMock(ActionOutput::class),
-            $this->createContext()
+        DumbFiberRunner::run(
+            fn () =>
+                $action->execute(
+                    $this->createMock(TargetOutput::class),
+                    $this->createContext(),
+                    __DIR__
+                )
         );
     }
 
@@ -28,12 +33,16 @@ final class RunProcessTest extends TestCase
     {
         $action = new RunProcess([PHP_BINARY, __DIR__ . '/test-scripts/prints-test-to-stdout.php']);
 
-        $output = $this->createMock(ActionOutput::class);
+        $output = $this->createMock(TargetOutput::class);
         $output->expects(self::once())->method('pushOutput')->with('test');
 
-        $action->execute(
-            $output,
-            $this->createContext()
+        DumbFiberRunner::run(
+            fn () =>
+                $action->execute(
+                    $output,
+                    $this->createContext(),
+                    __DIR__
+                )
         );
     }
 
@@ -41,12 +50,16 @@ final class RunProcessTest extends TestCase
     {
         $action = new RunProcess([PHP_BINARY, __DIR__ . '/test-scripts/prints-test-to-stderr.php']);
 
-        $output = $this->createMock(ActionOutput::class);
+        $output = $this->createMock(TargetOutput::class);
         $output->expects(self::once())->method('pushError')->with('test');
 
-        $action->execute(
-            $output,
-            $this->createContext()
+        DumbFiberRunner::run(
+            fn () =>
+                $action->execute(
+                    $output,
+                    $this->createContext(),
+                    __DIR__
+                )
         );
     }
 
@@ -54,9 +67,13 @@ final class RunProcessTest extends TestCase
     {
         $action = new RunProcess([PHP_BINARY, __DIR__ . '/test-scripts/prints-test-to-stdout.php']);
 
-        $result = $action->execute(
-            $this->createMock(ActionOutput::class),
-            $this->createContext()
+        $result = DumbFiberRunner::run(
+            fn () =>
+                $action->execute(
+                    $this->createMock(TargetOutput::class),
+                    $this->createContext(),
+                    __DIR__
+                )
         );
 
         self::assertTrue($result->hasSucceeded());

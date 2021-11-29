@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Tests\Ramona\AutomationPlatformLibBuild\Actions;
 
 use PHPUnit\Framework\TestCase;
-use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Actions\Group;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Context;
 
 final class GroupTest extends TestCase
@@ -25,8 +25,9 @@ final class GroupTest extends TestCase
         $group = new Group([$a1, $a2]);
 
         $group->execute(
-            $this->createMock(ActionOutput::class),
-            $this->createContext()
+            $this->createMock(TargetOutput::class),
+            $this->createContext(),
+            __DIR__
         );
     }
 
@@ -44,8 +45,9 @@ final class GroupTest extends TestCase
         $group = new Group([$a1, $a2]);
 
         $result = $group->execute(
-            $this->createMock(ActionOutput::class),
-            $this->createContext()
+            $this->createMock(TargetOutput::class),
+            $this->createContext(),
+            __DIR__
         );
 
         self::assertEquals([$artifact1, $artifact2], $result->artifacts());

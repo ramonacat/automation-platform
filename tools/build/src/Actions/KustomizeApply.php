@@ -6,8 +6,8 @@ namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use function assert;
 use function is_string;
-use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 use function sprintf;
@@ -18,7 +18,7 @@ final class KustomizeApply implements BuildAction
     {
     }
 
-    public function execute(ActionOutput $output, Context $context): BuildActionResult
+    public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildActionResult
     {
         /** @var mixed $context */
         $context = $context->configuration()->getSingleBuildValue('$.kubernetes.context');
@@ -26,6 +26,7 @@ final class KustomizeApply implements BuildAction
         assert(is_string($context));
 
         $process = new InActionProcess(
+            $workingDirectory,
             [
                 'kubectl',
                 '--context',

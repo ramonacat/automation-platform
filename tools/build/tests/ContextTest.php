@@ -22,6 +22,7 @@ final class ContextTest extends TestCase
 
         self::assertSame($config, $context->configuration());
     }
+
     public function testHasArtifactCollector(): void
     {
         $context = new Context(
@@ -32,6 +33,7 @@ final class ContextTest extends TestCase
 
         self::assertSame($collector, $context->artifactCollector());
     }
+
     public function testHasBuildFacts(): void
     {
         $context = new Context(

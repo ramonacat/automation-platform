@@ -38,7 +38,7 @@ return static function (BuildDefinitionBuilder $builder) {
 
     $builder->addTargetGenerator($rustTargetGenerator);
 
-    $builder->addTarget(new Target('put-runtime-config', new PutRuntimeConfiguration(__DIR__.'/runtime.configuration.json')));
+    $builder->addTarget(new Target('put-runtime-config', new PutRuntimeConfiguration('runtime.configuration.json')));
 
     $dockerTargetGenerator = new DockerTargetGenerator(
         __DIR__,
@@ -65,7 +65,7 @@ return static function (BuildDefinitionBuilder $builder) {
     $builder->addTarget(
         new Target(
             'generate-kustomize-override',
-            new PutFile(__DIR__.'/k8s/overlays/dev/deployment.yaml', $override),
+            new PutFile('k8s/overlays/dev/deployment.yaml', $override),
             array_merge(
                 $dockerTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
                 $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),

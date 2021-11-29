@@ -11,9 +11,9 @@ use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Targets\Parallel\FiberTargetExecutor;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetQueue;
-use Ramona\AutomationPlatformLibBuild\WorkingDirectory;
 
 final class BuildExecutor
 {
@@ -76,39 +76,28 @@ final class BuildExecutor
         );
 
         $queue = $this->buildQueue($targetId);
-        $this->buildOutput->setTargetCount($queue->count());
+
+        $targetFiberStack = new FiberTargetExecutor($this->buildFacts->logicalCores(), $this->artifactCollector);
 
         while (!$queue->isEmpty()) {
             $targetId = $queue->dequeue();
             $target = $this->buildDefinitions->target($targetId);
 
-            $this->buildOutput->startTarget($targetId);
-
-            $result = WorkingDirectory::in(
-                $targetId->path(),
-                fn () => $target->execute(
-                    $this->buildOutput,
-                    $context
-                )
-            );
-
-            // fixme log these from the callbacks
-            $standardOutput = $this->buildOutput->getCollectedStandardOutput();
-            $standardError = $this->buildOutput->getCollectedStandardError();
-
-            $this->buildOutput->finalizeTarget($targetId, $result);
-
-            if (!$result->hasSucceeded()) {
-                return $result;
-            }
-
-            foreach ($result->artifacts() as $artifact) {
-                $this->artifactCollector->collect($targetId, $artifact);
-            }
-
-            $this->logger->info('Target built', ['target-id' => $targetId->toString(), 'stdout' => $standardOutput, 'stderr' => $standardError]);
+            $targetFiberStack->addTarget($targetId, $target, $this->buildOutput->startTarget($targetId), $context);
         }
 
-        return BuildActionResult::ok($this->artifactCollector->all());
+        $results = $targetFiberStack->waitForAll();
+
+        $this->buildOutput->finalizeBuild($results);
+
+        $failed = false;
+        foreach ($results as $result) {
+            if (!$result[0]->hasSucceeded()) {
+                $failed = true;
+                break;
+            }
+        }
+
+        return $failed ? BuildActionResult::fail('Build failed') : BuildActionResult::ok($this->artifactCollector->all());
     }
 }

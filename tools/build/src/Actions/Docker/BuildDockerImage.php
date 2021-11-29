@@ -9,10 +9,10 @@ use function array_values;
 use function assert;
 use function is_array;
 use function is_string;
-use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 
@@ -25,8 +25,9 @@ final class BuildDockerImage implements BuildAction
     }
 
     public function execute(
-        ActionOutput $output,
-        Context $context
+        TargetOutput $output,
+        Context $context,
+        string $workingDirectory
     ): BuildActionResult {
         $dockerBuildCommand = $context->configuration()->getSingleBuildValue('$.docker.build-command');
 
@@ -39,6 +40,7 @@ final class BuildDockerImage implements BuildAction
         }
 
         $process = new InActionProcess(
+            $workingDirectory,
             array_values(array_merge($cleanDockerBuildCommand, ['-t', $this->imageName . ':' . $context->buildFacts()->buildId(), '-f', $this->dockerFilePath, $this->contextPath])),
             self::DEFAULT_TIMEOUT
         );

@@ -11,7 +11,7 @@
             "vendor/",
             "bin/",
             "BuildOutput/StyledBuildOutput.php",
-            "BuildOutput/CIBuildOutput.php",
+            "BuildOutput/StyledTargetOutput.php",
             "Rust/TargetGenerator.php",
             "PHP/TargetGenerator.php",
             "Docker/TargetGenerator.php",
@@ -20,7 +20,8 @@
             "Actions/Docker/LintDockerfile.php",
             "Actions/KustomizeApply.php",
             "Commands/Build.php",
-            "MachineInfo.php"
+            "MachineInfo.php",
+            "Targets/Parallel/FiberTargetExecutor.php"
         ]
     },
     "mutators": {

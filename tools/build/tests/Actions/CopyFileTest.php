@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Ramona\AutomationPlatformLibBuild\Actions;
 
+use const DIRECTORY_SEPARATOR;
 use PHPUnit\Framework\TestCase;
-use Ramona\AutomationPlatformLibBuild\ActionOutput;
 use Ramona\AutomationPlatformLibBuild\Actions\CopyFile;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
 use function Safe\touch;
@@ -20,14 +21,21 @@ final class CopyFileTest extends TestCase
     public function testCanCopyAFile(): void
     {
         $tempdir = sys_get_temp_dir();
-        $sourcePath = $tempdir . '/' . uniqid('', true);
-        touch($sourcePath);
-        $targetPath = $tempdir . '/' . uniqid('', true);
 
-        $action = new CopyFile($sourcePath, $targetPath);
+        $sourceFilename = uniqid('', true);
+        $targetFilename = uniqid('', true);
+
+        $sourcePath = $tempdir . DIRECTORY_SEPARATOR . $sourceFilename;
+
+        touch($sourcePath);
+
+        $targetPath = $tempdir . DIRECTORY_SEPARATOR . $targetFilename;
+
+        $action = new CopyFile($sourceFilename, $targetFilename);
         $action->execute(
-            $this->createMock(ActionOutput::class),
-            new Context(Configuration::fromJsonString('{}'), new Collector(), new BuildFacts('test', false, 1, 1))
+            $this->createMock(TargetOutput::class),
+            new Context(Configuration::fromJsonString('{}'), new Collector(), new BuildFacts('test', false, 1, 1)),
+            $tempdir
         );
 
         self::assertFileExists($targetPath);

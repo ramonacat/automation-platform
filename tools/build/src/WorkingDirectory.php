@@ -10,7 +10,6 @@ use function Safe\getcwd;
 final class WorkingDirectory
 {
     /**
-     * todo this should probably be placed elsewhere
      * @template T
      * @param callable():T $callback
      * @return T
