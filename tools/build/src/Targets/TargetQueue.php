@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild\Targets;
 
 use function array_diff;
+use function array_map;
+use function array_values;
+use function iterator_to_array;
 use SplQueue;
 
 final class TargetQueue
@@ -67,17 +70,22 @@ final class TargetQueue
 
     public function __debugInfo(): array
     {
-        $result = [];
-
-        foreach ($this->queue as $item) {
-            $result[] = $item->toString();
-        }
-
-        return $result;
+        return array_map(
+            static fn (TargetId $t) => $t->toString(),
+            $this->asArray()
+        );
     }
 
     public function equals(TargetQueue $other): bool
     {
         return array_diff($this->__debugInfo(), $other->__debugInfo()) === [];
+    }
+
+    /**
+     * @return list<TargetId>
+     */
+    public function asArray(): array
+    {
+        return array_values(iterator_to_array($this->queue));
     }
 }
