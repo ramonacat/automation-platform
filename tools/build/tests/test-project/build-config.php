@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
-use Ramona\AutomationPlatformLibBuild\Targets\Target;
 
 return static function (BuildDefinitionBuilder $builder) {
-    $builder->addTarget(new Target('a', new NoOp()));
-    $builder->addTarget(new Target('b', new NoOp()));
+    $builder->addTarget('a', new NoOp());
+    $builder->addTarget('b', new NoOp());
 };

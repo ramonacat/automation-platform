@@ -6,6 +6,7 @@ namespace Ramona\AutomationPlatformLibBuild\Definition;
 
 use function array_merge;
 use function count;
+use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
@@ -31,20 +32,22 @@ final class BuildDefinitionBuilder
     }
 
     /**
-     * @return $this
+     * @param list<TargetId> $dependencies
      */
-    public function addTarget(Target $target): self
+    public function addTarget(string $name, BuildAction $action, array $dependencies = []): TargetId
     {
-        $this->targets[] = $target;
+        $targetId = new TargetId($this->path, $name);
 
-        return $this;
+        $this->targets[] = new Target($targetId, $action, $dependencies);
+
+        return $targetId;
     }
 
     public function build(BuildFacts $buildFacts, Configuration $configuration): BuildDefinition
     {
         foreach ($this->targetGenerators as $generator) {
             foreach ($generator->targets($buildFacts, $configuration) as $target) {
-                $this->addTarget($target);
+                $this->targets[] = $target; // todo the build generator should get the def builder as arg instead
             }
         }
 
@@ -71,6 +74,6 @@ final class BuildDefinitionBuilder
             $dependencies = array_merge($dependencies, $generator->defaultTargetIds($kind));
         }
 
-        $this->targets[] = new Target($kind->targetName(), new NoOp(), $dependencies);
+        $this->targets[] = new Target(new TargetId($this->path, $kind->targetName()), new NoOp(), $dependencies);
     }
 }

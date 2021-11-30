@@ -57,7 +57,7 @@ final class BuildExecutorTest extends TestCase
     public function testWillReturnJustSelfForNoDependencies(): void
     {
         $this->setupDefinitions([
-            [new TargetId('.', 'build'), new Target('build', new NoOp())],
+            new Target(new TargetId('.', 'build'), new NoOp()),
         ]);
 
         $result = $this->buildExecutor->buildQueue(new TargetId('.', 'build'));
@@ -68,8 +68,8 @@ final class BuildExecutorTest extends TestCase
     public function testWillPutDependencyBeforeSelf(): void
     {
         $this->setupDefinitions([
-            [new TargetId('.', 'build-dep'), new Target('build-dep', new NoOp())],
-            [new TargetId('.', 'build'), new Target('build', new NoOp(), [new TargetId('.', 'build-dep')])],
+            new Target(new TargetId('.', 'build-dep'), new NoOp()),
+            new Target(new TargetId('.', 'build'), new NoOp(), [new TargetId('.', 'build-dep')]),
         ]);
 
         $result = $this->buildExecutor->buildQueue(new TargetId('.', 'build'));
@@ -88,9 +88,9 @@ final class BuildExecutorTest extends TestCase
     public function testCanHandleMultipleLevelsOfDependencies(): void
     {
         $this->setupDefinitions([
-            [new TargetId('.', 'build-dep-1'), new Target('build-dep-1', new NoOp())],
-            [new TargetId('.', 'build-dep'), new Target('build-dep-1', new NoOp(), [new TargetId('.', 'build-dep-1')])],
-            [new TargetId('.', 'build'), new Target('build-dep-1', new NoOp(), [new TargetId('.', 'build-dep')])],
+            new Target(new TargetId('.', 'build-dep-1'), new NoOp()),
+            new Target(new TargetId('.', 'build-dep'), new NoOp(), [new TargetId('.', 'build-dep-1')]),
+            new Target(new TargetId('.', 'build'), new NoOp(), [new TargetId('.', 'build-dep')]),
         ]);
 
         $result = $this->buildExecutor->buildQueue(new TargetId('.', 'build'));
@@ -105,10 +105,10 @@ final class BuildExecutorTest extends TestCase
     public function testCanHandleRepeatingDependencies(): void
     {
         $this->setupDefinitions([
-            [new TargetId('.', 'build-dep-2'), new Target('build-dep-2', new NoOp(), [new TargetId('.', 'build-dep-1')])],
-            [new TargetId('.', 'build-dep-1'), new Target('build-dep-1', new NoOp())],
-            [new TargetId('.', 'build-dep'), new Target('build-dep', new NoOp(), [new TargetId('.', 'build-dep-1')])],
-            [new TargetId('.', 'build'), new Target('build', new NoOp(), [new TargetId('.', 'build-dep'), new TargetId('.', 'build-dep-2')])],
+            new Target(new TargetId('.', 'build-dep-2'), new NoOp(), [new TargetId('.', 'build-dep-1')]),
+            new Target(new TargetId('.', 'build-dep-1'), new NoOp()),
+            new Target(new TargetId('.', 'build-dep'), new NoOp(), [new TargetId('.', 'build-dep-1')]),
+            new Target(new TargetId('.', 'build'), new NoOp(), [new TargetId('.', 'build-dep'), new TargetId('.', 'build-dep-2')]),
         ]);
 
         $result = $this->buildExecutor->buildQueue(new TargetId('.', 'build'));
@@ -138,13 +138,13 @@ final class BuildExecutorTest extends TestCase
     public function testWorksOnRepeatingDependencies(): void
     {
         $this->setupDefinitions([
-            [new TargetId(__DIR__ . '/b/', 'build-dev'), new Target('build-dev', new NoOp(), [new TargetId(__DIR__ . '/b', 'check')])],
-            [new TargetId(__DIR__ . '/b/', 'check'), new Target('check', new NoOp())],
-            [new TargetId(__DIR__ . '/b/', 'deploy-dev'), new Target('deploy-dev', new NoOp(), [new TargetId(__DIR__ . '/b', 'build-dev')])],
+            new Target(new TargetId(__DIR__ . '/b/', 'build-dev'), new NoOp(), [new TargetId(__DIR__ . '/b', 'check')]),
+            new Target(new TargetId(__DIR__ . '/b/', 'check'), new NoOp()),
+            new Target(new TargetId(__DIR__ . '/b/', 'deploy-dev'), new NoOp(), [new TargetId(__DIR__ . '/b', 'build-dev')]),
 
-            [new TargetId(__DIR__ . '/a/', 'build-dev'), new Target('build-dev', new NoOp(), [new TargetId(__DIR__ . '/a', 'check')])],
-            [new TargetId(__DIR__ . '/a/', 'check'), new Target('check', new NoOp())],
-            [new TargetId(__DIR__ . '/a/', 'deploy-dev'), new Target('deploy-dev', new NoOp(), [new TargetId(__DIR__ . '/b', 'deploy-dev')])],
+            new Target(new TargetId(__DIR__ . '/a/', 'build-dev'), new NoOp(), [new TargetId(__DIR__ . '/a', 'check')]),
+            new Target(new TargetId(__DIR__ . '/a/', 'check'), new NoOp()),
+            new Target(new TargetId(__DIR__ . '/a/', 'deploy-dev'), new NoOp(), [new TargetId(__DIR__ . '/b', 'deploy-dev')]),
         ]);
 
         $result = $this->buildExecutor->buildQueue(new TargetId(__DIR__ . '/a', 'deploy-dev'));
@@ -160,9 +160,9 @@ final class BuildExecutorTest extends TestCase
     public function testConsidersTargetsWithDifferentPathsToTheSameDirectoryTheSame(): void
     {
         $this->setupDefinitions([
-            [new TargetId(__DIR__ . '/a', 'check'), new Target('check', new NoOp(), [new TargetId(__DIR__ . '/b', 'check'), new TargetId(__DIR__ . '/a/../c', 'check')])],
-            [new TargetId(__DIR__ . '/b', 'check'), new Target('check', new NoOp(), [new TargetId(__DIR__ . '/c', 'check')])],
-            [new TargetId(__DIR__ . '/c', 'check'), new Target('check', new NoOp())],
+            new Target(new TargetId(__DIR__ . '/a', 'check'), new NoOp(), [new TargetId(__DIR__ . '/b', 'check'), new TargetId(__DIR__ . '/a/../c', 'check')]),
+            new Target(new TargetId(__DIR__ . '/b', 'check'), new NoOp(), [new TargetId(__DIR__ . '/c', 'check')]),
+            new Target(new TargetId(__DIR__ . '/c', 'check'), new NoOp()),
         ]);
 
         $result = $this->buildExecutor->buildQueue(new TargetId(__DIR__ . '/a', 'check'));
@@ -182,7 +182,7 @@ final class BuildExecutorTest extends TestCase
         $action->expects(self::once())->method('execute')->willReturn(BuildResult::ok([]));
 
         $this->setupDefinitions([
-            [$targetId, new Target('check', $action)],
+            new Target($targetId, $action),
         ]);
 
         $this->buildExecutor->executeTarget($targetId);
@@ -194,8 +194,8 @@ final class BuildExecutorTest extends TestCase
         $targetIdB = new TargetId(__DIR__ . '/c', 'b');
 
         $this->setupDefinitions([
-            [$targetIdA, new Target('a', new NoOp())],
-            [$targetIdB, new Target('b', new NoOp(), [$targetIdA])],
+            new Target($targetIdA, new NoOp()),
+            new Target($targetIdB, new NoOp(), [$targetIdA]),
         ]);
 
         $this
@@ -228,8 +228,8 @@ final class BuildExecutorTest extends TestCase
             ->willReturn($resultB);
 
         $this->setupDefinitions([
-            [$targetIdA, new Target('a', $actionA)],
-            [$targetIdB, new Target('b', $actionB, [$targetIdA])],
+            new Target($targetIdA, $actionA),
+            new Target($targetIdB, $actionB, [$targetIdA]),
         ]);
 
         $result = $this->buildExecutor->executeTarget($targetIdB);
@@ -255,8 +255,8 @@ final class BuildExecutorTest extends TestCase
             ->willReturn($resultB);
 
         $this->setupDefinitions([
-            [$targetIdA, new Target('a', $actionA)],
-            [$targetIdB, new Target('b', $actionB, [$targetIdA])],
+            new Target($targetIdA, $actionA),
+            new Target($targetIdB, $actionB, [$targetIdA]),
         ]);
 
         $targetOutputA = $this->createMock(TargetOutput::class);
@@ -300,8 +300,8 @@ final class BuildExecutorTest extends TestCase
             ->willReturn($resultB);
 
         $this->setupDefinitions([
-            [$targetIdA, new Target('a', $actionA)],
-            [$targetIdB, new Target('b', $actionB, [$targetIdA])],
+            new Target($targetIdA, $actionA),
+            new Target($targetIdB, $actionB, [$targetIdA]),
         ]);
 
         $result = $this->buildExecutor->executeTarget($targetIdB);
@@ -309,7 +309,7 @@ final class BuildExecutorTest extends TestCase
     }
 
     /**
-     * @param non-empty-list<array{0:TargetId,1:Target}> $map
+     * @param non-empty-list<Target> $map
      */
     private function setupDefinitions(array $map): void
     {
@@ -318,8 +318,8 @@ final class BuildExecutorTest extends TestCase
             ->method('target')
             ->willReturnCallback(function (TargetId $targetId) use ($map) {
                 foreach ($map as $mapTarget) {
-                    if ($mapTarget[0]->toString() === $targetId->toString()) {
-                        return $mapTarget[1];
+                    if ($mapTarget->id()->toString() === $targetId->toString()) {
+                        return $mapTarget;
                     }
                 }
 

@@ -7,6 +7,6 @@ use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 
 return static function (BuildDefinitionBuilder $builder) {
-    $builder->addTarget(new Target('build', new NoOp()));
-    $builder->addTarget(new Target('fix', new NoOp()));
+    $builder->addTarget('build', new NoOp());
+    $builder->addTarget('fix', new NoOp());
 };

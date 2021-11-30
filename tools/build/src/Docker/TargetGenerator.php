@@ -28,14 +28,14 @@ final class TargetGenerator implements TargetGeneratorInterface
     {
         $this->targets = [
             new Target(
-                $artifactKey . '-docker-build',
+                new TargetId($this->projectDirectory, $artifactKey . '-docker-build'),
                 new BuildDockerImage($artifactKey, $imageName, $contextPath, $dockerFilePath),
                 [
                     new TargetId($projectDirectory, $this->artifactKey . '-docker-lint')
                 ]
             ),
             new Target(
-                $artifactKey . '-docker-lint',
+                new TargetId($this->projectDirectory, $artifactKey . '-docker-lint'),
                 new LintDockerfile($this->projectDirectory . DIRECTORY_SEPARATOR . $dockerFilePath),
                 $additionalDependencies
             )

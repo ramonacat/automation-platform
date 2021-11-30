@@ -11,37 +11,31 @@ return static function (BuildDefinitionBuilder $builder) {
     $tools = glob(__DIR__ . '/tools/*');
 
     $builder->addTarget(
-        new Target(
-            'build',
-            new NoOp(),
-            array_map(
-                static fn(string $path) => new TargetId($path, 'build'),
-                array_merge($tools, $libraries, $services)
-            )
+        'build',
+        new NoOp(),
+        array_map(
+            static fn(string $path) => new TargetId($path, 'build'),
+            array_merge($tools, $libraries, $services)
         )
     );
 
     $builder->addTarget(
-        new Target(
-            'fix',
-            new NoOp(),
-            array_map(
-                static fn(string $path) => new TargetId($path, 'fix'),
-                array_merge($tools, $libraries, $services)
-            )
+        'fix',
+        new NoOp(),
+        array_map(
+            static fn(string $path) => new TargetId($path, 'fix'),
+            array_merge($tools, $libraries, $services)
         )
     );
 
     $builder->addTarget(
-        new Target(
-            'deploy',
-            new NoOp(),
-            array_merge(
-                [new TargetId(__DIR__, 'build')],
-                array_map(
-                    static fn(string $path) => new TargetId($path, 'deploy'),
-                    $services
-                )
+        'deploy',
+        new NoOp(),
+        array_merge(
+            [new TargetId(__DIR__, 'build')],
+            array_map(
+                static fn(string $path) => new TargetId($path, 'deploy'),
+                $services
             )
         )
     );

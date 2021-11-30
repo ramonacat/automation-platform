@@ -42,21 +42,17 @@ return static function (BuildDefinitionBuilder $builder) {
     $builder->addTargetGenerator($dockerMigrationsTargetGenerator);
 
     $builder->addTarget(
-        new Target(
-            'generate-kustomize-override',
-            new PutFile('k8s/overlays/dev/deployment.yaml', $override),
-            array_merge(
-                $dockerTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
-                $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
-            )
+        'generate-kustomize-override',
+        new PutFile('k8s/overlays/dev/deployment.yaml', $override),
+        array_merge(
+            $dockerTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
+            $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
         )
     );
     $builder->addTarget(
-        new Target(
-            'deploy',
-            new KustomizeApply('k8s/overlays/dev'),
-            [new TargetId(__DIR__, 'build')]
-        )
+        'deploy',
+        new KustomizeApply('k8s/overlays/dev'),
+        [new TargetId(__DIR__, 'build')]
     );
 
     $builder->addDefaultTarget(

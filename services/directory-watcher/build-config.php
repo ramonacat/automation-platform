@@ -1,6 +1,5 @@
 <?php
 
-use Ramona\AutomationPlatformLibBuild\Actions\BuildDockerImage;
 use Ramona\AutomationPlatformLibBuild\Actions\KustomizeApply;
 use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
 use Ramona\AutomationPlatformLibBuild\Actions\PutRuntimeConfiguration;
@@ -8,7 +7,6 @@ use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
 use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
 use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
-use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator as DockerTargetGenerator;
 
@@ -38,7 +36,7 @@ return static function (BuildDefinitionBuilder $builder) {
 
     $builder->addTargetGenerator($rustTargetGenerator);
 
-    $builder->addTarget(new Target('put-runtime-config', new PutRuntimeConfiguration('runtime.configuration.json')));
+    $builder->addTarget('put-runtime-config', new PutRuntimeConfiguration('runtime.configuration.json'));
 
     $dockerTargetGenerator = new DockerTargetGenerator(
         __DIR__,
@@ -63,22 +61,18 @@ return static function (BuildDefinitionBuilder $builder) {
     $builder->addTargetGenerator($dockerMigrationsTargetGenerator);
 
     $builder->addTarget(
-        new Target(
             'generate-kustomize-override',
             new PutFile('k8s/overlays/dev/deployment.yaml', $override),
             array_merge(
                 $dockerTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
                 $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
-            )
         )
     );
 
     $builder->addTarget(
-        new Target(
             'deploy',
             new KustomizeApply('k8s/overlays/dev'),
             array_merge([new TargetId(__DIR__.'/../events/', 'deploy')], $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build))
-        )
     );
 
     $builder->addDefaultTarget(
