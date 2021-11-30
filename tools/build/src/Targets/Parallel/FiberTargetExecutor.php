@@ -6,6 +6,7 @@ namespace Ramona\AutomationPlatformLibBuild\Targets\Parallel;
 
 use function count;
 use Fiber;
+use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
@@ -30,8 +31,11 @@ final class FiberTargetExecutor
      */
     private array $results = [];
 
-    public function __construct(private int $maxDegreeOfParallelism, private Collector $artifactCollector)
-    {
+    public function __construct(
+        private int $maxDegreeOfParallelism,
+        private Collector $artifactCollector,
+        private LoggerInterface $logger,
+    ) {
     }
 
     public function addTarget(TargetId $targetId, Target $target, TargetOutput $output, Context $context): void
@@ -52,6 +56,8 @@ final class FiberTargetExecutor
         $fiber = new Fiber(function () use ($target, $targetId, $output, $context) {
             Fiber::suspend($target->execute($output, $context, $targetId->path()));
         });
+
+        $this->logger->info('Started executing target', [$targetId->toString()]);
 
         $this->runningFibers[$targetId->toString()] = $fiber;
         $this->outputsForRunningTargets[$targetId->toString()] = $output;
@@ -82,6 +88,16 @@ final class FiberTargetExecutor
                     foreach ($result->artifacts() as $artifact) {
                         $this->artifactCollector->collect(TargetId::fromString($fiberTargetId), $artifact);
                     }
+
+                    $this->logger->info(
+                        'Target execution finished',
+                        [
+                            'targetId' => $fiberTargetId,
+                            'stdout' => $output->getCollectedStandardOutput(),
+                            'stderr' => $output->getCollectedStandardError()
+                        ]
+                    );
+
                     return;
                 }
             }

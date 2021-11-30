@@ -51,7 +51,7 @@ final class TargetGenerator implements TargetGeneratorInterface
             fn (Target $t) => new TargetId($this->projectDirectory, $t->name()),
             array_filter(
                 $this->targets,
-                static fn (Target $t) => $t->name() !== 'rust-fix'
+                static fn (Target $t) => $t->name() !== 'rust-fmt'
             )
         ));
     }
