@@ -10,10 +10,10 @@ use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\CyclicDependencyFound;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionsLoader;
@@ -179,7 +179,7 @@ final class BuildExecutorTest extends TestCase
         $targetId = new TargetId(__DIR__ . '/c', 'check');
         $action = $this->createMock(BuildAction::class);
 
-        $action->expects(self::once())->method('execute')->willReturn(BuildActionResult::ok([]));
+        $action->expects(self::once())->method('execute')->willReturn(BuildResult::ok([]));
 
         $this->setupDefinitions([
             [$targetId, new Target('check', $action)],
@@ -215,8 +215,8 @@ final class BuildExecutorTest extends TestCase
         $targetIdA = new TargetId(__DIR__ . '/c', 'a');
         $targetIdB = new TargetId(__DIR__ . '/c', 'b');
 
-        $resultA = BuildActionResult::ok([$artifactA]);
-        $resultB = BuildActionResult::ok([$artifactB]);
+        $resultA = BuildResult::ok([$artifactA]);
+        $resultB = BuildResult::ok([$artifactB]);
 
         $actionA = $this->createMock(BuildAction::class);
         $actionA
@@ -242,8 +242,8 @@ final class BuildExecutorTest extends TestCase
         $targetIdA = new TargetId(__DIR__ . '/c', 'a');
         $targetIdB = new TargetId(__DIR__ . '/c', 'b');
 
-        $resultA = BuildActionResult::ok([]);
-        $resultB = BuildActionResult::fail('boo');
+        $resultA = BuildResult::ok([]);
+        $resultB = BuildResult::fail('boo');
 
         $actionA = $this->createMock(BuildAction::class);
         $actionA
@@ -287,8 +287,8 @@ final class BuildExecutorTest extends TestCase
         $targetIdA = new TargetId(__DIR__ . '/c', 'a');
         $targetIdB = new TargetId(__DIR__ . '/c', 'b');
 
-        $resultA = BuildActionResult::ok([]);
-        $resultB = BuildActionResult::fail('boo');
+        $resultA = BuildResult::ok([]);
+        $resultB = BuildResult::fail('boo');
 
         $actionA = $this->createMock(BuildAction::class);
         $actionA

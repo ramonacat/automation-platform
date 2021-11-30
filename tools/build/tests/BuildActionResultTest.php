@@ -5,35 +5,35 @@ declare(strict_types=1);
 namespace Tests\Ramona\AutomationPlatformLibBuild;
 
 use PHPUnit\Framework\TestCase;
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 final class BuildActionResultTest extends TestCase
 {
     public function testOkWillReturnASuccessfulResult(): void
     {
-        $result = BuildActionResult::ok([]);
+        $result = BuildResult::ok([]);
 
         self::assertTrue($result->hasSucceeded());
     }
 
     public function testFailWillReturnAFailedResult(): void
     {
-        $result = BuildActionResult::fail('x');
+        $result = BuildResult::fail('x');
 
         self::assertFalse($result->hasSucceeded());
     }
 
     public function testFailWillRetainAMessage(): void
     {
-        $result = BuildActionResult::fail('x');
+        $result = BuildResult::fail('x');
 
-        self::assertSame('x', $result->getMessage());
+        self::assertSame('x', $result->message());
     }
 
     public function testDependencyFailedWillReturnAFailedResult(): void
     {
-        $result = BuildActionResult::dependencyFailed(new TargetId(__DIR__, 'a'));
+        $result = BuildResult::dependencyFailed(new TargetId(__DIR__, 'a'));
 
         self::assertFalse($result->hasSucceeded());
     }
@@ -41,8 +41,8 @@ final class BuildActionResultTest extends TestCase
     public function testDependencyFailedWillHaveAnErrorMessage(): void
     {
         $targetId = new TargetId(__DIR__, 'a');
-        $result = BuildActionResult::dependencyFailed($targetId);
+        $result = BuildResult::dependencyFailed($targetId);
 
-        self::assertSame('Not executed due to dependency failure: ' . $targetId->toString(), $result->getMessage());
+        self::assertSame('Not executed due to dependency failure: ' . $targetId->toString(), $result->message());
     }
 }

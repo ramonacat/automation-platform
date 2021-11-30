@@ -7,9 +7,9 @@ namespace Ramona\AutomationPlatformLibBuild\Definition;
 use function array_map;
 use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Targets\Parallel\FiberTargetExecutor;
@@ -68,7 +68,7 @@ final class BuildExecutor
         return $buildQueue;
     }
 
-    public function executeTarget(TargetId $targetId): BuildActionResult
+    public function executeTarget(TargetId $targetId): BuildResult
     {
         $context = new Context(
             $this->configuration,
@@ -114,6 +114,8 @@ final class BuildExecutor
             }
         }
 
-        return $failed ? BuildActionResult::fail('Build failed') : BuildActionResult::ok($this->artifactCollector->all());
+        return $failed
+            ? BuildResult::fail('Build failed')
+            : BuildResult::ok($this->artifactCollector->all());
     }
 }

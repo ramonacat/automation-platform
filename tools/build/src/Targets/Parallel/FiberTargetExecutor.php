@@ -8,8 +8,8 @@ use function count;
 use Fiber;
 use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
@@ -27,7 +27,7 @@ final class FiberTargetExecutor
     private array $outputsForRunningTargets = [];
 
     /**
-     * @var array<string, array{0:BuildActionResult,1:TargetOutput}>
+     * @var array<string, array{0:BuildResult,1:TargetOutput}>
      */
     private array $results = [];
 
@@ -46,7 +46,7 @@ final class FiberTargetExecutor
             }
 
             if (!$this->results[$dependency->toString()][0]->hasSucceeded()) {
-                $result = BuildActionResult::dependencyFailed($dependency);
+                $result = BuildResult::dependencyFailed($dependency);
                 $this->results[$targetId->toString()] = [$result, $output];
                 $output->finalize($result);
                 return;
@@ -72,10 +72,10 @@ final class FiberTargetExecutor
         while (count($this->runningFibers) > 0) {
             foreach ($this->runningFibers as $fiberTargetId => $fiber) {
                 if ($fiber->isStarted()) {
-                    /** @var BuildActionResult|null $result */
+                    /** @var BuildResult|null $result */
                     $result = $fiber->resume();
                 } else {
-                    /** @var BuildActionResult|null $result */
+                    /** @var BuildResult|null $result */
                     $result = $fiber->start();
                 }
 
@@ -112,7 +112,7 @@ final class FiberTargetExecutor
     }
 
     /**
-     * @return array<string, array{0:BuildActionResult,1:TargetOutput}>
+     * @return array<string, array{0:BuildResult,1:TargetOutput}>
      */
     public function waitForAll(): array
     {
