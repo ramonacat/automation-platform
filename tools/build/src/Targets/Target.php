@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild\Targets;
 
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 
 final class Target
@@ -42,7 +42,7 @@ final class Target
         return $this->name;
     }
 
-    public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildActionResult
+    public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult
     {
         return $this->action->execute($output, $context, $workingDirectory);
     }

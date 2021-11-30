@@ -8,8 +8,8 @@ use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Actions\Group;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 
 final class GroupTest extends TestCase
@@ -19,8 +19,8 @@ final class GroupTest extends TestCase
         $a1 = $this->createMock(BuildAction::class);
         $a2 = $this->createMock(BuildAction::class);
 
-        $a1->expects(self::once())->method('execute')->willReturn(BuildActionResult::ok([]));
-        $a2->expects(self::once())->method('execute')->willReturn(BuildActionResult::ok([]));
+        $a1->expects(self::once())->method('execute')->willReturn(BuildResult::ok([]));
+        $a2->expects(self::once())->method('execute')->willReturn(BuildResult::ok([]));
 
         $group = new Group([$a1, $a2]);
 
@@ -39,8 +39,8 @@ final class GroupTest extends TestCase
         $a1 = $this->createMock(BuildAction::class);
         $a2 = $this->createMock(BuildAction::class);
 
-        $a1->method('execute')->willReturn(BuildActionResult::ok([$artifact1]));
-        $a2->method('execute')->willReturn(BuildActionResult::ok([$artifact2]));
+        $a1->method('execute')->willReturn(BuildResult::ok([$artifact1]));
+        $a2->method('execute')->willReturn(BuildResult::ok([$artifact2]));
 
         $group = new Group([$a1, $a2]);
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
 
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 interface BuildOutput
@@ -12,7 +12,7 @@ interface BuildOutput
     public function startTarget(TargetId $id): TargetOutput;
 
     /**
-     * @param array<string, array{0:BuildActionResult,1:TargetOutput}> $results
+     * @param array<string, array{0:BuildResult,1:TargetOutput}> $results
      */
     public function finalizeBuild(array $results): void;
 }

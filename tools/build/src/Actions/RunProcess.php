@@ -6,8 +6,8 @@ namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use function implode;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 
@@ -29,13 +29,13 @@ final class RunProcess implements BuildAction
     ) {
     }
 
-    public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildActionResult
+    public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult
     {
         $process = new InActionProcess($workingDirectory, $this->command, $this->timeoutSeconds);
 
         $commandName = implode(' ', $this->command);
         return $process->run($output)
-            ? BuildActionResult::ok($this->artifacts)
-            : BuildActionResult::fail("Failed to execute command \"{$commandName}\"");
+            ? BuildResult::ok($this->artifacts)
+            : BuildResult::fail("Failed to execute command \"{$commandName}\"");
     }
 }

@@ -11,8 +11,8 @@ use function is_array;
 use function is_string;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 
@@ -28,7 +28,7 @@ final class BuildDockerImage implements BuildAction
         TargetOutput $output,
         Context $context,
         string $workingDirectory
-    ): BuildActionResult {
+    ): BuildResult {
         $dockerBuildCommand = $context->configuration()->getSingleBuildValue('$.docker.build-command');
 
         // todo make the type check here cleaner and throw exceptions as needed
@@ -46,7 +46,7 @@ final class BuildDockerImage implements BuildAction
         );
 
         return $process->run($output)
-            ? BuildActionResult::ok([new ContainerImage($this->key, $this->imageName, $context->buildFacts()->buildId())])
-            : BuildActionResult::fail("Failed to build the container image");
+            ? BuildResult::ok([new ContainerImage($this->key, $this->imageName, $context->buildFacts()->buildId())])
+            : BuildResult::fail("Failed to build the container image");
     }
 }

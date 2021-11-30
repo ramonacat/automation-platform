@@ -6,8 +6,8 @@ namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use Closure;
 use const DIRECTORY_SEPARATOR;
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use function Safe\file_put_contents;
 
@@ -26,10 +26,10 @@ final class PutFile implements BuildAction
         $this->generateContents = Closure::fromCallable($generateContents);
     }
 
-    public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildActionResult
+    public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult
     {
         file_put_contents($workingDirectory . DIRECTORY_SEPARATOR . $this->path, ($this->generateContents)($context));
 
-        return BuildActionResult::ok([]);
+        return BuildResult::ok([]);
     }
 }

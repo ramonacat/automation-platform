@@ -6,7 +6,7 @@ namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
 
 use Bramus\Ansi\Ansi;
 use const PHP_EOL;
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 final class StyledTargetOutput implements TargetOutput
@@ -46,7 +46,7 @@ final class StyledTargetOutput implements TargetOutput
         return $this->standardError;
     }
 
-    public function finalize(BuildActionResult $result): void
+    public function finalize(BuildResult $result): void
     {
         $startLine = '> Target ' . $this->id->target() . ' from ' . $this->id->path() . ' finished' . PHP_EOL;
 

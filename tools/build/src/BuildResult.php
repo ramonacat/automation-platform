@@ -10,12 +10,12 @@ use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 /**
  * @psalm-immutable
  */
-final class BuildActionResult
+final class BuildResult
 {
     /**
      * @param list<Artifact> $artifacts
      */
-    private function __construct(private bool $succeeded, private ?string $message, private array $artifacts)
+    private function __construct(private bool $succeeded, private ?string $message, private array $artifacts, private ?BuildFailReason $failReason)
     {
     }
 
@@ -25,7 +25,7 @@ final class BuildActionResult
      */
     public static function ok(array $artifacts): self
     {
-        return new self(true, null, $artifacts);
+        return new self(true, null, $artifacts, null);
     }
 
     /**
@@ -33,12 +33,12 @@ final class BuildActionResult
      */
     public static function fail(string $message): self
     {
-        return new self(false, $message, []);
+        return new self(false, $message, [], BuildFailReason::ExecutionFailure);
     }
 
     public static function dependencyFailed(TargetId $dependencyId): self
     {
-        return new self(false, "Not executed due to dependency failure: {$dependencyId->toString()}", []);
+        return new self(false, "Not executed due to dependency failure: {$dependencyId->toString()}", [], BuildFailReason::DependencyFailed);
     }
 
     public function hasSucceeded(): bool
@@ -46,7 +46,7 @@ final class BuildActionResult
         return $this->succeeded;
     }
 
-    public function getMessage(): ?string
+    public function message(): ?string
     {
         return $this->message;
     }
@@ -57,5 +57,10 @@ final class BuildActionResult
     public function artifacts(): array
     {
         return $this->artifacts;
+    }
+
+    public function failReason(): ?BuildFailReason
+    {
+        return $this->failReason;
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Actions;
 
-use Ramona\AutomationPlatformLibBuild\BuildActionResult;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 
 /**
@@ -20,7 +20,7 @@ final class Group implements BuildAction
     {
     }
 
-    public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildActionResult
+    public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult
     {
         $artifacts = [];
         foreach ($this->actions as $action) {
@@ -35,6 +35,6 @@ final class Group implements BuildAction
             }
         }
 
-        return BuildActionResult::ok($artifacts);
+        return BuildResult::ok($artifacts);
     }
 }

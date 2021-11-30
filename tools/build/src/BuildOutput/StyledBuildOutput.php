@@ -7,6 +7,7 @@ namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
 use Bramus\Ansi\Ansi;
 use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
 use const PHP_EOL;
+use Ramona\AutomationPlatformLibBuild\BuildFailReason;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 final class StyledBuildOutput implements BuildOutput
@@ -26,18 +27,22 @@ final class StyledBuildOutput implements BuildOutput
             [$result, $output] = $result;
 
             if (!$result->hasSucceeded()) {
-                $this
-                    ->ansi
-                    ->color([SGR::COLOR_FG_RED])
-                    ->text('[❌]')
-                    ->nostyle();
+                [$icon, $color] = match ($result->failReason()) {
+                    BuildFailReason::DependencyFailed => ['⬤', SGR::COLOR_FG_YELLOW],
+                    BuildFailReason::ExecutionFailure => ['❌', SGR::COLOR_FG_RED],
+                };
             } else {
-                $this
-                    ->ansi
-                    ->color([SGR::COLOR_FG_GREEN])
-                    ->text('[✔]')
-                    ->nostyle();
+                $color = SGR::COLOR_FG_GREEN;
+                $icon = '✔';
             }
+
+            $this
+                ->ansi
+                ->color([$color])
+                ->text('[')
+                ->text($icon)
+                ->text(']')
+                ->nostyle();
 
             $this
                 ->ansi

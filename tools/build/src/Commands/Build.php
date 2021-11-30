@@ -111,7 +111,7 @@ final class Build
             $this
                 ->ansi
                 ->text('The build has failed.' . PHP_EOL)
-                ->text($result->getMessage() ?? '<no message>');
+                ->text($result->message() ?? '<no message>');
 
             return 1;
         }
