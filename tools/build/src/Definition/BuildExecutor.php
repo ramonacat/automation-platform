@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Definition;
 
+use function array_map;
 use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildActionResult;
@@ -77,7 +78,22 @@ final class BuildExecutor
 
         $queue = $this->buildQueue($targetId);
 
-        $targetFiberStack = new FiberTargetExecutor($this->buildFacts->logicalCores(), $this->artifactCollector);
+        $this->logger->info(
+            'Starting a build',
+            [
+                'targetId' => $targetId->toString(),
+                'queue' => array_map(
+                    static fn (TargetId $t) => $t->toString(),
+                    $queue->asArray()
+                )
+            ]
+        );
+
+        $targetFiberStack = new FiberTargetExecutor(
+            $this->buildFacts->logicalCores(),
+            $this->artifactCollector,
+            $this->logger
+        );
 
         while (!$queue->isEmpty()) {
             $targetId = $queue->dequeue();
