@@ -36,13 +36,13 @@ final class BuildDefinitionBuilderTest extends TestCase
 
         $generatorA = $this->createMock(TargetGenerator::class);
         $generatorA->method('targets')->willReturn([
-            new Target('a', new NoOp()),
-            new Target('b', new NoOp()),
+            new Target(new TargetId(__DIR__, 'a'), new NoOp()),
+            new Target(new TargetId(__DIR__, 'b'), new NoOp()),
         ]);
         $generatorB = $this->createMock(TargetGenerator::class);
         $generatorB->method('targets')->willReturn([
-            new Target('c', new NoOp()),
-            new Target('d', new NoOp()),
+            new Target(new TargetId(__DIR__, 'c'), new NoOp()),
+            new Target(new TargetId(__DIR__, 'd'), new NoOp()),
         ]);
 
         $builder->addTargetGenerator($generatorA);
@@ -62,14 +62,14 @@ final class BuildDefinitionBuilderTest extends TestCase
 
         $generatorA = $this->createMock(TargetGenerator::class);
         $generatorA->method('targets')->willReturn([
-            new Target('a', new NoOp()),
-            new Target('b', new NoOp()),
+            new Target(new TargetId(__DIR__, 'a'), new NoOp()),
+            new Target(new TargetId(__DIR__, 'b'), new NoOp()),
         ]);
         $generatorA->method('defaultTargetIds')->with(DefaultTargetKind::Build)->willReturn([new TargetId(__DIR__, 'a')]);
         $generatorB = $this->createMock(TargetGenerator::class);
         $generatorB->method('targets')->willReturn([
-            new Target('c', new NoOp()),
-            new Target('d', new NoOp()),
+            new Target(new TargetId(__DIR__, 'c'), new NoOp()),
+            new Target(new TargetId(__DIR__, 'd'), new NoOp()),
         ]);
         $generatorB->method('defaultTargetIds')->with(DefaultTargetKind::Build)->willReturn([new TargetId(__DIR__, 'c')]);
 

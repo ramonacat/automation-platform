@@ -36,9 +36,10 @@ final class DefaultBuildDefinitionsLoaderTest extends TestCase
     {
         $loader = $this->createLoader();
 
-        $actionNames = $loader->target(new TargetId(__DIR__ . '/test-project/', 'a'));
+        $targetId = new TargetId(__DIR__ . '/test-project/', 'a');
+        $target = $loader->target($targetId);
 
-        self::assertEquals(new Target('a', new NoOp()), $actionNames);
+        self::assertEquals(new Target($targetId, new NoOp()), $target);
     }
 
     private function createLoader(): DefaultBuildDefinitionsLoader

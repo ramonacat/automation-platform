@@ -26,10 +26,10 @@ final class BuildDefinition
     {
         $namesSeen = [];
         foreach ($targets as $target) {
-            if (isset($namesSeen[$target->name()])) {
-                throw new DuplicateTarget(new TargetId($path, $target->name()));
+            if (isset($namesSeen[$target->id()->toString()])) {
+                throw new DuplicateTarget($target->id());
             }
-            $namesSeen[$target->name()] = true;
+            $namesSeen[$target->id()->toString()] = true;
         }
 
         $this->targets = $targets;
@@ -41,7 +41,7 @@ final class BuildDefinition
      */
     public function targetNames(): array
     {
-        return array_map(static fn (Target $t) => $t->name(), $this->targets);
+        return array_map(static fn (Target $t) => $t->id()->target(), $this->targets);
     }
 
     public function target(string $targetName): Target

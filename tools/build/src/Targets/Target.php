@@ -12,34 +12,15 @@ use Ramona\AutomationPlatformLibBuild\Context;
 final class Target
 {
     /**
-     * @psalm-readonly
-     */
-    private string $name;
-
-    /**
-     * @psalm-readonly
-     */
-    private BuildAction $action;
-
-    /**
-     * @psalm-readonly
-     * @var list<TargetId>
-     */
-    private array $dependencies;
-
-    /**
      * @param list<TargetId> $dependencies
      */
-    public function __construct(string $name, BuildAction $action, array $dependencies = [])
+    public function __construct(private TargetId $id, private BuildAction $action, private array $dependencies = [])
     {
-        $this->name = $name;
-        $this->action = $action;
-        $this->dependencies = $dependencies;
     }
 
-    public function name(): string
+    public function id(): TargetId
     {
-        return $this->name;
+        return $this->id;
     }
 
     public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult

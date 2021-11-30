@@ -29,11 +29,11 @@ final class TargetGenerator implements TargetGeneratorInterface
     {
         $composerRequireCheckerConfigPath = $this->projectDirectory . DIRECTORY_SEPARATOR . 'composer-require-checker.json';
         $this->targets = [
-            new Target('php-type-check', new RunProcess(['php', 'vendor/bin/psalm'])),
-            new Target('php-coding-standard', new RunProcess(['php', 'vendor/bin/ecs'])),
+            new Target(new TargetId($this->projectDirectory, 'php-type-check'), new RunProcess(['php', 'vendor/bin/psalm'])),
+            new Target(new TargetId($this->projectDirectory, 'php-coding-standard'), new RunProcess(['php', 'vendor/bin/ecs'])),
             // The config file here is a temporary solution until https://github.com/maglnet/ComposerRequireChecker/pull/320 is done and merged
             new Target(
-                'php-check-transitive-deps',
+                new TargetId($this->projectDirectory, 'php-check-transitive-deps'),
                 new RunProcess(
                     file_exists($composerRequireCheckerConfigPath)
                         ? [
@@ -49,9 +49,9 @@ final class TargetGenerator implements TargetGeneratorInterface
                         ]
                 )
             ),
-            new Target('php-check-unused-deps', new RunProcess(['composer', 'unused'])),
-            new Target('php-cs-fix', new RunProcess(['php', 'vendor/bin/ecs', '--fix'])),
-            new Target('php-tests-unit', new RunProcess(['php', 'vendor/bin/phpunit']), [new TargetId($this->projectDirectory, 'php-type-check')]),
+            new Target(new TargetId($this->projectDirectory, 'php-check-unused-deps'), new RunProcess(['composer', 'unused'])),
+            new Target(new TargetId($this->projectDirectory, 'php-cs-fix'), new RunProcess(['php', 'vendor/bin/ecs', '--fix'])),
+            new Target(new TargetId($this->projectDirectory, 'php-tests-unit'), new RunProcess(['php', 'vendor/bin/phpunit']), [new TargetId($this->projectDirectory, 'php-type-check')]),
 
         ];
     }
@@ -62,7 +62,7 @@ final class TargetGenerator implements TargetGeneratorInterface
             $this->targets,
             [
                 new Target(
-                    'php-tests-mutation',
+                    new TargetId($this->projectDirectory, 'php-tests-mutation'),
                     new RunProcess(
                         [
                             'php',
@@ -89,10 +89,10 @@ final class TargetGenerator implements TargetGeneratorInterface
             [new TargetId($this->projectDirectory, 'php-tests-mutation')],
             array_values(
                 array_map(
-                    fn (Target $t) => new TargetId($this->projectDirectory, $t->name()),
+                    static fn (Target $t) => $t->id(),
                     array_filter(
                         $this->targets,
-                        static fn (Target $target) => $target->name() !== 'php-cs-fix'
+                        static fn (Target $target) => $target->id()->target() !== 'php-cs-fix'
                     )
                 )
             )

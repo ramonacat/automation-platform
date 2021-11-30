@@ -33,13 +33,14 @@ final class BuildDefinitionBuilder
 
     /**
      * @param list<TargetId> $dependencies
-     * @return $this
      */
-    public function addTarget(string $name, BuildAction $action, array $dependencies = []): self
+    public function addTarget(string $name, BuildAction $action, array $dependencies = []): TargetId
     {
-        $this->targets[] = new Target($name, $action, $dependencies);
+        $targetId = new TargetId($this->path, $name);
 
-        return $this;
+        $this->targets[] = new Target($targetId, $action, $dependencies);
+
+        return $targetId;
     }
 
     public function build(BuildFacts $buildFacts, Configuration $configuration): BuildDefinition
@@ -73,6 +74,6 @@ final class BuildDefinitionBuilder
             $dependencies = array_merge($dependencies, $generator->defaultTargetIds($kind));
         }
 
-        $this->targets[] = new Target($kind->targetName(), new NoOp(), $dependencies);
+        $this->targets[] = new Target(new TargetId($this->path, $kind->targetName()), new NoOp(), $dependencies);
     }
 }

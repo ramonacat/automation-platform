@@ -25,12 +25,12 @@ final class TargetGenerator implements TargetGeneratorInterface
     public function __construct(private string $projectDirectory)
     {
         $this->targets = [
-            new Target('rust-clippy', new RunProcess(['cargo', 'clippy', '--', '-D', 'clippy::pedantic', '-D', 'warnings'], timeoutSeconds: 300)),
-            new Target('rust-fmt-check', new RunProcess(['cargo', 'fmt', '--', '--check'], timeoutSeconds: 300)),
-            new Target('rust-fmt', new RunProcess(['cargo', 'fmt'], timeoutSeconds: 300)),
-            new Target('rust-tests-unit', new RunProcess(['cargo', 'test'], timeoutSeconds: 300)),
-            new Target('rust-unused-dependencies', new RunProcess(['cargo', '+nightly', 'udeps', '--all-targets'], timeoutSeconds: 300)),
-            new Target('rust-cargo-audit', new RunProcess(['cargo', 'audit'], timeoutSeconds: 300)),
+            new Target(new TargetId($this->projectDirectory, 'rust-clippy'), new RunProcess(['cargo', 'clippy', '--', '-D', 'clippy::pedantic', '-D', 'warnings'], timeoutSeconds: 300)),
+            new Target(new TargetId($this->projectDirectory, 'rust-fmt-check'), new RunProcess(['cargo', 'fmt', '--', '--check'], timeoutSeconds: 300)),
+            new Target(new TargetId($this->projectDirectory, 'rust-fmt'), new RunProcess(['cargo', 'fmt'], timeoutSeconds: 300)),
+            new Target(new TargetId($this->projectDirectory, 'rust-tests-unit'), new RunProcess(['cargo', 'test'], timeoutSeconds: 300)),
+            new Target(new TargetId($this->projectDirectory, 'rust-unused-dependencies'), new RunProcess(['cargo', '+nightly', 'udeps', '--all-targets'], timeoutSeconds: 300)),
+            new Target(new TargetId($this->projectDirectory, 'rust-cargo-audit'), new RunProcess(['cargo', 'audit'], timeoutSeconds: 300)),
         ];
     }
 
@@ -48,10 +48,10 @@ final class TargetGenerator implements TargetGeneratorInterface
     private function buildTargetIds(): array
     {
         return array_values(array_map(
-            fn (Target $t) => new TargetId($this->projectDirectory, $t->name()),
+            fn (Target $t) => $t->id(),
             array_filter(
                 $this->targets,
-                static fn (Target $t) => $t->name() !== 'rust-fmt'
+                static fn (Target $t) => $t->id()->target() !== 'rust-fmt'
             )
         ));
     }
