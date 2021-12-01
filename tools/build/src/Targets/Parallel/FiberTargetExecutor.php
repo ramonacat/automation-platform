@@ -7,7 +7,9 @@ namespace Ramona\AutomationPlatformLibBuild\Targets\Parallel;
 use function count;
 use Fiber;
 use Psr\Log\LoggerInterface;
+use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
+use Ramona\AutomationPlatformLibBuild\BuildOutput\NullTargetOutput;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
@@ -38,6 +40,19 @@ final class FiberTargetExecutor
     ) {
     }
 
+    /**
+     * @param list<Artifact> $artifacts
+     */
+    public function addTargetFromCache(TargetId $targetId, array $artifacts): void
+    {
+        // fixme separate BuildResult kind for cached
+        foreach ($artifacts as $artifact) {
+            $this->artifactCollector->collect($targetId, $artifact);
+        }
+        $this->results[$targetId->toString()] = [BuildResult::okCached($artifacts), new NullTargetOutput()];
+    }
+
+    // todo remove the TargetId argument, it's a part of Target anyway
     public function addTarget(TargetId $targetId, Target $target, TargetOutput $output, Context $context): void
     {
         foreach ($target->dependencies() as $dependency) {

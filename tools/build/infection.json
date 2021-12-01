@@ -21,7 +21,9 @@
             "Actions/KustomizeApply.php",
             "Commands/Build.php",
             "MachineInfo.php",
-            "Targets/Parallel/FiberTargetExecutor.php"
+            "Targets/Parallel/FiberTargetExecutor.php",
+            "ChangeTracking/GitChangeTracker.php",
+            "State/DotBuildStateStorage.php"
         ]
     },
     "mutators": {

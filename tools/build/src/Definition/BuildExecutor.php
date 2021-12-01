@@ -10,8 +10,10 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
+use Ramona\AutomationPlatformLibBuild\ChangeTracking\ChangeTracker;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\State\State;
 use Ramona\AutomationPlatformLibBuild\Targets\Parallel\FiberTargetExecutor;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetQueue;
@@ -25,7 +27,9 @@ final class BuildExecutor
         private BuildOutput            $buildOutput,
         private BuildDefinitionsLoader $buildDefinitions,
         private Configuration          $configuration,
-        private BuildFacts             $buildFacts
+        private BuildFacts             $buildFacts,
+        private State                  $state,
+        private ChangeTracker          $changeTracker
     ) {
         $this->artifactCollector = new Collector();
     }
@@ -76,6 +80,7 @@ final class BuildExecutor
             $this->buildFacts
         );
 
+        $currentStateId = $this->changeTracker->getCurrentStateId();
         $queue = $this->buildQueue($targetId);
 
         $this->logger->info(
@@ -95,11 +100,35 @@ final class BuildExecutor
             $this->logger
         );
 
+        $cacheBusters = [];
+
         while (!$queue->isEmpty()) {
             $targetId = $queue->dequeue();
             $target = $this->buildDefinitions->target($targetId);
 
-            $targetFiberStack->addTarget($targetId, $target, $this->buildOutput->startTarget($targetId), $context);
+            $state = $this->state->getStateIdForTarget($targetId);
+
+            if (
+                $state !== null
+                && !$this->changeTracker->wasModifiedSince($state[0], $targetId->path())
+            ) {
+                foreach ($target->dependencies() as $dependency) {
+                    if (isset($cacheBusters[$dependency->toString()])) {
+                        $cacheBusters[$targetId->toString()] = true;
+                        break;
+                    }
+                }
+
+                if (!isset($cacheBusters[$targetId->toString()])) {
+                    $this->logger->info('Adding target from cache', ['id' => $targetId->toString()]);
+                    $targetFiberStack->addTargetFromCache($targetId, $state[1]);
+                } else {
+                    $targetFiberStack->addTarget($targetId, $target, $this->buildOutput->startTarget($targetId), $context);
+                }
+            } else {
+                $cacheBusters[$targetId->toString()] = true;
+                $targetFiberStack->addTarget($targetId, $target, $this->buildOutput->startTarget($targetId), $context);
+            }
         }
 
         $results = $targetFiberStack->waitForAll();
@@ -107,10 +136,11 @@ final class BuildExecutor
         $this->buildOutput->finalizeBuild($results);
 
         $failed = false;
-        foreach ($results as $result) {
+        foreach ($results as $resultTargetId => $result) {
             if (!$result[0]->hasSucceeded()) {
                 $failed = true;
-                break;
+            } else {
+                $this->state->setTargetStateId(TargetId::fromString($resultTargetId), $currentStateId, $result[0]->artifacts());
             }
         }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild;
 
+use function in_array;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
@@ -15,7 +16,7 @@ final class BuildResult
     /**
      * @param list<Artifact> $artifacts
      */
-    private function __construct(private bool $succeeded, private ?string $message, private array $artifacts, private ?BuildFailReason $failReason)
+    private function __construct(private ?string $message, private array $artifacts, private BuildResultWithReason $reason)
     {
     }
 
@@ -25,7 +26,16 @@ final class BuildResult
      */
     public static function ok(array $artifacts): self
     {
-        return new self(true, null, $artifacts, null);
+        return new self(null, $artifacts, BuildResultWithReason::OkBuilt);
+    }
+
+    /**
+     * @psalm-pure
+     * @param list<Artifact> $artifacts
+     */
+    public static function okCached(array $artifacts): self
+    {
+        return new self(null, $artifacts, BuildResultWithReason::OkFromCache);
     }
 
     /**
@@ -33,17 +43,17 @@ final class BuildResult
      */
     public static function fail(string $message): self
     {
-        return new self(false, $message, [], BuildFailReason::ExecutionFailure);
+        return new self($message, [], BuildResultWithReason::FailExecutionFailure);
     }
 
     public static function dependencyFailed(TargetId $dependencyId): self
     {
-        return new self(false, "Not executed due to dependency failure: {$dependencyId->toString()}", [], BuildFailReason::DependencyFailed);
+        return new self("Not executed due to dependency failure: {$dependencyId->toString()}", [], BuildResultWithReason::FailDependencyFailed);
     }
 
     public function hasSucceeded(): bool
     {
-        return $this->succeeded;
+        return in_array($this->reason, [BuildResultWithReason::OkBuilt, BuildResultWithReason::OkFromCache], true);
     }
 
     public function message(): ?string
@@ -59,8 +69,8 @@ final class BuildResult
         return $this->artifacts;
     }
 
-    public function failReason(): ?BuildFailReason
+    public function reason(): BuildResultWithReason
     {
-        return $this->failReason;
+        return $this->reason;
     }
 }

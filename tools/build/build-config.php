@@ -13,7 +13,7 @@ return static function (BuildDefinitionBuilder $builder) {
             __DIR__,
             new Configuration(
                 minMsi: 92,
-                minCoveredMsi: 95
+                minCoveredMsi: 94
             )
         )
     );
