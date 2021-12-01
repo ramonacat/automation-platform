@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild\Targets\Parallel;
 
 use function count;
+use Exception;
 use Fiber;
+use function get_class;
 use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
@@ -54,7 +56,15 @@ final class FiberTargetExecutor
         }
 
         $fiber = new Fiber(function () use ($target, $targetId, $output, $context) {
-            Fiber::suspend($target->execute($output, $context, $targetId->path()));
+            try {
+                $result = $target->execute($output, $context, $targetId->path());
+            } catch (Exception $e) {
+                // NOTE: The details here are hidden on purpose, because the result will appear in the output from the build which is public
+                $result = BuildResult::fail('Action failed. Uncaught exception of type: ' . get_class($e));
+
+                $this->logger->error('Action failed. Uncaught exception.', ['exception' => $e]);
+            }
+            Fiber::suspend($result);
         });
 
         $this->logger->info('Started executing target', [$targetId->toString()]);
