@@ -45,9 +45,9 @@ jobs:
               uses: actions/cache@v2
               with:
                 path: .build/
-                key: ${{ runner.os }}-buildx-${{ github.sha }}
+                key: ${{ runner.os }}-buildstate-${{ github.sha }}
                 restore-keys: |
-                  ${{ runner.os }}-buildx-
+                  ${{ runner.os }}-buildstate-
 
             - name: Setup PHP
               uses: shivammathur/setup-php@v2
