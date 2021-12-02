@@ -7,7 +7,7 @@ namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
 use Bramus\Ansi\Ansi;
 use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
 use const PHP_EOL;
-use Ramona\AutomationPlatformLibBuild\BuildFailReason;
+use Ramona\AutomationPlatformLibBuild\BuildResultWithReason;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 final class StyledBuildOutput implements BuildOutput
@@ -26,15 +26,12 @@ final class StyledBuildOutput implements BuildOutput
         foreach ($results as $targetId => $result) {
             [$result, $output] = $result;
 
-            if (!$result->hasSucceeded()) {
-                [$icon, $color] = match ($result->failReason()) {
-                    BuildFailReason::DependencyFailed => ['⬤', SGR::COLOR_FG_YELLOW],
-                    BuildFailReason::ExecutionFailure => ['❌', SGR::COLOR_FG_RED],
-                };
-            } else {
-                $color = SGR::COLOR_FG_GREEN;
-                $icon = '✔';
-            }
+            [$icon, $color] = match ($result->reason()) {
+                BuildResultWithReason::FailDependencyFailed => ['⬤', SGR::COLOR_FG_YELLOW],
+                BuildResultWithReason::FailExecutionFailure => ['❌', SGR::COLOR_FG_RED],
+                BuildResultWithReason::OkBuilt => ['✔', SGR::COLOR_FG_GREEN_BRIGHT],
+                BuildResultWithReason::OkFromCache => ['☑', SGR::COLOR_FG_GREEN],
+            };
 
             $this
                 ->ansi

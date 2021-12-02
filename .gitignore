@@ -12,3 +12,4 @@ services/*/k8s/overlays/dev/
 *.schema.json
 !schemas/*.schema.json
 runtime.configuration.json
+.build/

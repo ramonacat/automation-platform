@@ -79,6 +79,7 @@ return static function (BuildDefinitionBuilder $builder) {
         DefaultTargetKind::Build,
         [
             new TargetId(__DIR__, 'generate-kustomize-override'),
+            new TargetId(__DIR__.'/../../libraries/rust/platform/', 'build'),
         ]
     );
 

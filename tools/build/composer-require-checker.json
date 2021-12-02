@@ -4,6 +4,6 @@
     "static", "self", "parent",
     "array", "string", "int", "float", "bool", "iterable", "callable", "void", "object", "mixed",
     "Ramona\\AutomationPlatformLibBuild\\Targets\\DefaultTargetKind",
-    "Ramona\\AutomationPlatformLibBuild\\BuildFailReason"
+    "Ramona\\AutomationPlatformLibBuild\\BuildResultWithReason"
   ]
 }

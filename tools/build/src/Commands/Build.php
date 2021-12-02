@@ -9,6 +9,7 @@ use Bramus\Ansi\Ansi;
 use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
 use Bramus\Ansi\Writers\StreamWriter;
 use function count;
+use function dirname;
 use Exception;
 use function get_class;
 use function getenv;
@@ -22,6 +23,7 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\Artifacts\LogOnlyPublisher;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\StyledBuildOutput;
+use Ramona\AutomationPlatformLibBuild\ChangeTracking\GitChangeTracker;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Configuration\Locator;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionsLoader;
@@ -29,33 +31,20 @@ use Ramona\AutomationPlatformLibBuild\Definition\BuildExecutor;
 use Ramona\AutomationPlatformLibBuild\Definition\DefaultBuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use Ramona\AutomationPlatformLibBuild\MachineInfo;
+use Ramona\AutomationPlatformLibBuild\State\DotBuildStateStorage;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetDoesNotExist;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use function Safe\getcwd;
 use function Safe\realpath;
 use function sprintf;
-use function str_replace;
-use function uniqid;
 
 final class Build
 {
-    private BuildFacts $buildFacts;
     private string $workingDirectory;
     private Ansi $ansi;
-    private MachineInfo $machineInfo;
 
     public function __construct()
     {
-        $this->machineInfo = new MachineInfo();
-
-        $this->buildFacts = new BuildFacts(
-            // todo use something like git tag as the ID
-            str_replace('.', '', uniqid('', true)),
-            getenv('CI') !== false,
-            $this->machineInfo->logicalCores(),
-            $this->machineInfo->physicalCores(),
-        );
-
         $this->workingDirectory = realpath(getcwd());
         $this->ansi = new Ansi(new StreamWriter('php://stdout'));
     }
@@ -66,8 +55,21 @@ final class Build
      */
     public function __invoke(string $executableName, array $options, array $arguments): int
     {
+        $machineInfo = new MachineInfo();
+        $changeTracker = new GitChangeTracker();
+
+        $buildFacts = new BuildFacts(
+            $changeTracker->getCurrentStateId(),
+            getenv('CI') !== false,
+            $machineInfo->logicalCores(),
+            $machineInfo->physicalCores(),
+        );
+
+
         $configurationLocator = new Locator();
-        $configuration = Configuration::fromFile($configurationLocator->locateConfigurationFile());
+        $configurationFilePath = $configurationLocator->locateConfigurationFile();
+        $rootPath = dirname($configurationFilePath);
+        $configuration = Configuration::fromFile($configurationFilePath);
 
         $subtype = $options['environment'] ?? 'dev';
         assert(is_string($subtype));
@@ -76,7 +78,10 @@ final class Build
             $configuration = $configuration->merge(Configuration::fromFile($environmentConfigurationFile));
         }
 
-        $buildDefinitionsLoader = new DefaultBuildDefinitionsLoader($this->buildFacts, $configuration);
+        $stateStorage = new DotBuildStateStorage($rootPath);
+        $state = $stateStorage->get();
+
+        $buildDefinitionsLoader = new DefaultBuildDefinitionsLoader($buildFacts, $configuration);
 
         if (count($arguments) !== 1) {
             $this->printUsage($executableName, $buildDefinitionsLoader);
@@ -85,14 +90,16 @@ final class Build
         }
 
         $buildExecutor = new BuildExecutor(
-            $this->createFileLogger(),
+            $this->createFileLogger($buildFacts),
             new StyledBuildOutput($this->ansi),
             $buildDefinitionsLoader,
             $configuration,
-            $this->buildFacts,
+            $buildFacts,
+            $state,
+            $changeTracker
         );
 
-        $this->printBuildFacts();
+        $this->printBuildFacts($buildFacts);
 
         try {
             $result = $buildExecutor->executeTarget(new TargetId(getcwd(), $arguments[0]));
@@ -102,7 +109,7 @@ final class Build
                 ->text(sprintf('The target "%s" does not exist', $exception->targetId()->toString()));
             return 1;
         } catch (Exception $e) {
-            $this->printException($e);
+            $this->printException($buildFacts, $e);
 
             return 1;
         }
@@ -116,15 +123,16 @@ final class Build
             return 1;
         }
 
+        $stateStorage->set($state);
         $this->publishArtifacts($result->artifacts());
         return 0;
     }
 
-    private function createFileLogger(): LoggerInterface
+    private function createFileLogger(BuildFacts $buildFacts): LoggerInterface
     {
         $logger = new Logger('ap-build');
         $logHandler = new StreamHandler($this->workingDirectory . '/build.log');
-        $logHandler->setFormatter(new LogFormatter($this->buildFacts));
+        $logHandler->setFormatter(new LogFormatter($buildFacts));
         $logger->pushHandler($logHandler);
         return $logger;
     }
@@ -142,9 +150,9 @@ final class Build
         $artifactPublisher->print();
     }
 
-    private function printException(Exception $e): void
+    private function printException(BuildFacts $buildFacts, Exception $e): void
     {
-        if ($this->buildFacts->inPipeline()) {
+        if ($buildFacts->inPipeline()) {
             $this
                 ->ansi
                 ->text(sprintf('Unhandled exception of type: %s' . PHP_EOL, get_class($e)))
@@ -164,7 +172,7 @@ final class Build
             ->text(sprintf('Supported actions: %s%s', implode(', ', $buildDefinitionsLoader->getActionNames($this->workingDirectory)), PHP_EOL));
     }
 
-    private function printBuildFacts(): void
+    private function printBuildFacts(BuildFacts $buildFacts): void
     {
         $this
             ->ansi
@@ -173,16 +181,16 @@ final class Build
             ->text(PHP_EOL)
             ->nostyle()
             ->text('    CI: ')
-            ->text($this->buildFacts->inPipeline() ? '✔' : '❌')
+            ->text($buildFacts->inPipeline() ? '✔' : '❌')
             ->text(PHP_EOL)
             ->text('    Build ID: ')
-            ->text($this->buildFacts->buildId())
+            ->text($buildFacts->buildId())
             ->text(PHP_EOL)
             ->text('    Physical cores: ')
-            ->text((string)$this->buildFacts->physicalCores())
+            ->text((string)$buildFacts->physicalCores())
             ->text(PHP_EOL)
             ->text('    Logical cores: ')
-            ->text((string)$this->buildFacts->logicalCores())
+            ->text((string)$buildFacts->logicalCores())
             ->text(PHP_EOL);
     }
 }

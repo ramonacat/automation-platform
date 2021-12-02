@@ -6,15 +6,30 @@ namespace Tests\Ramona\AutomationPlatformLibBuild;
 
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
+use Ramona\AutomationPlatformLibBuild\BuildResultWithReason;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
-final class BuildActionResultTest extends TestCase
+final class BuildResultTest extends TestCase
 {
     public function testOkWillReturnASuccessfulResult(): void
     {
         $result = BuildResult::ok([]);
 
         self::assertTrue($result->hasSucceeded());
+    }
+
+    public function testHasFailReasonForNormalFail(): void
+    {
+        $result = BuildResult::fail('asdf');
+
+        self::assertEquals(BuildResultWithReason::FailExecutionFailure, $result->reason());
+    }
+
+    public function testHasFailReasonForDependencyFail(): void
+    {
+        $result = BuildResult::dependencyFailed(new TargetId(__DIR__, 'a'));
+
+        self::assertEquals(BuildResultWithReason::FailDependencyFailed, $result->reason());
     }
 
     public function testFailWillReturnAFailedResult(): void
