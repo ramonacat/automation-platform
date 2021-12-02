@@ -6,7 +6,9 @@ namespace Ramona\AutomationPlatformLibBuild\ChangeTracking;
 
 use function array_map;
 use const DIRECTORY_SEPARATOR;
+use Exception;
 use function explode;
+use Psr\Log\LoggerInterface;
 use function Safe\realpath;
 use function sha1;
 use function str_replace;
@@ -18,6 +20,10 @@ use function trim;
 
 final class GitChangeTracker implements ChangeTracker
 {
+    public function __construct(private LoggerInterface $logger)
+    {
+    }
+
     public function getCurrentStateId(): string
     {
         $currentCommitHash = $this->currentCommitHash();
@@ -51,7 +57,12 @@ final class GitChangeTracker implements ChangeTracker
 
         $modifiedFiles = ['git', 'diff', '--name-only', $previousCommitHash];
         $process = new Process($modifiedFiles);
-        $process->mustRun();
+        try {
+            $process->mustRun();
+        } catch (Exception $e) {
+            $this->logger->error('Failed to get list of modified files', ['previous-commit-hash' => $previousCommitHash, 'exception' => $e]);
+            return true;
+        }
 
         $output = explode("\n", trim($process->getOutput()));
         $changedFiles = array_map(static fn (string $line) => substr($line, 0), $output);

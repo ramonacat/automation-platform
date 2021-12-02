@@ -55,16 +55,19 @@ final class Build
      */
     public function __invoke(string $executableName, array $options, array $arguments): int
     {
+        $inPipeline = getenv('CI') !== false;
+
+        $logger = $this->createFileLogger($inPipeline);
+
         $machineInfo = new MachineInfo();
-        $changeTracker = new GitChangeTracker();
+        $changeTracker = new GitChangeTracker($logger);
 
         $buildFacts = new BuildFacts(
             $changeTracker->getCurrentStateId(),
-            getenv('CI') !== false,
+            $inPipeline,
             $machineInfo->logicalCores(),
             $machineInfo->physicalCores(),
         );
-
 
         $configurationLocator = new Locator();
         $configurationFilePath = $configurationLocator->locateConfigurationFile();
@@ -90,7 +93,7 @@ final class Build
         }
 
         $buildExecutor = new BuildExecutor(
-            $this->createFileLogger($buildFacts),
+            $logger,
             new StyledBuildOutput($this->ansi),
             $buildDefinitionsLoader,
             $configuration,
@@ -128,11 +131,11 @@ final class Build
         return 0;
     }
 
-    private function createFileLogger(BuildFacts $buildFacts): LoggerInterface
+    private function createFileLogger(bool $inPipeline): LoggerInterface
     {
         $logger = new Logger('ap-build');
         $logHandler = new StreamHandler($this->workingDirectory . '/build.log');
-        $logHandler->setFormatter(new LogFormatter($buildFacts));
+        $logHandler->setFormatter(new LogFormatter($inPipeline));
         $logger->pushHandler($logHandler);
         return $logger;
     }
