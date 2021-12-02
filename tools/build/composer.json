@@ -29,7 +29,8 @@
         "symfony/process": "^5.3",
         "remorhaz/php-json-path": "^0.7.7",
         "psr/log": "^2.0 | ^3.0",
-        "remorhaz/php-json-data": "^0.5.3"
+        "remorhaz/php-json-data": "^0.5.3",
+        "webmozart/assert": "^1.10"
     },
     "require-dev": {
         "symplify/easy-coding-standard": "^9.4",

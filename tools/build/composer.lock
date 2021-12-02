@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0afee2d534c7facca0fb95539028b21e",
+    "content-hash": "524334a2cd882f116b1a11fd2824e7d7",
     "packages": [
         {
             "name": "bramus/ansi-php",
@@ -3953,7 +3953,7 @@
         },
         {
             "name": "ramona/automation-platform-lib-coding-standard",
-            "version": "dev-master",
+            "version": "dev-dependabot/cargo/tools/commit-verifier/git2-0.13.25",
             "dist": {
                 "type": "path",
                 "url": "../../libraries/php/coding-standard",

@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Actions;
 
-use function assert;
-use function is_string;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
-use function sprintf;
+use Webmozart\Assert\Assert;
 
 final class KustomizeApply implements BuildAction
 {
@@ -20,17 +18,16 @@ final class KustomizeApply implements BuildAction
 
     public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult
     {
-        /** @var mixed $context */
-        $context = $context->configuration()->getSingleBuildValue('$.kubernetes.context');
+        $kubernetesContext = $context->configuration()->getSingleBuildValue('$.kubernetes.context');
 
-        assert(is_string($context));
+        Assert::string($kubernetesContext);
 
         $process = new InActionProcess(
             $workingDirectory,
             [
                 'kubectl',
                 '--context',
-                $context,
+                $kubernetesContext,
                 'apply',
                 '-k',
                 $this->overridePath
@@ -38,8 +35,8 @@ final class KustomizeApply implements BuildAction
             10
         );
 
-        return $process->run($output) ?
-            BuildResult::ok([])
-            : BuildResult::fail(sprintf('Failed to apply k8s override "%s"', $this->overridePath));
+        return $process->run($output)
+            ? BuildResult::ok([])
+            : BuildResult::fail("Failed to apply k8s override \"{$this->overridePath}\"");
     }
 }

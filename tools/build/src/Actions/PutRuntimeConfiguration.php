@@ -20,7 +20,10 @@ final class PutRuntimeConfiguration implements BuildAction
 
     public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult
     {
-        file_put_contents($workingDirectory . DIRECTORY_SEPARATOR . $this->path, json_encode($context->configuration()->getRuntimeConfiguration(), JSON_THROW_ON_ERROR));
+        file_put_contents(
+            $workingDirectory . DIRECTORY_SEPARATOR . $this->path,
+            json_encode($context->configuration()->getRuntimeConfiguration(), JSON_THROW_ON_ERROR)
+        );
 
         return BuildResult::ok([]);
     }

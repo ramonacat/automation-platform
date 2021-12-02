@@ -11,9 +11,6 @@ use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use function Safe\file_put_contents;
 
-/**
- * @api
- */
 final class PutFile implements BuildAction
 {
     private Closure $generateContents;
@@ -28,7 +25,10 @@ final class PutFile implements BuildAction
 
     public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult
     {
-        file_put_contents($workingDirectory . DIRECTORY_SEPARATOR . $this->path, ($this->generateContents)($context));
+        file_put_contents(
+            $workingDirectory . DIRECTORY_SEPARATOR . $this->path,
+            ($this->generateContents)($context)
+        );
 
         return BuildResult::ok([]);
     }
