@@ -8,17 +8,11 @@ use DateTimeImmutable;
 use Monolog\Logger;
 use const PHP_EOL;
 use PHPUnit\Framework\TestCase;
-use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use RuntimeException;
 
 final class LogFormatterTest extends TestCase
 {
-    private function createBuildFacts(): BuildFacts
-    {
-        return new BuildFacts('test', false, 1, 1);
-    }
-
     public function testCanFormatARecordWithEmptyContext(): void
     {
         $record = [
@@ -31,7 +25,7 @@ final class LogFormatterTest extends TestCase
             'message' => 'test test test'
         ];
 
-        $formatter = new LogFormatter($this->createBuildFacts());
+        $formatter = new LogFormatter(false);
         $formatted = $formatter->format($record);
 
         self::assertEquals('[2021-01-01 00:00:00+00:00][INFO] test test test' . PHP_EOL, $formatted);
@@ -60,7 +54,7 @@ final class LogFormatterTest extends TestCase
             ],
         ];
 
-        $formatter = new LogFormatter($this->createBuildFacts());
+        $formatter = new LogFormatter(false);
         $formatted = $formatter->formatBatch($records);
 
         self::assertEquals(
@@ -89,7 +83,7 @@ final class LogFormatterTest extends TestCase
             'message' => 'test test test'
         ];
 
-        $formatter = new LogFormatter($this->createBuildFacts());
+        $formatter = new LogFormatter(false);
         $formatted = $formatter->format($record);
 
         self::assertEquals(
@@ -122,7 +116,7 @@ final class LogFormatterTest extends TestCase
             'message' => 'test test test'
         ];
 
-        $formatter = new LogFormatter($this->createBuildFacts());
+        $formatter = new LogFormatter(false);
         $formatted = $formatter->format($record);
 
         self::assertStringStartsWith(
@@ -146,7 +140,7 @@ final class LogFormatterTest extends TestCase
             'message' => 'test test test'
         ];
 
-        $formatter = new LogFormatter(new BuildFacts('test', true, 1, 1));
+        $formatter = new LogFormatter(true);
         $formatted = $formatter->format($record);
 
         self::assertEquals(

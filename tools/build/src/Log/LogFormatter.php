@@ -13,7 +13,6 @@ use function is_scalar;
 use const JSON_PRETTY_PRINT;
 use Monolog\Formatter\FormatterInterface;
 use const PHP_EOL;
-use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use function Safe\json_encode;
 use function Safe\sprintf;
 use function str_contains;
@@ -21,7 +20,7 @@ use Throwable;
 
 final class LogFormatter implements FormatterInterface
 {
-    public function __construct(private BuildFacts $buildFacts)
+    public function __construct(private bool $inPipeline)
     {
     }
 
@@ -33,7 +32,7 @@ final class LogFormatter implements FormatterInterface
 
         /** @psalm-suppress MixedAssignment */
         foreach ($record['context'] as $key => $value) {
-            if ($value instanceof Throwable && $this->buildFacts->inPipeline()) {
+            if ($value instanceof Throwable && $this->inPipeline) {
                 $value = sprintf("[%s][running in CI, exception details were redacted]", get_class($value));
             }
             $formattedValue = $this->formatValue($value);
