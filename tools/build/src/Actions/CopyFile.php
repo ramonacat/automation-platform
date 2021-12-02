@@ -10,9 +10,6 @@ use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use function Safe\copy;
 
-/**
- * @api
- */
 final class CopyFile implements BuildAction
 {
     public function __construct(private string $source, private string $target)
@@ -21,7 +18,10 @@ final class CopyFile implements BuildAction
 
     public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult
     {
-        copy($workingDirectory . DIRECTORY_SEPARATOR . $this->source, $workingDirectory . DIRECTORY_SEPARATOR . $this->target);
+        copy(
+            $workingDirectory . DIRECTORY_SEPARATOR . $this->source,
+            $workingDirectory . DIRECTORY_SEPARATOR . $this->target
+        );
 
         return BuildResult::ok([]);
     }

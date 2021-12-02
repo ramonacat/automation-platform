@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild\Actions\Docker;
 
 use function array_merge;
-use function array_values;
-use function assert;
-use function is_array;
-use function is_string;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
+use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
+use Webmozart\Assert\Assert;
 
 final class BuildDockerImage implements BuildAction
 {
@@ -31,22 +29,43 @@ final class BuildDockerImage implements BuildAction
     ): BuildResult {
         $dockerBuildCommand = $context->configuration()->getSingleBuildValue('$.docker.build-command');
 
-        // todo make the type check here cleaner and throw exceptions as needed
-        $cleanDockerBuildCommand = [];
-        assert(is_array($dockerBuildCommand));
-        foreach ($dockerBuildCommand as $item) {
-            assert(is_string($item));
-            $cleanDockerBuildCommand[] = $item;
-        }
+        Assert::isList($dockerBuildCommand);
+        Assert::allString($dockerBuildCommand);
 
         $process = new InActionProcess(
             $workingDirectory,
-            array_values(array_merge($cleanDockerBuildCommand, ['-t', $this->imageName . ':' . $context->buildFacts()->buildId(), '-f', $this->dockerFilePath, $this->contextPath])),
+            $this->createDockerBuildCommand($dockerBuildCommand, $context),
             self::DEFAULT_TIMEOUT
         );
 
         return $process->run($output)
-            ? BuildResult::ok([new ContainerImage($this->key, $this->imageName, $context->buildFacts()->buildId())])
+            ? BuildResult::ok($this->createArtifacts($context))
             : BuildResult::fail("Failed to build the container image");
+    }
+
+    /**
+     * @return list<Artifact>
+     */
+    private function createArtifacts(Context $context): array
+    {
+        return [
+            new ContainerImage(
+                $this->key,
+                $this->imageName,
+                $context->buildFacts()->buildId()
+            )
+        ];
+    }
+
+    /**
+     * @param list<string> $dockerBuildCommand
+     * @return list<string>
+     */
+    private function createDockerBuildCommand(array $dockerBuildCommand, Context $context): array
+    {
+        return array_merge(
+            $dockerBuildCommand,
+            ['-t', $this->imageName . ':' . $context->buildFacts()->buildId(), '-f', $this->dockerFilePath, $this->contextPath]
+        );
     }
 }

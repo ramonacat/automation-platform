@@ -34,6 +34,7 @@ final class RunProcess implements BuildAction
         $process = new InActionProcess($workingDirectory, $this->command, $this->timeoutSeconds);
 
         $commandName = implode(' ', $this->command);
+
         return $process->run($output)
             ? BuildResult::ok($this->artifacts)
             : BuildResult::fail("Failed to execute command \"{$commandName}\"");
