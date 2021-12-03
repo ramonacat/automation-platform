@@ -1,4 +1,4 @@
-FROM rust:1.56-slim-bullseye AS planner
+FROM rust:1.57.0-slim-bullseye AS planner
 
 RUN cargo install cargo-chef
 
@@ -7,7 +7,7 @@ WORKDIR /opt/events/services/events/
 
 RUN cargo chef prepare --recipe-path recipe.json
 
-FROM rust:1.56-slim-bullseye AS cacher
+FROM rust:1.57.0-slim-bullseye AS cacher
 
 RUN apt-get update && apt-get install --no-install-recommends -y libssl-dev=1.1.1k-1+deb11u1 pkg-config=0.29.2-1 && rm -rf /var/lib/apt/lists/*
 RUN cargo install cargo-chef
@@ -18,7 +18,7 @@ COPY --from=planner /opt/events/services/events/recipe.json recipe.json
 COPY libraries/rust/platform/ /opt/events/libraries/rust/platform
 RUN cargo chef cook --release --recipe-path recipe.json
 
-FROM rust:1.56-slim-bullseye AS build
+FROM rust:1.57.0-slim-bullseye AS build
 
 RUN apt-get update && apt-get install --no-install-recommends -y libssl-dev=1.1.1k-1+deb11u1 pkg-config=0.29.2-1 && rm -rf /var/lib/apt/lists/*
 
