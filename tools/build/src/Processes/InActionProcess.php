@@ -6,7 +6,7 @@ namespace Ramona\AutomationPlatformLibBuild\Processes;
 
 use Fiber;
 use IteratorAggregate;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use Symfony\Component\Process\Process;
 
 final class InActionProcess

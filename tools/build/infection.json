@@ -10,8 +10,8 @@
         "excludes": [
             "vendor/",
             "bin/",
-            "BuildOutput/StyledBuildOutput.php",
-            "BuildOutput/StyledTargetOutput.php",
+            "Output/StyledBuildOutput.php",
+            "Output/StyledTargetOutput.php",
             "Rust/TargetGenerator.php",
             "PHP/TargetGenerator.php",
             "Docker/TargetGenerator.php",

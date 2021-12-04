@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
+namespace Ramona\AutomationPlatformLibBuild\Output;
 
 use Bramus\Ansi\Ansi;
 use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
@@ -48,7 +48,7 @@ final class StyledBuildOutput implements BuildOutput
                 ->text(PHP_EOL);
 
             if (!$result->hasSucceeded()) {
-                $stdout = $output->getCollectedStandardOutput();
+                $stdout = $output->standardOutput();
                 if ($stdout !== '') {
                     $this
                         ->ansi
@@ -61,7 +61,7 @@ final class StyledBuildOutput implements BuildOutput
                         ->text(PHP_EOL);
                 }
 
-                $stderr = $output->getCollectedStandardError();
+                $stderr = $output->standardError();
                 if ($stderr !== '') {
                     $this->ansi
                         ->color([SGR::COLOR_FG_CYAN])

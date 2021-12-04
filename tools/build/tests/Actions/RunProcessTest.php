@@ -7,8 +7,8 @@ namespace Tests\Ramona\AutomationPlatformLibBuild\Actions;
 use const PHP_BINARY;
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Tests\Ramona\AutomationPlatformLibBuild\DumbFiberRunner;
 

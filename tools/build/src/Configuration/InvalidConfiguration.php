@@ -18,8 +18,18 @@ final class InvalidConfiguration extends RuntimeException
         return new self('The "build" key is missing');
     }
 
-    public static function buildNotANode(): self
+    public static function notAnArray(): self
     {
-        return new self('The "build" key is not a node');
+        return new self("The configuration given does not parse to an array");
+    }
+
+    public static function buildNotAnArray(): self
+    {
+        return new self("The build key in configuration does not parse to an array");
+    }
+
+    public static function runtimeNotAnArray(): self
+    {
+        return new self("The runtime key in the configuration is not an array");
     }
 }

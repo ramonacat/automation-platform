@@ -7,27 +7,22 @@ namespace Ramona\AutomationPlatformLibBuild\Configuration;
 use function array_reverse;
 use function array_unshift;
 use function is_array;
-use Remorhaz\JSON\Data\Value\EncodedJson\NodeValueFactory;
-use Remorhaz\JSON\Data\Value\NodeValueInterface;
-use Remorhaz\JSON\Path\Processor\Processor;
-use Remorhaz\JSON\Path\Processor\ProcessorInterface;
-use Remorhaz\JSON\Path\Query\QueryFactory;
-use Remorhaz\JSON\Path\Query\QueryFactoryInterface;
+use JsonPath\JsonObject;
 use function Safe\file_get_contents;
-use stdClass;
+use function Safe\json_decode;
 
 final class Configuration
 {
-    private QueryFactoryInterface $queryFactory;
-    /** @var list<NodeValueInterface> */
+    /** @var list<array> */
     private array $configurations;
-    private ProcessorInterface $processor;
 
     private function __construct(string $jsonString)
     {
-        $this->queryFactory = QueryFactory::create();
-        $this->configurations = [NodeValueFactory::create()->createValue($jsonString)];
-        $this->processor = Processor::create();
+        $configuration = json_decode($jsonString, true);
+        if (!is_array($configuration)) {
+            throw InvalidConfiguration::notAnArray();
+        }
+        $this->configurations = [$configuration];
     }
 
     public static function fromFile(string $path): self
@@ -44,16 +39,14 @@ final class Configuration
 
     public function getSingleBuildValue(string $jsonPath): mixed
     {
-        $query = $this->queryFactory->createQuery($jsonPath);
-
-        $buildConfigurationQuery = $this->queryFactory->createQuery('$.build');
-
         $buildConfigurations = [];
         foreach ($this->configurations as $configuration) {
-            $buildConfiguration = $this->processor->selectOne($buildConfigurationQuery, $configuration);
+            if (isset($configuration['build'])) {
+                if (!is_array($configuration['build'])) {
+                    throw InvalidConfiguration::buildNotAnArray();
+                }
 
-            if ($buildConfiguration->exists()) {
-                $buildConfigurations[] = $buildConfiguration->get();
+                $buildConfigurations[] = $configuration['build'];
             }
         }
 
@@ -62,16 +55,15 @@ final class Configuration
         }
 
         foreach ($buildConfigurations as $buildConfiguration) {
-            if (!$buildConfiguration instanceof NodeValueInterface) {
-                throw InvalidConfiguration::buildNotANode();
-            }
-            $result = $this->processor->selectOne($query, $buildConfiguration);
+            $jsonObject = new JsonObject($buildConfiguration, true);
+            /** @var mixed|false $result */
+            $result = $jsonObject->get($jsonPath);
 
-            if (!$result->exists()) {
+            if ($result === false) {
                 continue;
             }
 
-            return $result->decode();
+            return $result;
         }
 
         throw ConfigurationValueNotFound::forPath($jsonPath);
@@ -79,21 +71,19 @@ final class Configuration
 
     public function getRuntimeConfiguration(): mixed
     {
-        $query = $this->queryFactory->createQuery('$.runtime');
-
         /** @var list<array<mixed>> $allConfigurations */
         $allConfigurations = [];
 
         foreach ($this->configurations as $configuration) {
-            $runtimeConfiguration = $this->processor->selectOne($query, $configuration);
-
-            if (!$runtimeConfiguration->exists()) {
+            if (!isset($configuration['runtime'])) {
                 continue;
             }
 
-            /** @var stdClass $decoded */
-            $decoded = $runtimeConfiguration->decode();
-            $allConfigurations[] = $this->castToArrayRecursively($decoded);
+            if (!is_array($configuration['runtime'])) {
+                throw InvalidConfiguration::runtimeNotAnArray();
+            }
+
+            $allConfigurations[] = $configuration['runtime'];
         }
 
         return $this->mergeRuntimeConfigurations(array_reverse($allConfigurations));
@@ -121,20 +111,6 @@ final class Configuration
         }
 
         return $finalConfiguration;
-    }
-
-    private function castToArrayRecursively(stdClass $in): array
-    {
-        $out = (array)$in;
-
-        /** @var mixed $value */
-        foreach ($out as $key => $value) {
-            if ($value instanceof stdClass) {
-                $out[$key] = $this->castToArrayRecursively($value);
-            }
-        }
-
-        return $out;
     }
 
     public function merge(Configuration $other): self

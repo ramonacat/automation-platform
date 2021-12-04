@@ -29,6 +29,7 @@ final class BuildDefinition
             if (isset($namesSeen[$target->id()->toString()])) {
                 throw new DuplicateTarget($target->id());
             }
+
             $namesSeen[$target->id()->toString()] = true;
         }
 
@@ -41,7 +42,10 @@ final class BuildDefinition
      */
     public function targetNames(): array
     {
-        return array_map(static fn (Target $t) => $t->id()->target(), $this->targets);
+        return array_map(
+            static fn (Target $t) => $t->id()->target(),
+            $this->targets
+        );
     }
 
     public function target(string $targetName): Target

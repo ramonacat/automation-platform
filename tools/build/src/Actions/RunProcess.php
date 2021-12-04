@@ -6,9 +6,9 @@ namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use function implode;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 
 /**

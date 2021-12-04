@@ -13,7 +13,7 @@ final class WorkingDirectoryTest extends TestCase
 {
     public function testWillExecuteInTheGivenDirectory(): void
     {
-        $targetDirectory = realpath(__DIR__ . '/a');
+        $targetDirectory = realpath(__DIR__ . '/fixtures/a');
 
         WorkingDirectory::in($targetDirectory, fn () => self::assertEquals($targetDirectory, realpath(getcwd())));
     }
@@ -22,7 +22,7 @@ final class WorkingDirectoryTest extends TestCase
     {
         $currentWorkingDirectory = getcwd();
 
-        WorkingDirectory::in(__DIR__ . '/a', fn () => null);
+        WorkingDirectory::in(__DIR__ . '/fixtures/a', fn () => null);
 
         self::assertEquals(getcwd(), $currentWorkingDirectory);
     }

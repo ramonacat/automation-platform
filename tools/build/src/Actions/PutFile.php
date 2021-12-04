@@ -6,9 +6,9 @@ namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use Closure;
 use const DIRECTORY_SEPARATOR;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use function Safe\file_put_contents;
 
 final class PutFile implements BuildAction

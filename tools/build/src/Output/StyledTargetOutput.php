@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild\BuildOutput;
+namespace Ramona\AutomationPlatformLibBuild\Output;
 
 use Bramus\Ansi\Ansi;
 use const PHP_EOL;
@@ -13,7 +13,6 @@ final class StyledTargetOutput implements TargetOutput
 {
     private string $standardOutput = '';
     private string $standardError = '';
-    private string $output = '';
 
     public function __construct(private TargetId $id, private Ansi $ansi)
     {
@@ -27,31 +26,21 @@ final class StyledTargetOutput implements TargetOutput
     public function pushError(string $data): void
     {
         $this->standardError .= $data;
-        $this->output .= $data;
     }
 
     public function pushOutput(string $data): void
     {
         $this->standardOutput .= $data;
-        $this->output .= $data;
     }
 
-    public function getCollectedStandardOutput(): string
-    {
-        return $this->standardOutput;
-    }
-
-    public function getCollectedStandardError(): string
-    {
-        return $this->standardError;
-    }
-
-    public function finalize(BuildResult $result): void
+    public function finalize(BuildResult $result): CollectedTargetOutput
     {
         $startLine = '> Target ' . $this->id->target() . ' from ' . $this->id->path() . ' finished' . PHP_EOL;
 
         $this
             ->ansi
             ->text($startLine);
+
+        return new CollectedTargetOutput($this->standardOutput, $this->standardError);
     }
 }

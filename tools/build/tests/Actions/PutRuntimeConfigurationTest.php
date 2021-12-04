@@ -6,8 +6,8 @@ namespace Tests\Ramona\AutomationPlatformLibBuild\Actions;
 
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\Actions\PutRuntimeConfiguration;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
+use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use function Safe\file_get_contents;
 use function sys_get_temp_dir;
 use function uniqid;

@@ -19,7 +19,7 @@ final class DefaultBuildDefinitionsLoaderTest extends TestCase
     {
         $loader = $this->createLoader();
 
-        $actionNames = $loader->getActionNames(__DIR__ . '/test-project/');
+        $actionNames = $loader->targetNames(__DIR__ . '/test-project/');
 
         self::assertEquals(['a', 'b'], $actionNames);
     }
@@ -29,7 +29,7 @@ final class DefaultBuildDefinitionsLoaderTest extends TestCase
         $loader = $this->createLoader();
 
         $this->expectException(InvalidBuildDefinition::class);
-        $loader->getActionNames(__DIR__ . '/test-invalid-project-1');
+        $loader->targetNames(__DIR__ . '/test-invalid-project-1');
     }
 
     public function testCanGetTargetById(): void
