@@ -100,8 +100,16 @@ final class TargetGenerator implements TargetGeneratorInterface
 
     public function defaultTargetIds(DefaultTargetKind $kind): array
     {
+        $buildDependencies = [];
+        $deps = new LocalDependencyDetector();
+        foreach ($deps->forProject($this->projectDirectory) as $dependantProjectPath) {
+            $buildDependencies[] = new TargetId($dependantProjectPath, 'build');
+        }
+
+        $buildDependencies = array_merge($buildDependencies, $this->buildTargetIds());
+
         return match ($kind) {
-            DefaultTargetKind::Build => $this->buildTargetIds(),
+            DefaultTargetKind::Build => $buildDependencies,
             DefaultTargetKind::Fix => [new TargetId($this->projectDirectory, 'php-cs-fix')],
         };
     }

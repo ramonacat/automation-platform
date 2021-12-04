@@ -14,6 +14,7 @@
             "Output/StyledTargetOutput.php",
             "Rust/TargetGenerator.php",
             "PHP/TargetGenerator.php",
+            "PHP/LocalDependencyDetector.php",
             "Docker/TargetGenerator.php",
             "Artifacts/LogOnlyPublisher.php",
             "Actions/Docker/BuildDockerImage.php",
