@@ -7,6 +7,7 @@ namespace Ramona\AutomationPlatformLibBuild\Rust;
 use const DIRECTORY_SEPARATOR;
 use JsonPath\JsonObject;
 use Symfony\Component\Process\Process;
+use Webmozart\Assert\Assert;
 
 final class LocalDependencyDetector
 {
@@ -19,11 +20,14 @@ final class LocalDependencyDetector
         $process->mustRun();
 
         $metadata = new JsonObject($process->getOutput());
-
+        /** @var mixed|false $deps */
         $deps = $metadata->get('$.packages[*].dependencies[*].path');
         if ($deps === false) {
             return [];
         }
+
+        Assert::isList($deps);
+        Assert::allString($deps);
 
         return $deps;
     }
