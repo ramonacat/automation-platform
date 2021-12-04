@@ -15,6 +15,7 @@
             "Rust/TargetGenerator.php",
             "PHP/TargetGenerator.php",
             "PHP/LocalDependencyDetector.php",
+            "PHP/InvalidComposerJson.php",
             "Docker/TargetGenerator.php",
             "Artifacts/LogOnlyPublisher.php",
             "Actions/Docker/BuildDockerImage.php",
