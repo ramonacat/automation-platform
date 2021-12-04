@@ -58,8 +58,17 @@ final class TargetGenerator implements TargetGeneratorInterface
 
     public function defaultTargetIds(DefaultTargetKind $kind): array
     {
+        $buildDependencies = [];
+        $deps = new LocalDependencyDetector();
+
+        foreach ($deps->forProject($this->projectDirectory) as $dependantProject) {
+            $buildDependencies[] = new TargetId($dependantProject, 'build');
+        }
+
+        $buildDependencies = [...$buildDependencies, ...$this->buildTargetIds()];
+
         return match ($kind) {
-            DefaultTargetKind::Build => $this->buildTargetIds(),
+            DefaultTargetKind::Build => $buildDependencies,
             DefaultTargetKind::Fix => [new TargetId($this->projectDirectory, 'rust-fmt')],
         };
     }
