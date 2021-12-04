@@ -70,8 +70,9 @@ final class BuildDefinitionBuilderTest extends TestCase
         $generatorB->method('targets')->willReturn([
             new Target(new TargetId(__DIR__, 'c'), new NoOp()),
             new Target(new TargetId(__DIR__, 'd'), new NoOp()),
+            new Target(new TargetId(__DIR__, 'e'), new NoOp()),
         ]);
-        $generatorB->method('defaultTargetIds')->with(DefaultTargetKind::Build)->willReturn([new TargetId(__DIR__, 'c')]);
+        $generatorB->method('defaultTargetIds')->with(DefaultTargetKind::Build)->willReturn([new TargetId(__DIR__, 'c'), new TargetId(__DIR__, 'e')]);
 
         $builder->addTargetGenerator($generatorA);
         $builder->addTargetGenerator($generatorB);
@@ -83,6 +84,13 @@ final class BuildDefinitionBuilderTest extends TestCase
             Configuration::fromJsonString('{}')
         );
 
-        self::assertEquals([new TargetId(__DIR__, 'a'), new TargetId(__DIR__, 'c')], $buildDefinition->target('build')->dependencies());
+        self::assertEquals(
+            [
+                new TargetId(__DIR__, 'a'),
+                new TargetId(__DIR__, 'c'),
+                new TargetId(__DIR__, 'e'),
+            ],
+            $buildDefinition->target('build')->dependencies()
+        );
     }
 }

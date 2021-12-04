@@ -29,4 +29,11 @@ final class BuildFactsTest extends TestCase
 
         self::assertSame(2, $facts->physicalCores());
     }
+
+    public function testHasPipelineStatus(): void
+    {
+        $facts = new BuildFacts('test', true, 1, 2);
+
+        self::assertTrue($facts->inPipeline());
+    }
 }

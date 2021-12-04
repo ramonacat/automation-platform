@@ -122,4 +122,18 @@ final class ConfigurationTest extends TestCase
 
         self::assertSame(['a' => 2, 'b' => 3], $configuration->getRuntimeConfiguration());
     }
+
+    public function testThrowsIfTheConfigurationIsNotAnArray(): void
+    {
+        $this->expectException(InvalidConfiguration::class);
+        Configuration::fromJsonString('123');
+    }
+
+    public function testThrowsIfBuildSectionIsNotAnArray(): void
+    {
+        $configuration = Configuration::fromJsonString('{"build": 123}');
+        $this->expectException(InvalidConfiguration::class);
+
+        $configuration->getSingleBuildValue('$.a');
+    }
 }
