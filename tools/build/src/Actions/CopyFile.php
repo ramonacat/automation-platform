@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use const DIRECTORY_SEPARATOR;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use function Safe\copy;
 
 final class CopyFile implements BuildAction

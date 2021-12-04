@@ -6,9 +6,9 @@ namespace Ramona\AutomationPlatformLibBuild\Actions;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use function Safe\file_put_contents;
 use function Safe\json_encode;
 

@@ -6,82 +6,33 @@ namespace Ramona\AutomationPlatformLibBuild\Definition;
 
 use function array_map;
 use Psr\Log\LoggerInterface;
-use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\ChangeTracking\ChangeTracker;
-use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Output\BuildOutput;
+use Ramona\AutomationPlatformLibBuild\Queue\Builder;
 use Ramona\AutomationPlatformLibBuild\State\State;
 use Ramona\AutomationPlatformLibBuild\Targets\Parallel\FiberTargetExecutor;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
-use Ramona\AutomationPlatformLibBuild\Targets\TargetQueue;
 
 final class BuildExecutor
 {
-    private Collector $artifactCollector;
-
     public function __construct(
         private LoggerInterface        $logger,
         private BuildOutput            $buildOutput,
         private BuildDefinitionsLoader $buildDefinitions,
-        private Configuration          $configuration,
         private BuildFacts             $buildFacts,
         private State                  $state,
-        private ChangeTracker          $changeTracker
+        private ChangeTracker          $changeTracker,
+        private Builder $queueBuilder
     ) {
-        $this->artifactCollector = new Collector();
     }
 
-    /**
-     * @todo extract this to its own class?
-     */
-    public function buildQueue(TargetId $desiredTarget): TargetQueue
+    public function executeTarget(TargetId $targetId, Context $context): BuildResult
     {
-        $leftToBuild = new TargetQueue();
-        $leftToBuild->enqueue($desiredTarget);
-
-        $buildQueue = new TargetQueue();
-
-        while (!$leftToBuild->isEmpty()) {
-            $targetId = $leftToBuild->dequeue();
-            $dependencies = $this->buildDefinitions->target($targetId)->dependencies();
-
-            $allDependenciesQueued = true;
-
-            foreach ($dependencies as $targetDependency) {
-                $isInBuildQueue = $buildQueue->hasId($targetDependency);
-
-                if (!$isInBuildQueue) {
-                    if (!$leftToBuild->hasId($targetDependency)) {
-                        $leftToBuild->enqueue($targetDependency);
-                    }
-
-                    $allDependenciesQueued = false;
-                }
-            }
-
-            if ($allDependenciesQueued) {
-                $buildQueue->enqueue($targetId);
-            } else {
-                $leftToBuild->enqueue($targetId);
-            }
-        }
-
-        return $buildQueue;
-    }
-
-    public function executeTarget(TargetId $targetId): BuildResult
-    {
-        $context = new Context(
-            $this->configuration,
-            $this->artifactCollector,
-            $this->buildFacts
-        );
-
         $currentStateId = $this->changeTracker->getCurrentStateId();
-        $queue = $this->buildQueue($targetId);
+        $queue = $this->queueBuilder->build($targetId);
 
         $this->logger->info(
             'Starting a build',
@@ -96,7 +47,7 @@ final class BuildExecutor
 
         $targetFiberStack = new FiberTargetExecutor(
             $this->buildFacts->logicalCores(),
-            $this->artifactCollector,
+            $context,
             $this->logger
         );
 
@@ -123,11 +74,11 @@ final class BuildExecutor
                     $this->logger->info('Adding target from cache', ['id' => $targetId->toString()]);
                     $targetFiberStack->addTargetFromCache($targetId, $state[1]);
                 } else {
-                    $targetFiberStack->addTarget($targetId, $target, $this->buildOutput->startTarget($targetId), $context);
+                    $targetFiberStack->addTarget($target, $this->buildOutput->startTarget($targetId), $context);
                 }
             } else {
                 $cacheBusters[$targetId->toString()] = true;
-                $targetFiberStack->addTarget($targetId, $target, $this->buildOutput->startTarget($targetId), $context);
+                $targetFiberStack->addTarget($target, $this->buildOutput->startTarget($targetId), $context);
             }
         }
 
@@ -146,6 +97,6 @@ final class BuildExecutor
 
         return $failed
             ? BuildResult::fail('Build failed')
-            : BuildResult::ok($this->artifactCollector->all());
+            : BuildResult::ok($context->artifactCollector()->all());
     }
 }

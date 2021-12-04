@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Definition;
 
+use function assert;
 use Closure;
 use const DIRECTORY_SEPARATOR;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
@@ -50,13 +51,16 @@ final class DefaultBuildDefinitionsLoader implements BuildDefinitionsLoader
 
     public function target(TargetId $targetId): Target
     {
-        return $this->get($targetId->path())->target($targetId->target());
+        $target = $this->get($targetId->path())->target($targetId->target());
+        assert($targetId->toString() === $target->id()->toString());
+
+        return $target;
     }
 
     /**
      * @return non-empty-list<string>
      */
-    public function getActionNames(string $workingDirectory): array
+    public function targetNames(string $workingDirectory): array
     {
         return $this->get($workingDirectory)->targetNames();
     }

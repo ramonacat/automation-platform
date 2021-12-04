@@ -14,5 +14,5 @@ interface BuildDefinitionsLoader
     /**
      * @return non-empty-list<string>
      */
-    public function getActionNames(string $workingDirectory): array;
+    public function targetNames(string $workingDirectory): array;
 }

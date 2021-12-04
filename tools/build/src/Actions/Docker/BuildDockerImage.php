@@ -8,9 +8,9 @@ use function array_merge;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 use Webmozart\Assert\Assert;
 

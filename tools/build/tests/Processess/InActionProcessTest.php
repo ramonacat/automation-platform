@@ -6,7 +6,7 @@ namespace Tests\Ramona\AutomationPlatformLibBuild\Processess;
 
 use const PHP_BINARY;
 use PHPUnit\Framework\TestCase;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 use Tests\Ramona\AutomationPlatformLibBuild\DumbFiberRunner;
 

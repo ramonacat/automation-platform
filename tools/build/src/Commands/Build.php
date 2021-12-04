@@ -20,17 +20,20 @@ use Monolog\Logger;
 use const PHP_EOL;
 use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
+use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\Artifacts\LogOnlyPublisher;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\StyledBuildOutput;
 use Ramona\AutomationPlatformLibBuild\ChangeTracking\GitChangeTracker;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Configuration\Locator;
+use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildExecutor;
 use Ramona\AutomationPlatformLibBuild\Definition\DefaultBuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use Ramona\AutomationPlatformLibBuild\MachineInfo;
+use Ramona\AutomationPlatformLibBuild\Output\StyledBuildOutput;
+use Ramona\AutomationPlatformLibBuild\Queue\Builder;
 use Ramona\AutomationPlatformLibBuild\State\DotBuildStateStorage;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetDoesNotExist;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
@@ -96,16 +99,16 @@ final class Build
             $logger,
             new StyledBuildOutput($this->ansi),
             $buildDefinitionsLoader,
-            $configuration,
             $buildFacts,
             $state,
-            $changeTracker
+            $changeTracker,
+            new Builder($buildDefinitionsLoader)
         );
 
         $this->printBuildFacts($buildFacts);
 
         try {
-            $result = $buildExecutor->executeTarget(new TargetId(getcwd(), $arguments[0]));
+            $result = $buildExecutor->executeTarget(new TargetId(getcwd(), $arguments[0]), new Context($configuration, new Collector(), $buildFacts));
         } catch (TargetDoesNotExist $exception) {
             $this
                 ->ansi
@@ -172,7 +175,7 @@ final class Build
         $this
             ->ansi
             ->text(sprintf('Usage: %s [action-name]%s', $executableName, PHP_EOL))
-            ->text(sprintf('Supported actions: %s%s', implode(', ', $buildDefinitionsLoader->getActionNames($this->workingDirectory)), PHP_EOL));
+            ->text(sprintf('Supported actions: %s%s', implode(', ', $buildDefinitionsLoader->targetNames($this->workingDirectory)), PHP_EOL));
     }
 
     private function printBuildFacts(BuildFacts $buildFacts): void

@@ -67,7 +67,6 @@ final class TargetGenerator implements TargetGeneratorInterface
                         [
                             'php',
                             'vendor/bin/infection',
-                            // todo set the number of parallel runs dynamically, once it's supported in build
                             '-j' . (string)$facts->logicalCores(),
                             '--min-msi=' . (string)$this->configuration->minMsi(),
                             '--min-covered-msi=' . (string)$this->configuration->minCoveredMsi()

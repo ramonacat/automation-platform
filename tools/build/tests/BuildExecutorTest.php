@@ -11,21 +11,21 @@ use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\BuildOutput;
-use Ramona\AutomationPlatformLibBuild\BuildOutput\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\ChangeTracking\ChangeTracker;
-use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
-use Ramona\AutomationPlatformLibBuild\CyclicDependencyFound;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildExecutor;
+use Ramona\AutomationPlatformLibBuild\Output\BuildOutput;
+use Ramona\AutomationPlatformLibBuild\Output\CollectedTargetOutput;
+use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\Queue\Builder;
 use Ramona\AutomationPlatformLibBuild\State\State;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
-use Ramona\AutomationPlatformLibBuild\Targets\TargetQueue;
 use RuntimeException;
 use function Safe\realpath;
 use function sprintf;
+use Tests\Ramona\AutomationPlatformLibBuild\Actions\ContextFactory;
 
 final class BuildExecutorTest extends TestCase
 {
@@ -50,6 +50,7 @@ final class BuildExecutorTest extends TestCase
     {
         $this->buildDefinitionsLoader = $this->createMock(BuildDefinitionsLoader::class);
         $this->buildOutput = $this->createMock(BuildOutput::class);
+
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->changeTracker = $this->createMock(ChangeTracker::class);
         $this->state = new State();
@@ -57,136 +58,18 @@ final class BuildExecutorTest extends TestCase
             $this->logger,
             $this->buildOutput,
             $this->buildDefinitionsLoader,
-            Configuration::fromJsonString('{}'),
             new BuildFacts('test', false, 1, 1),
             $this->state,
-            $this->changeTracker
+            $this->changeTracker,
+            new Builder($this->buildDefinitionsLoader)
         );
-    }
-
-    public function testWillReturnJustSelfForNoDependencies(): void
-    {
-        $this->setupDefinitions([
-            new Target(new TargetId('.', 'build'), new NoOp()),
-        ]);
-
-        $result = $this->buildExecutor->buildQueue(new TargetId('.', 'build'));
-
-        self::assertObjectEquals(TargetQueue::fromArray([new TargetId('.', 'build')]), $result);
-    }
-
-    public function testWillPutDependencyBeforeSelf(): void
-    {
-        $this->setupDefinitions([
-            new Target(new TargetId('.', 'build-dep'), new NoOp()),
-            new Target(new TargetId('.', 'build'), new NoOp(), [new TargetId('.', 'build-dep')]),
-        ]);
-
-        $result = $this->buildExecutor->buildQueue(new TargetId('.', 'build'));
-
-        self::assertObjectEquals(
-            TargetQueue::fromArray(
-                [
-                new TargetId('.', 'build-dep'),
-                new TargetId('.', 'build'),
-            ]
-            ),
-            $result
-        );
-    }
-
-    public function testCanHandleMultipleLevelsOfDependencies(): void
-    {
-        $this->setupDefinitions([
-            new Target(new TargetId('.', 'build-dep-1'), new NoOp()),
-            new Target(new TargetId('.', 'build-dep'), new NoOp(), [new TargetId('.', 'build-dep-1')]),
-            new Target(new TargetId('.', 'build'), new NoOp(), [new TargetId('.', 'build-dep')]),
-        ]);
-
-        $result = $this->buildExecutor->buildQueue(new TargetId('.', 'build'));
-
-        self::assertObjectEquals(TargetQueue::fromArray([
-            new TargetId('.', 'build-dep-1'),
-            new TargetId('.', 'build-dep'),
-            new TargetId('.', 'build'),
-        ]), $result);
-    }
-
-    public function testCanHandleRepeatingDependencies(): void
-    {
-        $this->setupDefinitions([
-            new Target(new TargetId('.', 'build-dep-2'), new NoOp(), [new TargetId('.', 'build-dep-1')]),
-            new Target(new TargetId('.', 'build-dep-1'), new NoOp()),
-            new Target(new TargetId('.', 'build-dep'), new NoOp(), [new TargetId('.', 'build-dep-1')]),
-            new Target(new TargetId('.', 'build'), new NoOp(), [new TargetId('.', 'build-dep'), new TargetId('.', 'build-dep-2')]),
-        ]);
-
-        $result = $this->buildExecutor->buildQueue(new TargetId('.', 'build'));
-
-        self::assertObjectEquals(TargetQueue::fromArray([
-            new TargetId('.', 'build-dep-1'),
-            new TargetId('.', 'build-dep'),
-            new TargetId('.', 'build-dep-2'),
-            new TargetId('.', 'build'),
-        ]), $result);
-    }
-
-    public function testThrowsOnCycles(): void
-    {
-        $this->markTestSkipped('Need to figure out how to do the cyclic check...');
-        /*
-                $this->setupDefinitions([
-                    [new TargetId('.', 'build-dep-1'), new Target('build-dep-1', new NoOp(), [new TargetId('.', 'build')])],
-                    [new TargetId('.', 'build-dep'), new Target('build-dep', new NoOp(), [new TargetId('.', 'build-dep-1')])],
-                    [new TargetId('.', 'build'), new Target('build', new NoOp(), [new TargetId('.', 'build-dep')])],
-                ]);
-
-                $this->expectException(CyclicDependencyFound::class);
-                $this->buildExecutor->buildQueue(new TargetId('.', 'build'));*/
-    }
-
-    public function testWorksOnRepeatingDependencies(): void
-    {
-        $this->setupDefinitions([
-            new Target(new TargetId(__DIR__ . '/b/', 'build-dev'), new NoOp(), [new TargetId(__DIR__ . '/b', 'check')]),
-            new Target(new TargetId(__DIR__ . '/b/', 'check'), new NoOp()),
-            new Target(new TargetId(__DIR__ . '/b/', 'deploy-dev'), new NoOp(), [new TargetId(__DIR__ . '/b', 'build-dev')]),
-
-            new Target(new TargetId(__DIR__ . '/a/', 'build-dev'), new NoOp(), [new TargetId(__DIR__ . '/a', 'check')]),
-            new Target(new TargetId(__DIR__ . '/a/', 'check'), new NoOp()),
-            new Target(new TargetId(__DIR__ . '/a/', 'deploy-dev'), new NoOp(), [new TargetId(__DIR__ . '/b', 'deploy-dev')]),
-        ]);
-
-        $result = $this->buildExecutor->buildQueue(new TargetId(__DIR__ . '/a', 'deploy-dev'));
-
-        self::assertObjectEquals(TargetQueue::fromArray([
-            new TargetId(__DIR__ . '/b', 'check'),
-            new TargetId(__DIR__ . '/b', 'build-dev'),
-            new TargetId(__DIR__ . '/b', 'deploy-dev'),
-            new TargetId(__DIR__ . '/a', 'deploy-dev'),
-        ]), $result);
-    }
-
-    public function testConsidersTargetsWithDifferentPathsToTheSameDirectoryTheSame(): void
-    {
-        $this->setupDefinitions([
-            new Target(new TargetId(__DIR__ . '/a', 'check'), new NoOp(), [new TargetId(__DIR__ . '/b', 'check'), new TargetId(__DIR__ . '/a/../c', 'check')]),
-            new Target(new TargetId(__DIR__ . '/b', 'check'), new NoOp(), [new TargetId(__DIR__ . '/c', 'check')]),
-            new Target(new TargetId(__DIR__ . '/c', 'check'), new NoOp()),
-        ]);
-
-        $result = $this->buildExecutor->buildQueue(new TargetId(__DIR__ . '/a', 'check'));
-
-        self::assertObjectEquals(TargetQueue::fromArray([
-            new TargetId(__DIR__ . '/c', 'check'),
-            new TargetId(__DIR__ . '/b', 'check'),
-            new TargetId(__DIR__ . '/a', 'check'),
-        ]), $result);
     }
 
     public function testCanExecuteATarget(): void
     {
-        $targetId = new TargetId(__DIR__ . '/c', 'check');
+        $this->initDefaultTargetOutput();
+
+        $targetId = new TargetId(__DIR__ . '/fixtures/c', 'check');
         $action = $this->createMock(BuildAction::class);
 
         $action->expects(self::once())->method('execute')->willReturn(BuildResult::ok([]));
@@ -195,13 +78,15 @@ final class BuildExecutorTest extends TestCase
             new Target($targetId, $action),
         ]);
 
-        $this->buildExecutor->executeTarget($targetId);
+        $this->buildExecutor->executeTarget($targetId, ContextFactory::create());
     }
 
     public function testWillStartEachTarget(): void
     {
-        $targetIdA = new TargetId(__DIR__ . '/c', 'a');
-        $targetIdB = new TargetId(__DIR__ . '/c', 'b');
+        $this->initDefaultTargetOutput();
+
+        $targetIdA = new TargetId(__DIR__ . '/fixtures/c', 'a');
+        $targetIdB = new TargetId(__DIR__ . '/fixtures/c', 'b');
 
         $this->setupDefinitions([
             new Target($targetIdA, new NoOp()),
@@ -214,16 +99,18 @@ final class BuildExecutorTest extends TestCase
             ->method('startTarget')
             ->withConsecutive([$targetIdA], [$targetIdB]);
 
-        $this->buildExecutor->executeTarget($targetIdB);
+        $this->buildExecutor->executeTarget($targetIdB, ContextFactory::create());
     }
 
     public function testWillCollectAllArtifacts(): void
     {
+        $this->initDefaultTargetOutput();
+
         $artifactA = new ContainerImage('ramona-test-1', 'ramona/test1', 'latest');
         $artifactB = new ContainerImage('ramona-test-2', 'ramona/test2', 'latest');
 
-        $targetIdA = new TargetId(__DIR__ . '/c', 'a');
-        $targetIdB = new TargetId(__DIR__ . '/c', 'b');
+        $targetIdA = new TargetId(__DIR__ . '/fixtures/c', 'a');
+        $targetIdB = new TargetId(__DIR__ . '/fixtures/c', 'b');
 
         $resultA = BuildResult::ok([$artifactA]);
         $resultB = BuildResult::ok([$artifactB]);
@@ -242,15 +129,15 @@ final class BuildExecutorTest extends TestCase
             new Target($targetIdB, $actionB, [$targetIdA]),
         ]);
 
-        $result = $this->buildExecutor->executeTarget($targetIdB);
+        $result = $this->buildExecutor->executeTarget($targetIdB, ContextFactory::create());
 
         self::assertEquals([$artifactA, $artifactB], $result->artifacts());
     }
 
     public function testWillFinalizeTheBuild(): void
     {
-        $targetIdA = new TargetId(__DIR__ . '/c', 'a');
-        $targetIdB = new TargetId(__DIR__ . '/c', 'b');
+        $targetIdA = new TargetId(__DIR__ . '/fixtures/c', 'a');
+        $targetIdB = new TargetId(__DIR__ . '/fixtures/c', 'b');
 
         $resultA = BuildResult::ok([]);
         $resultB = BuildResult::fail('boo');
@@ -270,7 +157,11 @@ final class BuildExecutorTest extends TestCase
         ]);
 
         $targetOutputA = $this->createMock(TargetOutput::class);
+        $collectedTargetOutputA = new CollectedTargetOutput('a', 'b');
+        $targetOutputA->method('finalize')->willReturn($collectedTargetOutputA);
         $targetOutputB = $this->createMock(TargetOutput::class);
+        $collectedTargetOutputB = new CollectedTargetOutput('c', 'd');
+        $targetOutputB->method('finalize')->willReturn($collectedTargetOutputB);
 
         $this
             ->buildOutput
@@ -285,17 +176,19 @@ final class BuildExecutorTest extends TestCase
             ->expects(self::once())
             ->method('finalizeBuild')
             ->with([
-                $targetIdA->toString() => [$resultA, $targetOutputA],
-                $targetIdB->toString() => [$resultB, $targetOutputB]
+                $targetIdA->toString() => [$resultA, $collectedTargetOutputA],
+                $targetIdB->toString() => [$resultB, $collectedTargetOutputB],
             ]);
 
-        $this->buildExecutor->executeTarget($targetIdB);
+        $this->buildExecutor->executeTarget($targetIdB, ContextFactory::create());
     }
 
     public function testWillFailIfAnyTargetFailed(): void
     {
-        $targetIdA = new TargetId(__DIR__ . '/c', 'a');
-        $targetIdB = new TargetId(__DIR__ . '/c', 'b');
+        $this->initDefaultTargetOutput();
+
+        $targetIdA = new TargetId(__DIR__ . '/fixtures/c', 'a');
+        $targetIdB = new TargetId(__DIR__ . '/fixtures/c', 'b');
 
         $resultA = BuildResult::ok([]);
         $resultB = BuildResult::fail('boo');
@@ -314,28 +207,30 @@ final class BuildExecutorTest extends TestCase
             new Target($targetIdB, $actionB, [$targetIdA]),
         ]);
 
-        $result = $this->buildExecutor->executeTarget($targetIdB);
+        $result = $this->buildExecutor->executeTarget($targetIdB, ContextFactory::create());
         self::assertFalse($result->hasSucceeded());
     }
 
     public function testWillRebuildIFADeeplyNestedDependencyWasRebuilt(): void
     {
-        $targetIdC = new TargetId(__DIR__ . '/c', 'c');
+        $this->initDefaultTargetOutput();
+
+        $targetIdC = new TargetId(__DIR__ . '/fixtures/c', 'c');
         $targetC = new Target($targetIdC, new NoOp());
 
-        $targetIdB = new TargetId(__DIR__ . '/b', 'b');
+        $targetIdB = new TargetId(__DIR__ . '/fixtures/b', 'b');
         $targetB = new Target($targetIdB, new NoOp(), [$targetIdC]);
 
         $actionA = $this->createMock(BuildAction::class);
         $actionA->expects(self::once())->method('execute')->willReturn(BuildResult::ok([]));
-        $targetIdA = new TargetId(__DIR__ . '/a', 'a');
+        $targetIdA = new TargetId(__DIR__ . '/fixtures/a', 'a');
         $targetA = new Target($targetIdA, $actionA, [$targetIdB]);
 
         $this
             ->changeTracker
             ->method('wasModifiedSince')
             ->willReturnCallback(function (string $_, string $directory) {
-                return realpath($directory) === realpath(__DIR__ . '/c');
+                return realpath($directory) === realpath(__DIR__ . '/fixtures/c');
             });
 
         $this->changeTracker->method('getCurrentStateId')->willReturn('aaa');
@@ -345,27 +240,27 @@ final class BuildExecutorTest extends TestCase
 
         $this->setupDefinitions([$targetB, $targetC, $targetA]);
 
-        $this->buildExecutor->executeTarget($targetIdA);
+        $this->buildExecutor->executeTarget($targetIdA, ContextFactory::create());
     }
 
     public function testWillNotRebuildIfNoDependenciesWereRebuilt(): void
     {
-        $targetIdC = new TargetId(__DIR__ . '/c', 'c');
+        $targetIdC = new TargetId(__DIR__ . '/fixtures/c', 'c');
         $targetC = new Target($targetIdC, new NoOp());
 
-        $targetIdB = new TargetId(__DIR__ . '/b', 'b');
+        $targetIdB = new TargetId(__DIR__ . '/fixtures/b', 'b');
         $targetB = new Target($targetIdB, new NoOp());
 
         $actionA = $this->createMock(BuildAction::class);
         $actionA->expects(self::never())->method('execute')->willReturn(BuildResult::ok([]));
-        $targetIdA = new TargetId(__DIR__ . '/a', 'a');
+        $targetIdA = new TargetId(__DIR__ . '/fixtures/a', 'a');
         $targetA = new Target($targetIdA, $actionA, [$targetIdB]);
 
         $this
             ->changeTracker
             ->method('wasModifiedSince')
             ->willReturnCallback(function (string $_, string $directory) {
-                return realpath($directory) === realpath(__DIR__ . '/c');
+                return realpath($directory) === realpath(__DIR__ . '/fixtures/c');
             });
 
         $this->changeTracker->method('getCurrentStateId')->willReturn('aaa');
@@ -375,24 +270,24 @@ final class BuildExecutorTest extends TestCase
 
         $this->setupDefinitions([$targetB, $targetC, $targetA]);
 
-        $this->buildExecutor->executeTarget($targetIdA);
+        $this->buildExecutor->executeTarget($targetIdA, ContextFactory::create());
     }
 
     public function testWillNotRebuildIfNoDependenciesWereRebuiltDeeplyNested(): void
     {
         $actionC = $this->createMock(BuildAction::class);
         $actionC->expects(self::never())->method('execute')->willReturn(BuildResult::ok([]));
-        $targetIdC = new TargetId(__DIR__ . '/c', 'c');
+        $targetIdC = new TargetId(__DIR__ . '/fixtures/c', 'c');
         $targetC = new Target($targetIdC, new NoOp());
 
         $actionB = $this->createMock(BuildAction::class);
         $actionB->expects(self::never())->method('execute')->willReturn(BuildResult::ok([]));
-        $targetIdB = new TargetId(__DIR__ . '/b', 'b');
+        $targetIdB = new TargetId(__DIR__ . '/fixtures/b', 'b');
         $targetB = new Target($targetIdB, new NoOp(), [$targetIdC]);
 
         $actionA = $this->createMock(BuildAction::class);
         $actionA->expects(self::never())->method('execute')->willReturn(BuildResult::ok([]));
-        $targetIdA = new TargetId(__DIR__ . '/a', 'a');
+        $targetIdA = new TargetId(__DIR__ . '/fixtures/a', 'a');
         $targetA = new Target($targetIdA, $actionA, [$targetIdB]);
 
         $this
@@ -410,7 +305,7 @@ final class BuildExecutorTest extends TestCase
 
         $this->setupDefinitions([$targetB, $targetC, $targetA]);
 
-        $result = $this->buildExecutor->executeTarget($targetIdA);
+        $result = $this->buildExecutor->executeTarget($targetIdA, ContextFactory::create());
 
         self::assertEquals(
             BuildResult::ok([
@@ -424,17 +319,19 @@ final class BuildExecutorTest extends TestCase
 
     public function testWillSetStateForSuccessfulTargets(): void
     {
+        $this->initDefaultTargetOutput();
+
         $this->changeTracker->method('getCurrentStateId')->willReturn('aaa');
 
-        $targetIdA = new TargetId(__DIR__ . '/a', 'a');
-        $targetIdB = new TargetId(__DIR__ . '/b', 'b');
+        $targetIdA = new TargetId(__DIR__ . '/fixtures/a', 'a');
+        $targetIdB = new TargetId(__DIR__ . '/fixtures/b', 'b');
 
         $this->setupDefinitions([
             new Target($targetIdA, new NoOp()),
             new Target($targetIdB, new NoOp(), [$targetIdA]),
         ]);
 
-        $this->buildExecutor->executeTarget($targetIdB);
+        $this->buildExecutor->executeTarget($targetIdB, ContextFactory::create());
 
         self::assertEquals(['aaa', []], $this->state->getStateIdForTarget($targetIdA));
         self::assertEquals(['aaa', []], $this->state->getStateIdForTarget($targetIdB));
@@ -457,5 +354,12 @@ final class BuildExecutorTest extends TestCase
 
                 throw new RuntimeException(sprintf('Unexpected target id "%s"', $targetId->toString()));
             });
+    }
+
+    private function initDefaultTargetOutput(): void
+    {
+        $targetOutput = $this->createMock(TargetOutput::class);
+        $targetOutput->method('finalize')->willReturn(new CollectedTargetOutput('', ''));
+        $this->buildOutput->method('startTarget')->willReturn($targetOutput);
     }
 }
