@@ -136,4 +136,12 @@ final class ConfigurationTest extends TestCase
 
         $configuration->getSingleBuildValue('$.a');
     }
+
+    public function testThrowsIfRuntimeIsNotAnArray(): void
+    {
+        $configuration = Configuration::fromJsonString('{"runtime": 12}');
+        $this->expectException(InvalidConfiguration::class);
+
+        $configuration->getRuntimeConfiguration();
+    }
 }
