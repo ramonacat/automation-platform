@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Ramona\AutomationPlatformLibBuild\Actions;
+namespace Ramona\AutomationPlatformLibBuild\Actions\Kubernetes;
 
+use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;

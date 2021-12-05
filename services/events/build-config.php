@@ -1,7 +1,8 @@
 <?php
 
-use Ramona\AutomationPlatformLibBuild\Actions\KustomizeApply;
-use Ramona\AutomationPlatformLibBuild\Actions\PutFile;
+use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\GenerateKustomizeOverride;
+use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\KustomizeApply;
+use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\KustomizeOverride;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
 use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
@@ -12,25 +13,6 @@ use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 return static function (BuildDefinitionBuilder $builder) {
     $rustTargetGenerator = new TargetGenerator(__DIR__);
 
-    $override = static fn(Context $context):string => <<<EOT
-        apiVersion: apps/v1
-        kind: Deployment
-        metadata:
-          name: svc-events
-        spec:
-          template:
-            metadata:
-              labels:
-                app: svc-events
-            spec:
-              initContainers:
-                - name: migrations
-                  image: {$context->artifactCollector()->getByKey(__DIR__, 'image-migrations')->name()}
-              containers:
-                - name: app
-                  image: {$context->artifactCollector()->getByKey(__DIR__, 'image-service')->name()}
-        EOT;
-
     $builder->addTargetGenerator($rustTargetGenerator);
 
     $dockerTargetGenerator = new \Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator(__DIR__, 'image-service', 'automation-platform-svc-events', [], '../../', 'docker/Dockerfile');
@@ -40,12 +22,33 @@ return static function (BuildDefinitionBuilder $builder) {
 
     $builder->addTarget(
         'generate-kustomize-override',
-        new PutFile('k8s/overlays/dev/deployment.yaml', $override),
+        new GenerateKustomizeOverride(
+            'k8s/base/deployment.yaml',
+            'k8s/overlays/dev',
+            [
+                new KustomizeOverride('$.spec.template.metadata.labels.app', fn() => 'svc-events'),
+                new KustomizeOverride(
+                    '$.spec.template.spec.initContainers[0]',
+                    fn(Context $c) => [
+                        'name' => 'migrations',
+                        'image' => $c->artifactCollector()->getByKey(__DIR__, 'image-migrations')->name()
+                    ]
+                ),
+                new KustomizeOverride(
+                    '$.spec.template.spec.containers[0]',
+                    fn(Context $c) => [
+                        'name' => 'app',
+                        'image' => $c->artifactCollector()->getByKey(__DIR__, 'image-service')->name()
+                    ]
+                ),
+            ]
+        ),
         array_merge(
             $dockerTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
             $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
         )
     );
+
     $builder->addTarget(
         'deploy',
         new KustomizeApply('k8s/overlays/dev'),
