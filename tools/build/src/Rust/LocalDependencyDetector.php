@@ -16,7 +16,7 @@ final class LocalDependencyDetector
      */
     public function forProject(string $projectDirectory): array
     {
-        $process = new Process(['cargo', 'metadata', '--frozen', '--all-features', '--color', 'never', '--manifest-path', $projectDirectory . DIRECTORY_SEPARATOR . 'Cargo.toml']);
+        $process = new Process(['cargo', 'metadata', '--locked', '--all-features', '--color', 'never', '--manifest-path', $projectDirectory . DIRECTORY_SEPARATOR . 'Cargo.toml']);
         $process->mustRun();
 
         $metadata = new JsonObject($process->getOutput());
