@@ -22,5 +22,5 @@ if ($options === false) {
     $options = [];
 }
 
-$restArguments = array_values(array_slice($argv, $restIndex));
+$restArguments = array_slice($argv, $restIndex);
 exit((new Build())($argv[0], $options, $restArguments));
