@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6e69dcb6e6fdd16b06d7aee6010a19e1",
+    "content-hash": "efe024682103502bbcda315ab20f5211",
     "packages": [
         {
             "name": "bramus/ansi-php",
@@ -3177,12 +3177,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Roave/SecurityAdvisories.git",
-                "reference": "48f62899325ede08503d5532d9e1c98d7983df55"
+                "reference": "661f78bd557b2acb20e6da7745de77b1ddc69e59"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/48f62899325ede08503d5532d9e1c98d7983df55",
-                "reference": "48f62899325ede08503d5532d9e1c98d7983df55",
+                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/661f78bd557b2acb20e6da7745de77b1ddc69e59",
+                "reference": "661f78bd557b2acb20e6da7745de77b1ddc69e59",
                 "shasum": ""
             },
             "conflict": {
@@ -3322,7 +3322,7 @@
                 "kreait/firebase-php": ">=3.2,<3.8.1",
                 "la-haute-societe/tcpdf": "<6.2.22",
                 "laminas/laminas-http": "<2.14.2",
-                "laravel/framework": "<6.20.26|>=7,<7.30.5|>=8,<8.40",
+                "laravel/framework": "<6.20.42|>=7,<7.30.6|>=8,<8.75",
                 "laravel/socialite": ">=1,<1.0.99|>=2,<2.0.10",
                 "lavalite/cms": "<=5.8",
                 "lcobucci/jwt": ">=3.4,<3.4.6|>=4,<4.0.4|>=4.1,<4.1.5",
@@ -3597,7 +3597,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-12-07T22:15:12+00:00"
+            "time": "2021-12-08T20:16:08+00:00"
         },
         {
             "name": "sanmai/later",
@@ -6795,16 +6795,16 @@
         },
         {
             "name": "symplify/easy-coding-standard",
-            "version": "9.4.70",
+            "version": "10.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symplify/easy-coding-standard.git",
-                "reference": "9276b0c7a1a5671fc4a067656ab40d0aea42aaca"
+                "reference": "8dd82634721904983c0d060fe201ae61a1d9fe73"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symplify/easy-coding-standard/zipball/9276b0c7a1a5671fc4a067656ab40d0aea42aaca",
-                "reference": "9276b0c7a1a5671fc4a067656ab40d0aea42aaca",
+                "url": "https://api.github.com/repos/symplify/easy-coding-standard/zipball/8dd82634721904983c0d060fe201ae61a1d9fe73",
+                "reference": "8dd82634721904983c0d060fe201ae61a1d9fe73",
                 "shasum": ""
             },
             "require": {
@@ -6834,7 +6834,7 @@
             ],
             "description": "Prefixed scoped version of ECS package",
             "support": {
-                "source": "https://github.com/symplify/easy-coding-standard/tree/9.4.70"
+                "source": "https://github.com/symplify/easy-coding-standard/tree/10.0.2"
             },
             "funding": [
                 {
@@ -6846,7 +6846,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2021-10-02T16:09:04+00:00"
+            "time": "2021-12-08T16:13:05+00:00"
         },
         {
             "name": "theseer/tokenizer",
