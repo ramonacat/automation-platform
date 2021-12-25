@@ -1,0 +1,27 @@
+metadata {
+    created_time: instant,
+    id: guid,
+    source: string
+}
+
+struct FileOnMountPath {
+    path: string,
+    mount_id: string
+}
+
+message FileCreated {
+    path: FileOnMountPath
+}
+
+message FileChanged {
+    path: FileOnMountPath
+}
+
+message FileDeleted {
+    path: FileOnMountPath
+}
+
+message FileMoved {
+    from: FileOnMountPath,
+    to: FileOnMountPath
+}

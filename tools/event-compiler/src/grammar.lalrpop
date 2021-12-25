@@ -1,0 +1,47 @@
+use crate::parsing::IdentifierRaw;
+use crate::parsing::FieldRaw;
+use crate::parsing::DefinitionRaw;
+use crate::parsing::MetadataRaw;
+use crate::parsing::FileRaw;
+grammar();
+
+RIdentifier:IdentifierRaw<'input> =
+    <id:r"[a-zA-Z0-9_][a-zA-Z0-9_-]*"> => IdentifierRaw::new(id);
+
+RField:FieldRaw<'input> = <name:RIdentifier> ":" <type_name:RIdentifier> => FieldRaw::new(name, type_name);
+
+RFields:Vec<FieldRaw<'input>> = {
+    <field:RField> => vec![field],
+    <mut rest:RFields> "," <field:RField?> => {
+        if let Some(field) = field {
+            rest.push(field);
+        }
+
+        rest
+     }
+}
+
+RDefinition:DefinitionRaw<'input> = {
+    "struct" <name:RIdentifier> "{" <fields:RFields?> "}" => DefinitionRaw::Struct(name, fields.unwrap_or_else(|| vec![])),
+    "message" <name:RIdentifier> "{" <fields:RFields?> "}" => DefinitionRaw::Message(name, fields.unwrap_or_else(|| vec![]))
+}
+
+RMetadata:MetadataRaw<'input> = {
+    "metadata" "{" <fields:RFields?> "}" => MetadataRaw::new(fields.unwrap_or_else(|| vec![]))
+}
+
+RDefinitions:Vec<DefinitionRaw<'input>> = {
+    <rest:RDefinitions?> <st:RDefinition> => {
+        if let Some(mut rest) = rest {
+            rest.push(st);
+
+            rest
+        } else {
+            vec![st]
+        }
+    }
+}
+
+pub RFile:FileRaw<'input> = {
+    <meta:RMetadata?> <definitions:RDefinitions> => FileRaw::new(meta, definitions)
+}
