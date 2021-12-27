@@ -1,5 +1,5 @@
 [package]
-name = "events"
+name = "svc-events"
 version = "0.1.0"
 edition = "2021"
 
@@ -20,3 +20,4 @@ jsonschema="0.13.3"
 time = { version = "0.3.5", features=["local-offset", "parsing", "serde", "formatting"] }
 
 platform = { path = "../../libraries/rust/platform" }
+events = { path = "../../libraries/rust/events" }

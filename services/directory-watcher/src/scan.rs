@@ -1,13 +1,15 @@
-use crate::events::{FileChanged, FileCreated};
 use crate::file_status_store::{FileStatusStore, FileStatusSyncResult};
 use crate::mount::{Mount, PathInside};
 use async_walkdir::{DirEntry, WalkDir};
+use events::{Message, MessagePayload, Metadata};
 use futures_lite::stream::StreamExt;
 use platform::events::EventSender;
-use std::fs::Metadata;
+use std::fs::Metadata as FsMetadata;
 use std::sync::Arc;
+use std::time::SystemTime;
 use time::OffsetDateTime;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -64,11 +66,29 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
         Ok(())
     }
 
+    // fixme move this into a common service
+    async fn send_event(&self, payload: MessagePayload) -> Result<(), Error> {
+        self.event_sender
+            .lock()
+            .await
+            .send(Message {
+                metadata: Metadata {
+                    created_time: SystemTime::now(),
+                    source: "directory-watcher".to_string(),
+                    id: Uuid::new_v4(),
+                },
+                payload,
+            })
+            .await?;
+
+        Ok(())
+    }
+
     async fn sync_file(
         &mut self,
         dir: &Mount,
         entry: DirEntry,
-        metadata: Metadata,
+        metadata: FsMetadata,
     ) -> Result<(), Error> {
         let path = entry.path();
 
@@ -86,18 +106,16 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
         info!("Found file: {} ({:?})", path.to_string_lossy(), sync_status);
         match sync_status {
             FileStatusSyncResult::Created => {
-                self.event_sender
-                    .lock()
-                    .await
-                    .send(FileCreated::new(&mount_relative_path))
-                    .await?;
+                self.send_event(MessagePayload::FileCreated {
+                    path: mount_relative_path.into(),
+                })
+                .await?;
             }
             FileStatusSyncResult::Modified => {
-                self.event_sender
-                    .lock()
-                    .await
-                    .send(FileChanged::new(&mount_relative_path))
-                    .await?;
+                self.send_event(MessagePayload::FileChanged {
+                    path: mount_relative_path.into(),
+                })
+                .await?;
             }
             FileStatusSyncResult::NotModified => {}
         }
@@ -109,8 +127,6 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use platform::events::Event;
-    use serde::Serialize;
     use serde_json::{to_value, Value};
     use std::path::PathBuf;
 
@@ -119,10 +135,7 @@ mod tests {
     }
     #[async_trait]
     impl EventSender for MockEventSender {
-        async fn send<'a, T: Event + Serialize + 'a>(
-            &mut self,
-            event: T,
-        ) -> Result<(), platform::events::Error> {
+        async fn send<'a>(&mut self, event: Message) -> Result<(), platform::events::Error> {
             self.events.push(to_value(event).unwrap());
 
             Ok(())
@@ -189,45 +202,95 @@ mod tests {
         let index = events
             .iter()
             .position(|e| {
-                PathBuf::from(e.get("path").unwrap().as_str().unwrap()) == PathBuf::from("a/b")
+                PathBuf::from(
+                    e.get("payload")
+                        .unwrap()
+                        .get("path")
+                        .unwrap()
+                        .get("path")
+                        .unwrap()
+                        .as_str()
+                        .unwrap(),
+                ) == PathBuf::from("a/b")
             })
             .unwrap();
 
         assert_eq!(
             &Value::String("mount_a".into()),
-            events[index].get("mount_id").unwrap()
+            events[index]
+                .get("payload")
+                .unwrap()
+                .get("path")
+                .unwrap()
+                .get("mount_id")
+                .unwrap()
         );
 
         assert_eq!(
-            &Value::String("file.status.created".into()),
-            events[index].get("type").unwrap()
+            &Value::String("FileCreated".into()),
+            events[index].get("payload").unwrap().get("type").unwrap()
         );
 
         assert_eq!(
             PathBuf::from("a/b"),
-            PathBuf::from(events[index].get("path").unwrap().as_str().unwrap())
+            PathBuf::from(
+                events[index]
+                    .get("payload")
+                    .unwrap()
+                    .get("path")
+                    .unwrap()
+                    .get("path")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+            )
         );
 
         let index_b = events
             .iter()
             .position(|e| {
-                PathBuf::from(e.get("path").unwrap().as_str().unwrap()) == PathBuf::from("b/c")
+                PathBuf::from(
+                    e.get("payload")
+                        .unwrap()
+                        .get("path")
+                        .unwrap()
+                        .get("path")
+                        .unwrap()
+                        .as_str()
+                        .unwrap(),
+                ) == PathBuf::from("b/c")
             })
             .unwrap();
 
         assert_eq!(
             &Value::String("mount_a".into()),
-            events[index_b].get("mount_id").unwrap()
+            events[index_b]
+                .get("payload")
+                .unwrap()
+                .get("path")
+                .unwrap()
+                .get("mount_id")
+                .unwrap()
         );
 
         assert_eq!(
-            &Value::String("file.status.changed".into()),
-            events[index_b].get("type").unwrap()
+            &Value::String("FileChanged".into()),
+            events[index_b].get("payload").unwrap().get("type").unwrap()
         );
 
         assert_eq!(
             PathBuf::from("b/c"),
-            PathBuf::from(events[index_b].get("path").unwrap().as_str().unwrap())
+            PathBuf::from(
+                events[index_b]
+                    .get("payload")
+                    .unwrap()
+                    .get("path")
+                    .unwrap()
+                    .get("path")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+            )
         );
     }
 }

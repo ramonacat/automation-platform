@@ -26,16 +26,10 @@ spec:
           image: automation-platform-svc-directory-watcher:latest # todo find out how to handle this for prod
           imagePullPolicy: Never # todo this will of course break in prod
           volumeMounts:
-            - name: rmq-events-default-user
-              mountPath: "/etc/svc-events/secrets/rmq-events-default-user"
-              readOnly: true
             - name: directory-watcher-ap-directory-watcher-credentials
               mountPath: "/etc/svc-events/secrets/directory-watcher.ap-directory-watcher.credentials"
               readOnly: true
       volumes:
-        - name: rmq-events-default-user
-          secret:
-            secretName: rmq-events-default-user
         - name: directory-watcher-ap-directory-watcher-credentials
           secret:
-            secretName: directory-watcher.ap-directory-watcher.credentials
+            secretName: directory-watcher.ap-directory-watcher.credentials.postgresql.acid.zalan.do

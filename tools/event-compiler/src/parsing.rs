@@ -2,6 +2,7 @@
 pub struct IdentifierRaw<'input>(pub(crate) &'input str);
 
 impl<'input> IdentifierRaw<'input> {
+    #[must_use]
     pub fn new(name: &'input str) -> Self {
         Self(name)
     }
@@ -14,6 +15,7 @@ pub struct FieldRaw<'input>(
 );
 
 impl<'input> FieldRaw<'input> {
+    #[must_use]
     pub fn new(name: IdentifierRaw<'input>, type_name: IdentifierRaw<'input>) -> Self {
         Self(name, type_name)
     }
@@ -31,12 +33,14 @@ pub struct MetadataRaw<'input> {
 }
 
 impl<'input> MetadataRaw<'input> {
+    #[must_use]
     pub(crate) fn fields(&self) -> &[FieldRaw<'input>] {
         &self.fields
     }
 }
 
 impl<'input> MetadataRaw<'input> {
+    #[must_use]
     pub fn new(fields: Vec<FieldRaw<'input>>) -> Self {
         Self { fields }
     }
@@ -49,6 +53,7 @@ pub struct FileRaw<'input> {
 }
 
 impl<'input> FileRaw<'input> {
+    #[must_use]
     pub fn new(
         metadata: Option<MetadataRaw<'input>>,
         definitions: Vec<DefinitionRaw<'input>>,
@@ -59,16 +64,27 @@ impl<'input> FileRaw<'input> {
         }
     }
 
+    #[must_use]
     pub fn metadata(&self) -> Option<&MetadataRaw<'input>> {
         self.metadata.as_ref()
     }
 
+    #[must_use]
     pub fn definitions(&self) -> &[DefinitionRaw<'input>] {
         &self.definitions
     }
 }
 
-lalrpop_util::lalrpop_mod!(#[allow(clippy::all)] pub grammar);
+lalrpop_util::lalrpop_mod!(
+    #[
+        allow(
+            clippy::all, clippy::unnested_or_patterns, clippy::missing_errors_doc,
+            clippy::trivially_copy_pass_by_ref, clippy::unnecessary_wraps,
+            clippy::pedantic
+        )
+    ]
+    pub grammar
+);
 
 #[cfg(test)]
 mod test {

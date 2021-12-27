@@ -1,35 +1,35 @@
 use serde::{Deserialize, Serialize};
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Metadata {
-        pub source: String,
-        pub id: ::uuid::Uuid,
-        #[serde(with="crate::system_time_serializer")]
-        pub created_time: std::time::SystemTime,
+    pub source: String,
+    #[serde(with = "crate::system_time_serializer")]
+    pub created_time: std::time::SystemTime,
+    pub id: ::uuid::Uuid,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FileOnMountPath {
-        pub path: String,
-        pub mount_id: String,
+    pub path: String,
+    pub mount_id: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum MessagePayload {
-    FileDeleted {
+    FileMoved {
+        from: FileOnMountPath,
+        to: FileOnMountPath,
+    },
+    FileCreated {
         path: FileOnMountPath,
     },
     FileChanged {
         path: FileOnMountPath,
     },
-    FileCreated {
+    FileDeleted {
         path: FileOnMountPath,
     },
-    FileMoved {
-        from: FileOnMountPath,
-        to: FileOnMountPath,
-    },
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Message {
     pub metadata: Metadata,
     pub payload: MessagePayload,

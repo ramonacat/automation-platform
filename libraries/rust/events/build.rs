@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let ast = parser.parse(&events).unwrap();
 
     let type_checker = TypeChecker::new();
-    let typed_file = type_checker.check(ast)?;
+    let typed_file = type_checker.check(&ast)?;
 
     let rust = event_compiler::compiler_rust::compile(typed_file);
     std::fs::write("src/structs.rs", rust).unwrap();

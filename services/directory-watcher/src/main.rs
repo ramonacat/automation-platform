@@ -15,7 +15,6 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio_postgres::Client;
 
-mod events;
 mod file_status_store;
 mod filesystem_events;
 mod mount;

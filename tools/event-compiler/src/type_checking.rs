@@ -52,10 +52,12 @@ pub struct TypedField {
 }
 
 impl TypedField {
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    #[must_use]
     pub fn type_name(&self) -> &TypedFieldType {
         &self.type_id
     }
@@ -74,20 +76,24 @@ pub struct TypedMessage {
 }
 
 impl TypedStruct {
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    #[must_use]
     pub fn fields(&self) -> &[TypedField] {
         &self.fields
     }
 }
 
 impl TypedMessage {
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    #[must_use]
     pub fn fields(&self) -> &[TypedField] {
         &self.fields
     }
@@ -126,6 +132,7 @@ pub struct TypedMetadata {
 }
 
 impl TypedMetadata {
+    #[must_use]
     pub fn fields(&self) -> &[TypedField] {
         &self.fields
     }
@@ -144,6 +151,7 @@ pub struct TypeChecker<'input> {
 }
 
 impl<'input> TypeChecker<'input> {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -157,7 +165,6 @@ impl<'input> TypeChecker<'input> {
     }
 
     fn map_fields(
-        &self,
         fields_raw: &[FieldRaw<'input>],
         struct_name: &str,
     ) -> Result<HashMap<&'input str, TypeCheckableFieldType<'input>>, TypeCheckError> {
@@ -199,7 +206,7 @@ impl<'input> TypeChecker<'input> {
 
         for (field_name, field_type) in raw_fields {
             fields.push(TypedField {
-                name: field_name.to_string(),
+                name: (*field_name).to_string(),
                 type_id: match field_type {
                     TypeCheckableFieldType::U8 => TypedFieldType::U8,
                     TypeCheckableFieldType::U16 => TypedFieldType::U16,
@@ -216,13 +223,13 @@ impl<'input> TypeChecker<'input> {
                         if !self.structs.contains_key(*type_name) {
                             return if self.messages.contains_key(*type_name) {
                                 Err(TypeCheckError::StructNotFoundMessageExists(
-                                    type_name.to_string(),
+                                    (*type_name).to_string(),
                                 ))
                             } else {
-                                Err(TypeCheckError::StructNotFound(type_name.to_string()))
+                                Err(TypeCheckError::StructNotFound((*type_name).to_string()))
                             };
                         }
-                        TypedFieldType::OtherStruct(type_name.to_string())
+                        TypedFieldType::OtherStruct((*type_name).to_string())
                     }
                 },
             });
@@ -231,13 +238,17 @@ impl<'input> TypeChecker<'input> {
         Ok(fields)
     }
 
-    pub fn check(mut self, file: FileRaw<'input>) -> Result<TypedFile, TypeCheckError> {
+    /// # Errors
+    /// May return an error when the type check fails
+    /// # Panics
+    /// TODO MAKE THIS NOT EVER PANIC
+    pub fn check(mut self, file: &FileRaw<'input>) -> Result<TypedFile, TypeCheckError> {
         for definition_raw in file.definitions() {
             match definition_raw {
                 DefinitionRaw::Struct(name, fields) => {
                     self.check_duplicate(name)?;
 
-                    let fields = self.map_fields(fields, name.0)?;
+                    let fields = Self::map_fields(fields, name.0)?;
 
                     self.structs.insert(
                         name.0.to_string(),
@@ -250,7 +261,7 @@ impl<'input> TypeChecker<'input> {
                 DefinitionRaw::Message(name, fields) => {
                     self.check_duplicate(name)?;
 
-                    let fields = self.map_fields(fields, name.0)?;
+                    let fields = Self::map_fields(fields, name.0)?;
 
                     self.messages.insert(
                         name.0.to_string(),
@@ -265,7 +276,7 @@ impl<'input> TypeChecker<'input> {
 
         let mut metadata_fields = HashMap::new();
         if let Some(metadata) = file.metadata() {
-            metadata_fields = self.map_fields(metadata.fields(), "metadata")?;
+            metadata_fields = Self::map_fields(metadata.fields(), "metadata")?;
         }
 
         let mut graph = DiGraph::new();
@@ -281,7 +292,7 @@ impl<'input> TypeChecker<'input> {
                     graph.add_edge(
                         *node_ids.get(*name).unwrap(),
                         *node_ids.get(&struct_definition.name).unwrap(),
-                        name.to_string(),
+                        (*name).to_string(),
                     );
                 }
             }

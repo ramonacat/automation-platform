@@ -16,6 +16,9 @@ WORKDIR /opt/directory-watcher/services/directory-watcher/
 
 COPY --from=planner /opt/directory-watcher/services/directory-watcher/recipe.json recipe.json
 COPY libraries/rust/platform/ /opt/directory-watcher/libraries/rust/platform
+COPY libraries/rust/events/ /opt/directory-watcher/libraries/rust/events
+COPY tools/event-compiler/ /opt/directory-watcher/tools/event-compiler
+
 RUN cargo chef cook --release --recipe-path recipe.json
 
 FROM rust:1.57.0-slim-bullseye AS build

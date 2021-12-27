@@ -25,6 +25,8 @@ pub mod system_time_serializer {
         }
     }
 
+    /// # Errors
+    /// Can fail if the `SystemTime` was before `UNIX_EPOCH`
     pub fn serialize<S>(val: &SystemTime, ser: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -36,6 +38,8 @@ pub mod system_time_serializer {
         )
     }
 
+    /// # Errors
+    /// Can fail if the value is not `u64`
     pub fn deserialize<'de, D>(des: D) -> Result<SystemTime, D::Error>
     where
         D: Deserializer<'de>,
@@ -46,7 +50,8 @@ pub mod system_time_serializer {
 
 #[cfg(test)]
 mod test {
-    use crate::{MessagePayload, Metadata, FileOnMountPath};
+    use crate::{FileOnMountPath, MessagePayload, Metadata};
+    use serde_json::Value;
     use std::ops::Add;
     use std::time::{Duration, SystemTime};
     use uuid::Uuid;
@@ -57,13 +62,20 @@ mod test {
             metadata: Metadata {
                 id: Uuid::parse_str("936DA01F9ABD4d9d80C702AF85C822A8").unwrap(),
                 created_time: SystemTime::UNIX_EPOCH.add(Duration::from_secs(1024)),
-                source: "test".to_string()
+                source: "test".to_string(),
             },
-            payload: MessagePayload::FileCreated { path: FileOnMountPath { path: "a/b/c.txt".to_string(), mount_id: "test1".to_string() } },
+            payload: MessagePayload::FileCreated {
+                path: FileOnMountPath {
+                    path: "a/b/c.txt".to_string(),
+                    mount_id: "test1".to_string(),
+                },
+            },
         };
 
         let json = serde_json::to_string(&message).unwrap();
 
-        assert_eq!("{\"metadata\":{\"source\":\"test\",\"id\":\"936da01f-9abd-4d9d-80c7-02af85c822a8\",\"created_time\":1024},\"payload\":{\"type\":\"FileCreated\",\"path\":{\"path\":\"a/b/c.txt\",\"mount_id\":\"test1\"}}}", json);
+        let expected:Value = serde_json::from_str("{\"metadata\":{\"source\":\"test\",\"id\":\"936da01f-9abd-4d9d-80c7-02af85c822a8\",\"created_time\":1024},\"payload\":{\"type\":\"FileCreated\",\"path\":{\"path\":\"a/b/c.txt\",\"mount_id\":\"test1\"}}}").unwrap();
+        let actual: Value = serde_json::from_str(json.as_str()).unwrap();
+        assert_eq!(expected, actual);
     }
 }

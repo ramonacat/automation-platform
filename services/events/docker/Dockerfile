@@ -16,6 +16,9 @@ WORKDIR /opt/events/services/events/
 
 COPY --from=planner /opt/events/services/events/recipe.json recipe.json
 COPY libraries/rust/platform/ /opt/events/libraries/rust/platform
+COPY libraries/rust/events/ /opt/events/libraries/rust/events
+COPY tools/event-compiler/ /opt/events/tools/event-compiler
+
 RUN cargo chef cook --release --recipe-path recipe.json
 
 FROM rust:1.57.0-slim-bullseye AS build
@@ -34,6 +37,6 @@ FROM debian:bullseye-slim
 RUN apt-get update && apt-get install --no-install-recommends -y libssl1.1=1.1.1k-1+deb11u1 && rm -rf /var/lib/apt/lists/*
 
 COPY schemas/events.schema.json /etc/svc-events/schemas/events.schema.json
-COPY --from=build /opt/events/services/events/target/release/events /opt/events/
+COPY --from=build /opt/events/services/events/target/release/svc-events /opt/events/events
 
 ENTRYPOINT ["/opt/events/events"]

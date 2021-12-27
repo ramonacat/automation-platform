@@ -10,16 +10,13 @@ use tracing::{error, info};
 
 use tokio_postgres::Client;
 
-use jsonschema::{ErrorIterator, JSONSchema, ValidationError};
+use events::MessagePayload;
+use jsonschema::{ErrorIterator, ValidationError};
 use platform::events::{Response, Status};
 use postgres_native_tls::MakeTlsConnector;
-use serde_json::Value;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use thiserror::Error;
-use time::format_description::well_known::Rfc3339;
-use time::OffsetDateTime;
-use uuid::Uuid;
 
 #[tokio::main]
 #[tracing::instrument]
@@ -62,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let client = client.clone();
         tokio::spawn(async move {
             run_with_error_handling(async move {
-                let client = EventsClient::new(socket, address, client.as_ref())?;
+                let client = EventsClient::new(socket, address, client.as_ref());
                 client.handle().await?;
 
                 Ok::<_, ClientHandlingError>(())
@@ -114,7 +111,6 @@ struct EventsClient<'a> {
     socket: TcpStream,
     address: SocketAddr,
     postgres: &'a Client,
-    schema: JSONSchema,
 }
 
 impl Debug for EventsClient<'_> {
@@ -153,10 +149,6 @@ enum MessageHandlingError {
     SchemaValidation(Vec<jsonschema::error::ValidationErrorKind>),
     #[error("JSON Parsing Failed: {0}")]
     JsonParsingFailed(#[from] serde_json::Error),
-    #[error("Missing key: {0}")]
-    MissingKey(String),
-    #[error("Missing key: {0}")]
-    InvalidKeyType(String),
     #[error("Invalid UUID: {0}")]
     InvalidUuid(#[from] uuid::Error),
     #[error("Invalid Date/Time: {0}")]
@@ -175,21 +167,29 @@ impl From<jsonschema::ValidationError<'_>> for MessageHandlingError {
     }
 }
 
+trait TypeName {
+    fn type_name(&self) -> &'static str;
+}
+
+// todo define a macro to do this automagically? use `strum_macros`?
+impl TypeName for MessagePayload {
+    fn type_name(&self) -> &'static str {
+        match self {
+            MessagePayload::FileMoved { .. } => "FileMoved",
+            MessagePayload::FileChanged { .. } => "FileChanged",
+            MessagePayload::FileCreated { .. } => "FileCreated",
+            MessagePayload::FileDeleted { .. } => "FileDeleted",
+        }
+    }
+}
+
 impl<'a> EventsClient<'a> {
-    pub fn new(
-        socket: TcpStream,
-        address: SocketAddr,
-        postgres: &'a Client,
-    ) -> Result<Self, EventsClientConstructionError> {
-        Ok(Self {
+    pub const fn new(socket: TcpStream, address: SocketAddr, postgres: &'a Client) -> Self {
+        Self {
             socket,
             address,
             postgres,
-            // todo inject this
-            schema: JSONSchema::compile(&serde_json::from_str(&std::fs::read_to_string(
-                "/etc/svc-events/schemas/events.schema.json",
-            )?)?)?,
-        })
+        }
     }
 
     #[tracing::instrument]
@@ -198,7 +198,7 @@ impl<'a> EventsClient<'a> {
         let reader = BufReader::new(&mut reader);
         let mut lines = reader.lines();
         while let Some(line) = lines.next_line().await? {
-            let response = match Self::handle_message(line, self.postgres, &self.schema).await {
+            let response = match Self::handle_message(line, self.postgres).await {
                 Ok(_) => Response { status: Status::Ok },
                 Err(e) => {
                     error!("Request processing failed: {:?}", e);
@@ -220,53 +220,18 @@ impl<'a> EventsClient<'a> {
     async fn handle_message(
         line: String,
         postgres: &'_ Client,
-        schema: &JSONSchema,
     ) -> Result<(), MessageHandlingError> {
-        const ID_FIELD: &str = "id";
-        const CREATED_TIMESTAMP_FIELD: &str = "created_timestamp";
-        const TYPE_FIELD: &str = "type";
-
-        let parsed: Value = serde_json::from_str(&line)?;
-
-        schema.validate(&parsed)?;
+        let parsed: ::events::Message = serde_json::from_str(&line)?;
+        let value: serde_json::Value = serde_json::from_str(&line)?;
 
         postgres
             .execute(
                 "INSERT INTO events(id, created_timestamp, type, data) VALUES($1,$2,$3,$4)",
                 &[
-                    &Uuid::parse_str(
-                        parsed
-                            .get(ID_FIELD)
-                            .ok_or_else(|| MessageHandlingError::MissingKey(ID_FIELD.to_string()))?
-                            .as_str()
-                            .ok_or_else(|| {
-                                MessageHandlingError::InvalidKeyType(ID_FIELD.to_string())
-                            })?,
-                    )?,
-                    &OffsetDateTime::parse(
-                        parsed
-                            .get(CREATED_TIMESTAMP_FIELD)
-                            .ok_or_else(|| {
-                                MessageHandlingError::MissingKey(
-                                    CREATED_TIMESTAMP_FIELD.to_string(),
-                                )
-                            })?
-                            .as_str()
-                            .ok_or_else(|| {
-                                MessageHandlingError::InvalidKeyType(
-                                    CREATED_TIMESTAMP_FIELD.to_string(),
-                                )
-                            })?,
-                        &Rfc3339,
-                    )?,
-                    &parsed
-                        .get(TYPE_FIELD)
-                        .ok_or_else(|| MessageHandlingError::MissingKey(TYPE_FIELD.to_string()))?
-                        .as_str()
-                        .ok_or_else(|| {
-                            MessageHandlingError::InvalidKeyType(TYPE_FIELD.to_string())
-                        })?,
-                    &parsed,
+                    &parsed.metadata.id,
+                    &parsed.metadata.created_time,
+                    &parsed.payload.type_name(),
+                    &value,
                 ],
             )
             .await?;

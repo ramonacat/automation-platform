@@ -368,7 +368,7 @@ dependencies = [
  "tokio-postgres",
  "tracing",
  "tracing-subscriber",
- "uuid 0.8.2",
+ "uuid",
 ]
 
 [[package]]
@@ -439,7 +439,7 @@ dependencies = [
  "event-compiler",
  "serde",
  "serde_json",
- "uuid 1.0.0-alpha.1",
+ "uuid",
 ]
 
 [[package]]
@@ -976,7 +976,7 @@ dependencies = [
  "structopt",
  "time",
  "url",
- "uuid 0.8.2",
+ "uuid",
 ]
 
 [[package]]
@@ -1535,6 +1535,7 @@ name = "platform"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "events",
  "jsonpath-rust",
  "jsonschema",
  "serde",
@@ -2330,16 +2331,6 @@ name = "uuid"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
-dependencies = [
- "getrandom",
- "serde",
-]
-
-[[package]]
-name = "uuid"
-version = "1.0.0-alpha.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb3ab47baa004111b323696c6eaa2752e7356f7f77cf6b6dc7a2087368ce1ca4"
 dependencies = [
  "getrandom",
  "serde",
