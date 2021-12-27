@@ -25,12 +25,12 @@ final class TargetGenerator implements TargetGeneratorInterface
     public function __construct(private string $projectDirectory)
     {
         $this->targets = [
-            new Target(new TargetId($this->projectDirectory, 'rust-clippy'), new RunProcess(['cargo', 'clippy', '--', '-D', 'clippy::pedantic', '-D', 'warnings'], timeoutSeconds: 300)),
-            new Target(new TargetId($this->projectDirectory, 'rust-fmt-check'), new RunProcess(['cargo', 'fmt', '--', '--check'], timeoutSeconds: 300)),
-            new Target(new TargetId($this->projectDirectory, 'rust-fmt'), new RunProcess(['cargo', 'fmt'], timeoutSeconds: 300)),
-            new Target(new TargetId($this->projectDirectory, 'rust-tests-unit'), new RunProcess(['cargo', 'test'], timeoutSeconds: 300)),
-            new Target(new TargetId($this->projectDirectory, 'rust-unused-dependencies'), new RunProcess(['cargo', '+nightly', 'udeps', '--all-targets'], timeoutSeconds: 300)),
-            new Target(new TargetId($this->projectDirectory, 'rust-cargo-audit'), new RunProcess(['cargo', 'audit'], timeoutSeconds: 300)),
+            new Target(new TargetId($this->projectDirectory, 'rust-clippy'), new RunProcess(['cargo', 'clippy', '--', '-D', 'clippy::pedantic', '-D', 'warnings'], timeoutSeconds: 600)),
+            new Target(new TargetId($this->projectDirectory, 'rust-fmt-check'), new RunProcess(['cargo', 'fmt', '--', '--check'], timeoutSeconds: 600)),
+            new Target(new TargetId($this->projectDirectory, 'rust-fmt'), new RunProcess(['cargo', 'fmt'], timeoutSeconds: 600)),
+            new Target(new TargetId($this->projectDirectory, 'rust-tests-unit'), new RunProcess(['cargo', 'test'], timeoutSeconds: 600)),
+            new Target(new TargetId($this->projectDirectory, 'rust-unused-dependencies'), new RunProcess(['cargo', '+nightly', 'udeps', '--all-targets'], timeoutSeconds: 600)),
+            new Target(new TargetId($this->projectDirectory, 'rust-cargo-audit'), new RunProcess(['cargo', 'audit'], timeoutSeconds: 600)),
         ];
     }
 

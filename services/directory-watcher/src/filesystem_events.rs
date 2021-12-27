@@ -1,19 +1,30 @@
-use crate::events::{FileChanged, FileCreated, FileDeleted, FileMoved};
 use crate::file_status_store::FileStatusStore;
 use crate::mount::{Mount, PathInside};
 use crate::HandleEventsError;
+use events::{FileOnMountPath, Message, MessagePayload, Metadata};
 use notify::DebouncedEvent;
 use platform::events::EventSender;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
+use std::time::SystemTime;
 use time::OffsetDateTime;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 pub struct FilesystemEventHandler<'a, T: EventSender + Sync + Send> {
     event_sender: Arc<Mutex<T>>,
     file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
     mounts: &'a [Mount],
+}
+
+impl From<PathInside<'_>> for FileOnMountPath {
+    fn from(p: PathInside) -> Self {
+        Self {
+            path: p.path().to_string_lossy().to_string(),
+            mount_id: p.mount_id().to_string(),
+        }
+    }
 }
 
 impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
@@ -41,6 +52,24 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
         Ok(())
     }
 
+    // fixme move this into a common service
+    async fn send_event(&self, payload: MessagePayload) -> Result<(), HandleEventsError> {
+        self.event_sender
+            .lock()
+            .await
+            .send(Message {
+                metadata: Metadata {
+                    created_time: SystemTime::now(),
+                    source: "directory-watcher".to_string(),
+                    id: Uuid::new_v4(),
+                },
+                payload,
+            })
+            .await?;
+
+        Ok(())
+    }
+
     async fn handle_event(&self, item: DebouncedEvent) -> Result<(), HandleEventsError> {
         info!("Handling filesystem event: {:?}", item);
         match item {
@@ -53,11 +82,10 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .await
                     .sync(&mount_relative_path, modfiied_date)
                     .await?;
-                self.event_sender
-                    .lock()
-                    .await
-                    .send(FileCreated::new(&mount_relative_path))
-                    .await?;
+                self.send_event(MessagePayload::FileCreated {
+                    path: mount_relative_path.into(),
+                })
+                .await?;
             }
             DebouncedEvent::Chmod(x) | DebouncedEvent::Write(x) => {
                 let mount_relative_path = PathInside::from_mount_list(self.mounts, &x)?;
@@ -68,11 +96,11 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .await
                     .sync(&mount_relative_path, modfiied_date)
                     .await?;
-                self.event_sender
-                    .lock()
-                    .await
-                    .send(FileChanged::new(&mount_relative_path))
-                    .await?;
+
+                self.send_event(MessagePayload::FileChanged {
+                    path: mount_relative_path.into(),
+                })
+                .await?;
             }
             DebouncedEvent::Remove(x) => {
                 let mount_relative_path = PathInside::from_mount_list(self.mounts, &x)?;
@@ -81,11 +109,11 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .await
                     .delete(&mount_relative_path)
                     .await?;
-                self.event_sender
-                    .lock()
-                    .await
-                    .send(FileDeleted::new(&mount_relative_path))
-                    .await?;
+
+                self.send_event(MessagePayload::FileDeleted {
+                    path: mount_relative_path.into(),
+                })
+                .await?;
             }
             DebouncedEvent::Rename(x, y) => {
                 let path_relative_from = PathInside::from_mount_list(self.mounts, &x)?;
@@ -96,11 +124,12 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .await
                     .rename(&path_relative_from, &path_relative_to)
                     .await?;
-                self.event_sender
-                    .lock()
-                    .await
-                    .send(FileMoved::new(&path_relative_from, &path_relative_to))
-                    .await?;
+
+                self.send_event(MessagePayload::FileMoved {
+                    from: path_relative_from.into(),
+                    to: path_relative_to.into(),
+                })
+                .await?;
             }
             DebouncedEvent::Error(x, y) => error!(
                 "Error: {} (at {})",
@@ -124,8 +153,7 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
 mod tests {
     use super::*;
     use crate::file_status_store::FileStatusSyncResult;
-    use platform::events::{Error, Event};
-    use serde::Serialize;
+    use platform::events::Error;
     use serde_json::{to_value, Value};
     use tempfile::TempDir;
 
@@ -135,10 +163,7 @@ mod tests {
 
     #[async_trait]
     impl EventSender for MockEventSender {
-        async fn send<'a, T: Event + Send + Sync + Serialize + 'a>(
-            &mut self,
-            event: T,
-        ) -> Result<(), Error> {
+        async fn send<'a>(&mut self, event: Message) -> Result<(), Error> {
             self.events.push(to_value(event).unwrap());
 
             Ok(())
@@ -212,8 +237,8 @@ mod tests {
         .await;
         assert_eq!(1, events.len());
         assert_eq!(
-            &Value::String("file.status.created".into()),
-            events[0].get("type").unwrap()
+            &Value::String("FileCreated".into()),
+            events[0].get("payload").unwrap().get("type").unwrap()
         );
     }
 
@@ -228,8 +253,8 @@ mod tests {
         .await;
         assert_eq!(1, events.len());
         assert_eq!(
-            &Value::String("file.status.changed".into()),
-            events[0].get("type").unwrap()
+            &Value::String("FileChanged".into()),
+            events[0].get("payload").unwrap().get("type").unwrap()
         );
     }
 
@@ -244,8 +269,8 @@ mod tests {
         .await;
         assert_eq!(1, events.len());
         assert_eq!(
-            &Value::String("file.status.deleted".into()),
-            events[0].get("type").unwrap()
+            &Value::String("FileDeleted".into()),
+            events[0].get("payload").unwrap().get("type").unwrap()
         );
     }
 
@@ -260,8 +285,8 @@ mod tests {
         .await;
         assert_eq!(1, events.len());
         assert_eq!(
-            &Value::String("file.status.moved".into()),
-            events[0].get("type").unwrap()
+            &Value::String("FileMoved".into()),
+            events[0].get("payload").unwrap().get("type").unwrap()
         );
     }
 }

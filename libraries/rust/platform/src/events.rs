@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use events::Message;
 use jsonschema::{ErrorIterator, ValidationError};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -21,10 +22,7 @@ pub struct Response {
 
 #[async_trait]
 pub trait EventSender {
-    async fn send<'a, T: Event + Send + Sync + Serialize + Debug + 'a>(
-        &mut self,
-        event: T,
-    ) -> Result<(), Error>;
+    async fn send<'a>(&mut self, event: Message) -> Result<(), Error>;
 }
 
 pub struct Service {
@@ -79,10 +77,7 @@ impl Service {
 
 #[async_trait]
 impl EventSender for Service {
-    async fn send<'a, T: Event + Serialize + Debug + Send + Sync + 'a>(
-        &mut self,
-        event: T,
-    ) -> Result<(), Error> {
+    async fn send<'a>(&mut self, event: Message) -> Result<(), Error> {
         info!("Sending an event: {:?}", event);
         let serialized = serde_json::to_value(&event)?;
 
