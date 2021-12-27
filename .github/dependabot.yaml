@@ -32,6 +32,14 @@ updates:
     directory: "libraries/rust/platform/"
     schedule:
       interval: "daily"
+  - package-ecosystem: "cargo"
+    directory: "libraries/rust/events/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "cargo"
+    directory: "tools/event-compiler/"
+    schedule:
+      interval: "daily"
   - package-ecosystem: "composer"
     directory: "libraries/php/coding-standard/"
     schedule:
