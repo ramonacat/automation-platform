@@ -16,4 +16,4 @@ spec:
   databases:
     events: ap  # dbname: owner
   postgresql:
-    version: "13"
+    version: "14"
