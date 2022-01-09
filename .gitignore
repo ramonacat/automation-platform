@@ -13,3 +13,5 @@ services/*/k8s/overlays/dev/
 !schemas/*.schema.json
 runtime.configuration.json
 .build/
+configuration.local.json
+configuration.*.local.json

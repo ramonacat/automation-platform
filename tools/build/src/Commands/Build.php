@@ -38,8 +38,10 @@ use Ramona\AutomationPlatformLibBuild\State\DotBuildStateStorage;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetDoesNotExist;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use function Safe\getcwd;
+use function Safe\json_encode;
 use function Safe\realpath;
 use function sprintf;
+use Webmozart\Assert\Assert;
 
 final class Build
 {
@@ -72,18 +74,14 @@ final class Build
             $machineInfo->physicalCores(),
         );
 
-        $configurationLocator = new Locator();
-        $configurationFilePath = $configurationLocator->locateConfigurationFile();
-        $rootPath = dirname($configurationFilePath);
-        $configuration = Configuration::fromFile($configurationFilePath);
+        $environment = $options['environment'] ?? 'dev';
+        assert(is_string($environment));
 
-        $subtype = $options['environment'] ?? 'dev';
-        assert(is_string($subtype));
-        $environmentConfigurationFile = $configurationLocator->tryLocateConfigurationFile($subtype);
-        if ($environmentConfigurationFile !== null) {
-            $configuration = $configuration->merge(Configuration::fromFile($environmentConfigurationFile));
-        }
+        $configuration = $this->loadConfiguration($environment);
 
+        /** @var mixed $rootPath */
+        $rootPath = $configuration->getSingleBuildValue('$.root-path');
+        Assert::string($rootPath);
         $stateStorage = new DotBuildStateStorage($rootPath);
         $state = $stateStorage->get();
 
@@ -198,5 +196,26 @@ final class Build
             ->text('    Logical cores: ')
             ->text((string)$buildFacts->logicalCores())
             ->text(PHP_EOL);
+    }
+
+    private function loadConfiguration(string $environment): Configuration
+    {
+        $configurationLocator = new Locator();
+        $configurationFilePath = $configurationLocator->locateConfigurationFile();
+        $rootPath = dirname($configurationFilePath);
+        $defaultConfiguration = Configuration::fromJsonString(json_encode(['build' => ['root-path' => $rootPath]]));
+        $configuration = Configuration::fromFile($configurationFilePath);
+        $configuration = $defaultConfiguration->merge($configuration);
+
+        $optionalAdditionalConfigurations = ['local', $environment, $environment . '.local'];
+
+        foreach ($optionalAdditionalConfigurations as $subtype) {
+            $additionalConfiguration = $configurationLocator->tryLocateConfigurationFile($subtype);
+            if ($additionalConfiguration !== null) {
+                $configuration = $configuration->merge(Configuration::fromFile($additionalConfiguration));
+            }
+        }
+
+        return $configuration;
     }
 }
