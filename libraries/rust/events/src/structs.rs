@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Metadata {
-    pub source: String,
     pub id: ::uuid::Uuid,
+    pub source: String,
     #[serde(with = "crate::system_time_serializer")]
     pub created_time: std::time::SystemTime,
 }
@@ -18,12 +18,12 @@ pub enum MessagePayload {
     FileCreated {
         path: FileOnMountPath,
     },
+    FileChanged {
+        path: FileOnMountPath,
+    },
     FileMoved {
         to: FileOnMountPath,
         from: FileOnMountPath,
-    },
-    FileChanged {
-        path: FileOnMountPath,
     },
     FileDeleted {
         path: FileOnMountPath,

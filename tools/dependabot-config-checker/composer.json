@@ -32,5 +32,12 @@
         "phpunit/phpunit": "^9.5",
         "infection/infection": "^0.25.3",
         "slevomat/coding-standard": "^7.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "infection/extension-installer": true,
+            "composer/package-versions-deprecated": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }

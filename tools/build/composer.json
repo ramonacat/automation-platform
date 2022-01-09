@@ -43,5 +43,12 @@
     },
     "bin": [
         "bin/build.php"
-    ]
+    ],
+    "config": {
+        "allow-plugins": {
+            "infection/extension-installer": true,
+            "composer/package-versions-deprecated": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
 }
