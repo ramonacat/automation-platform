@@ -75,6 +75,7 @@ impl Service {
     }
 }
 
+#[allow(clippy::no_effect_underscore_binding)]
 #[async_trait]
 impl EventSender for Service {
     async fn send<'a>(&mut self, event: Message) -> Result<(), Error> {
