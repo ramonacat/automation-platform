@@ -21,12 +21,12 @@ pub enum MessagePayload {
     FileChanged {
         path: FileOnMountPath,
     },
+    FileMoved {
+        to: FileOnMountPath,
+        from: FileOnMountPath,
+    },
     FileCreated {
         path: FileOnMountPath,
-    },
-    FileMoved {
-        from: FileOnMountPath,
-        to: FileOnMountPath,
     },
 }
 #[derive(Serialize, Deserialize, Debug)]

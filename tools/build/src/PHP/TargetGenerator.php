@@ -29,8 +29,8 @@ final class TargetGenerator implements TargetGeneratorInterface
     {
         $composerRequireCheckerConfigPath = $this->projectDirectory . DIRECTORY_SEPARATOR . 'composer-require-checker.json';
         $this->targets = [
-            new Target(new TargetId($this->projectDirectory, 'php-type-check'), new RunProcess(['php', 'vendor/bin/psalm'])),
-            new Target(new TargetId($this->projectDirectory, 'php-coding-standard'), new RunProcess(['php', 'vendor/bin/ecs'])),
+            new Target(new TargetId($this->projectDirectory, 'php-type-check'), new RunProcess(['php', 'vendor/bin/psalm'], [], 120)),
+            new Target(new TargetId($this->projectDirectory, 'php-coding-standard'), new RunProcess(['php', 'vendor/bin/ecs'], [], 120)),
             // The config file here is a temporary solution until https://github.com/maglnet/ComposerRequireChecker/pull/320 is done and merged
             new Target(
                 new TargetId($this->projectDirectory, 'php-check-transitive-deps'),
