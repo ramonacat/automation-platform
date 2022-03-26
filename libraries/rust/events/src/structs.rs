@@ -15,18 +15,18 @@ pub struct FileOnMountPath {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum MessagePayload {
-    FileDeleted {
-        path: FileOnMountPath,
-    },
     FileChanged {
         path: FileOnMountPath,
+    },
+    FileMoved {
+        to: FileOnMountPath,
+        from: FileOnMountPath,
     },
     FileCreated {
         path: FileOnMountPath,
     },
-    FileMoved {
-        from: FileOnMountPath,
-        to: FileOnMountPath,
+    FileDeleted {
+        path: FileOnMountPath,
     },
 }
 #[derive(Serialize, Deserialize, Debug)]
