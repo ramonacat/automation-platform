@@ -21,7 +21,7 @@ jobs:
                 toolchain: nightly
                 default: false
 
-            - uses: actions/cache@v2
+            - uses: actions/cache@v3
               with:
                 path: |
                     ~/.cargo/bin/
@@ -34,7 +34,7 @@ jobs:
 
             -
               name: Cache Docker layers
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                 path: /tmp/.buildx-cache
                 key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -42,7 +42,7 @@ jobs:
                   ${{ runner.os }}-buildx-
             -
               name: Cache Build state
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                 path: .build/
                 key: ${{ runner.os }}-buildstate-${{ github.sha }}
@@ -64,7 +64,7 @@ jobs:
               run: echo "::set-output name=dir::$(composer config cache-files-dir)"
 
             - name: Cache dependencies
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                 path: ${{ steps.composer-cache.outputs.dir }}
                 key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/composer.json') }}
