@@ -37,29 +37,11 @@ return static function (BuildDefinitionBuilder $builder) {
     $builder->addTarget(
         'build-k8s-mounts',
         new PutFiles(function (Context $context) {
-            $resources = array_map(
-                static fn(array $mountDescription) => '  - ' . $mountDescription['name'] . '.yaml',
-                $context->configuration()->getSingleBuildValue('$.kubernetes.mounts')
-            );
-            $resources = implode(PHP_EOL, $resources);
-            return [
-                'k8s/base/kustomization.yaml' =>
-                    <<<EOF
-                    apiVersion: kustomize.config.k8s.io/v1beta1
-                    resources:
-                    {$resources}
-                    EOF
-                ];
-        }
-        ),
-        [new TargetId(__DIR__, 'build-k8s-mounts-2')]
-    );
-
-    $builder->addTarget(
-        'build-k8s-mounts-2',
-        new PutFiles(function (Context $context) {
             $result = [];
+            $mountNames = [];
             foreach ($context->configuration()->getSingleBuildValue('$.kubernetes.mounts') as $mountDescription) {
+                $mountNames[] = $mountDescription['name'];
+
                 $spec = Yaml::dump($mountDescription['spec'], 0, 2);
 
                 $result['k8s/base/' . $mountDescription['name'] . '.yaml'] =
@@ -72,7 +54,39 @@ return static function (BuildDefinitionBuilder $builder) {
                         spec: {$spec}
                         EOF
                 ;
+
+                $result['k8s/base/' . $mountDescription['name'] . '--claim.yaml'] =
+                    <<<EOF
+                    apiVersion: v1
+                    kind: PersistentVolumeClaim
+                    
+                    metadata:
+                      name: {$mountDescription['name']}--claim
+                    spec:
+                      storageClassName: ""
+                      volumeName: {$mountDescription['name']}
+                      accessModes:
+                        - ReadWriteMany
+                      resources:
+                        requests:
+                          storage: {$mountDescription['spec']['capacity']['storage']}
+                    EOF;
             }
+
+            $resources = [];
+            foreach($mountNames as $mountName) {
+                $resources[] = '  - ' . $mountName . '.yaml';
+                $resources[] = '  - ' . $mountName . '--claim.yaml';
+            }
+
+            $resources = implode(PHP_EOL, $resources);
+
+            $result['k8s/base/kustomization.yaml'] =
+                <<<EOF
+                apiVersion: kustomize.config.k8s.io/v1beta1
+                resources:
+                {$resources}
+                EOF;
 
             return $result;
         })
