@@ -11,24 +11,31 @@ use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use function Safe\file_put_contents;
 
-final class PutFile implements BuildAction
+final class PutFiles implements BuildAction
 {
+    /**
+     * @var Closure(Context):array<string, string>
+     */
     private Closure $generateContents;
 
     /**
-     * @param callable(Context):string $generateContents
+     * @param callable(Context):array<string, string> $generateContents
      */
-    public function __construct(private string $path, callable $generateContents)
+    public function __construct(callable $generateContents)
     {
         $this->generateContents = Closure::fromCallable($generateContents);
     }
 
     public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult
     {
-        file_put_contents(
-            $workingDirectory . DIRECTORY_SEPARATOR . $this->path,
-            ($this->generateContents)($context)
-        );
+        $contents = ($this->generateContents)($context);
+
+        foreach ($contents as $path => $content) {
+            file_put_contents(
+                $workingDirectory . DIRECTORY_SEPARATOR . $path,
+                $content
+            );
+        }
 
         return BuildResult::ok([]);
     }
