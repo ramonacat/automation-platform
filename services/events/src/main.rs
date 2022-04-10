@@ -73,11 +73,8 @@ async fn run_with_error_handling<TError>(callback: impl Future<Output = Result<(
 where
     TError: Error,
 {
-    match callback.await {
-        Err(e) => {
-            error!("Task failed: {}", e);
-        }
-        Ok(()) => {}
+    if let Err(e) = callback.await {
+        error!("Task failed: {}", e);
     }
 }
 
