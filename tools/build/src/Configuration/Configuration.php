@@ -39,34 +39,14 @@ final class Configuration
 
     public function getSingleBuildValue(string $jsonPath): mixed
     {
-        $buildConfigurations = [];
-        foreach ($this->configurations as $configuration) {
-            if (isset($configuration['build'])) {
-                if (!is_array($configuration['build'])) {
-                    throw InvalidConfiguration::buildNotAnArray();
-                }
+        /** @var mixed|null $value */
+        $value = $this->getSingleBuildValueOrDefault($jsonPath, null);
 
-                $buildConfigurations[] = $configuration['build'];
-            }
+        if ($value === null) {
+            throw ConfigurationValueNotFound::forPath($jsonPath);
         }
 
-        if ($buildConfigurations === []) {
-            throw InvalidConfiguration::missingBuildKey();
-        }
-
-        foreach ($buildConfigurations as $buildConfiguration) {
-            $jsonObject = new JsonObject($buildConfiguration, true);
-            /** @var mixed|false $result */
-            $result = $jsonObject->get($jsonPath);
-
-            if ($result === false) {
-                continue;
-            }
-
-            return $result;
-        }
-
-        throw ConfigurationValueNotFound::forPath($jsonPath);
+        return $value;
     }
 
     public function getRuntimeConfiguration(): mixed
@@ -122,5 +102,37 @@ final class Configuration
         }
 
         return $result;
+    }
+
+    public function getSingleBuildValueOrDefault(string $jsonPath, mixed $default = null): mixed
+    {
+        $buildConfigurations = [];
+        foreach ($this->configurations as $configuration) {
+            if (isset($configuration['build'])) {
+                if (!is_array($configuration['build'])) {
+                    throw InvalidConfiguration::buildNotAnArray();
+                }
+
+                $buildConfigurations[] = $configuration['build'];
+            }
+        }
+
+        if ($buildConfigurations === []) {
+            throw InvalidConfiguration::missingBuildKey();
+        }
+
+        foreach ($buildConfigurations as $buildConfiguration) {
+            $jsonObject = new JsonObject($buildConfiguration, true);
+            /** @var mixed|false $result */
+            $result = $jsonObject->get($jsonPath);
+
+            if ($result === false) {
+                continue;
+            }
+
+            return $result;
+        }
+
+        return $default;
     }
 }

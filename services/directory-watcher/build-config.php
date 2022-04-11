@@ -61,9 +61,43 @@ return static function (BuildDefinitionBuilder $builder) {
                     '$.spec.template.spec.containers[0]',
                     fn(Context $c) => [
                         'name' => 'app',
-                        'image' => $c->artifactCollector()->getByKey(__DIR__, 'image-service')->name()
+                        'image' => $c->artifactCollector()->getByKey(__DIR__, 'image-service')->name(),
+                        'volumeMounts' => [
+                            [
+                                'name' => 'directory-watcher-ap-directory-watcher-credentials',
+                                'mountPath' => '/etc/svc-events/secrets/directory-watcher.ap-directory-watcher.credentials',
+                                'readOnly' => true
+                            ],
+                            ...array_map(
+                                static fn(array $mount) => [
+                                    'name' => $mount['name'],
+                                    'mountPath' => '/mnt/' . $mount['name'],
+                                ],
+                                $c->configuration()->getSingleBuildValueOrDefault('$.kubernetes.mounts', [])
+                            )
+                        ]
                     ]
                 ),
+                new KustomizeOverride(
+                    '$.spec.template.spec.volumes',
+                    fn(Context $c) => [
+                        [
+                            'name' => 'directory-watcher-ap-directory-watcher-credentials',
+                            'secret' => [
+                                'secretName' => 'directory-watcher.ap-directory-watcher.credentials.postgresql.acid.zalan.do'
+                            ]
+                        ],
+                        ...array_map(
+                            static fn(array $mount) => [
+                                'name' => $mount['name'],
+                                'persistentVolumeClaim' => [
+                                    'claimName' => $mount['name'] . '--claim'
+                                ]
+                            ],
+                            $c->configuration()->getSingleBuildValueOrDefault('$.kubernetes.mounts', [])
+                        )
+                    ]
+                )
             ]
         ),
         array_merge(
