@@ -144,4 +144,10 @@ final class ConfigurationTest extends TestCase
 
         $configuration->getRuntimeConfiguration();
     }
+
+    public function testCanReturnDefaultValue(): void
+    {
+        $configuration = Configuration::fromJsonString('{"build": {"a": 1}}');
+        self::assertSame(2, $configuration->getSingleBuildValueOrDefault('$.b', 2));
+    }
 }

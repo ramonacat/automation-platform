@@ -73,7 +73,7 @@ return static function (BuildDefinitionBuilder $builder) {
                                     'name' => $mount['name'],
                                     'mountPath' => '/mnt/' . $mount['name'],
                                 ],
-                                $c->configuration()->getSingleBuildValue('$.kubernetes.mounts')
+                                $c->configuration()->getSingleBuildValueOrDefault('$.kubernetes.mounts', [])
                             )
                         ]
                     ]
@@ -94,7 +94,7 @@ return static function (BuildDefinitionBuilder $builder) {
                                     'claimName' => $mount['name'] . '--claim'
                                 ]
                             ],
-                            $c->configuration()->getSingleBuildValue('$.kubernetes.mounts')
+                            $c->configuration()->getSingleBuildValueOrDefault('$.kubernetes.mounts', [])
                         )
                     ]
                 )

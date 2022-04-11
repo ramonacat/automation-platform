@@ -46,10 +46,12 @@ final class TargetGenerator implements TargetGeneratorInterface
                             'composer-require-checker',
                             'check',
                             'composer.json',
-                        ]
+                        ],
+                    [],
+                    60
                 )
             ),
-            new Target(new TargetId($this->projectDirectory, 'php-check-unused-deps'), new RunProcess(['composer-unused'])),
+            new Target(new TargetId($this->projectDirectory, 'php-check-unused-deps'), new RunProcess(['composer-unused'], [], 60)),
             new Target(new TargetId($this->projectDirectory, 'php-cs-fix'), new RunProcess(['php', 'vendor/bin/ecs', '--fix'])),
             new Target(new TargetId($this->projectDirectory, 'php-tests-unit'), new RunProcess(['php', 'vendor/bin/phpunit']), [new TargetId($this->projectDirectory, 'php-type-check')]),
 
