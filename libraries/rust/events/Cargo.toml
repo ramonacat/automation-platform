@@ -11,4 +11,4 @@ serde_json = "1.0.78"
 uuid = { version = "0.8.2", features=["v4", "serde"] }
 
 [build-dependencies]
-event-compiler={path="../../../tools/event-compiler"}
+message-compiler={path= "../../../tools/message-compiler" }
