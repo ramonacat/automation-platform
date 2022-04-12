@@ -17,7 +17,7 @@ WORKDIR /opt/events/services/events/
 COPY --from=planner /opt/events/services/events/recipe.json recipe.json
 COPY libraries/rust/platform/ /opt/events/libraries/rust/platform
 COPY libraries/rust/events/ /opt/events/libraries/rust/events
-COPY tools/event-compiler/ /opt/events/tools/event-compiler
+COPY tools/message-compiler/ /opt/events/tools/message-compiler
 
 RUN cargo chef cook --release --recipe-path recipe.json
 

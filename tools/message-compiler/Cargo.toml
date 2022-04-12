@@ -1,5 +1,5 @@
 [package]
-name = "event-compiler"
+name = "message-compiler"
 version = "0.1.0"
 edition = "2021"
 

@@ -29,25 +29,25 @@ jobs:
                     ~/.cargo/registry/cache/
                     ~/.cargo/git/db/
                     **/target/
-                key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-                restore-keys: ${{ runner.os }}-cargo-
+                key: ${{ runner.os }}-cargo-v2-${{ hashFiles('**/Cargo.lock') }}
+                restore-keys: ${{ runner.os }}-cargo-v2-
 
             -
               name: Cache Docker layers
               uses: actions/cache@v3
               with:
                 path: /tmp/.buildx-cache
-                key: ${{ runner.os }}-buildx-${{ github.sha }}
+                key: ${{ runner.os }}-buildx-v2-${{ github.sha }}
                 restore-keys: |
-                  ${{ runner.os }}-buildx-
+                  ${{ runner.os }}-buildx-v2-
             -
               name: Cache Build state
               uses: actions/cache@v3
               with:
                 path: .build/
-                key: ${{ runner.os }}-buildstate-${{ github.sha }}
+                key: ${{ runner.os }}-buildstate-v2-${{ github.sha }}
                 restore-keys: |
-                  ${{ runner.os }}-buildstate-
+                  ${{ runner.os }}-buildstate-v2-
 
             - name: Setup PHP
               uses: shivammathur/setup-php@v2

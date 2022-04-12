@@ -17,7 +17,7 @@ WORKDIR /opt/directory-watcher/services/directory-watcher/
 COPY --from=planner /opt/directory-watcher/services/directory-watcher/recipe.json recipe.json
 COPY libraries/rust/platform/ /opt/directory-watcher/libraries/rust/platform
 COPY libraries/rust/events/ /opt/directory-watcher/libraries/rust/events
-COPY tools/event-compiler/ /opt/directory-watcher/tools/event-compiler
+COPY tools/message-compiler/ /opt/directory-watcher/tools/message-compiler
 
 RUN cargo chef cook --release --recipe-path recipe.json
 
@@ -36,7 +36,6 @@ FROM debian:bullseye-slim
 
 RUN apt-get update && apt-get install --no-install-recommends -y libssl1.1=1.1.1n-0+deb11u1 && rm -rf /var/lib/apt/lists/*
 
-COPY schemas/events.schema.json /etc/svc-directory-watcher/schemas/events.schema.json
 COPY --from=build /opt/directory-watcher/services/directory-watcher/target/release/directory-watcher /opt/directory-watcher/
 COPY services/directory-watcher/runtime.configuration.json /etc/ap/
 
