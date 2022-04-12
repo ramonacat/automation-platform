@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use events::Message;
-use jsonschema::{ErrorIterator, ValidationError};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::net::SocketAddr;
@@ -38,24 +37,8 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error("Invalid JSON")]
     InvalidJson(#[from] serde_json::Error),
-    #[error("Failed to validate schema")]
-    SchemaValidation(jsonschema::error::ValidationErrorKind),
-    #[error("Multiple schema validation errors")]
-    MultipleSchemaValidationErrors(Vec<jsonschema::error::ValidationErrorKind>),
     #[error("Server failed to acknowledge the event")]
     ServerFailed,
-}
-
-impl<'a> From<jsonschema::ValidationError<'a>> for Error {
-    fn from(e: ValidationError<'a>) -> Self {
-        Self::SchemaValidation(e.kind)
-    }
-}
-
-impl From<jsonschema::ErrorIterator<'_>> for Error {
-    fn from(e: ErrorIterator) -> Self {
-        Self::MultipleSchemaValidationErrors(e.map(|e| e.kind).collect())
-    }
 }
 
 impl Service {

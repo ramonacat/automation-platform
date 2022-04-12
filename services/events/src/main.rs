@@ -11,7 +11,6 @@ use tracing::{error, info};
 use tokio_postgres::Client;
 
 use events::MessagePayload;
-use jsonschema::{ErrorIterator, ValidationError};
 use platform::events::{Response, Status};
 use postgres_native_tls::MakeTlsConnector;
 use std::fmt::{Debug, Formatter};
@@ -88,20 +87,6 @@ enum ClientHandlingError {
     JsonParsingFailed(#[from] serde_json::Error),
     #[error("Failed to construct the client: {0}")]
     ClientConstructionFailed(#[from] EventsClientConstructionError),
-    #[error("Multiple schema validation errors")]
-    SchemaValidation(Vec<jsonschema::error::ValidationErrorKind>),
-}
-
-impl From<jsonschema::ErrorIterator<'_>> for ClientHandlingError {
-    fn from(e: ErrorIterator) -> Self {
-        Self::SchemaValidation(e.map(|e| e.kind).collect())
-    }
-}
-
-impl From<jsonschema::ValidationError<'_>> for ClientHandlingError {
-    fn from(e: ValidationError) -> Self {
-        Self::SchemaValidation(vec![e.kind])
-    }
 }
 
 struct EventsClient<'a> {
@@ -118,50 +103,22 @@ impl Debug for EventsClient<'_> {
 
 #[derive(Debug, Error)]
 enum EventsClientConstructionError {
-    #[error("Multiple schema validation errors")]
-    SchemaValidation(Vec<jsonschema::error::ValidationErrorKind>),
     #[error("JSON Parsing Failed: {0}")]
     JsonParsingFailed(#[from] serde_json::Error),
     #[error("IO Error: {0}")]
     IoError(#[from] std::io::Error),
 }
 
-impl From<jsonschema::ErrorIterator<'_>> for EventsClientConstructionError {
-    fn from(e: ErrorIterator) -> Self {
-        Self::SchemaValidation(e.map(|e| e.kind).collect())
-    }
-}
-
-impl From<jsonschema::ValidationError<'_>> for EventsClientConstructionError {
-    fn from(e: ValidationError) -> Self {
-        Self::SchemaValidation(vec![e.kind])
-    }
-}
-
 #[derive(Error, Debug)]
 enum MessageHandlingError {
     #[error("Database Error: {0}")]
     DatabaseError(#[from] tokio_postgres::Error),
-    #[error("Multiple schema validation errors")]
-    SchemaValidation(Vec<jsonschema::error::ValidationErrorKind>),
     #[error("JSON Parsing Failed: {0}")]
     JsonParsingFailed(#[from] serde_json::Error),
     #[error("Invalid UUID: {0}")]
     InvalidUuid(#[from] uuid::Error),
     #[error("Invalid Date/Time: {0}")]
     InvalidDateTime(#[from] time::error::Parse),
-}
-
-impl From<jsonschema::ErrorIterator<'_>> for MessageHandlingError {
-    fn from(e: ErrorIterator) -> Self {
-        Self::SchemaValidation(e.map(|e| e.kind).collect())
-    }
-}
-
-impl From<jsonschema::ValidationError<'_>> for MessageHandlingError {
-    fn from(e: ValidationError) -> Self {
-        Self::SchemaValidation(vec![e.kind])
-    }
 }
 
 trait TypeName {
