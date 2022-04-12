@@ -8,25 +8,25 @@ pub struct Metadata {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileOnMountPath {
-    pub mount_id: String,
     pub path: String,
+    pub mount_id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum MessagePayload {
-    FileCreated {
+    FileMoved {
+        from: FileOnMountPath,
+        to: FileOnMountPath,
+    },
+    FileChanged {
         path: FileOnMountPath,
     },
     FileDeleted {
         path: FileOnMountPath,
     },
-    FileChanged {
+    FileCreated {
         path: FileOnMountPath,
-    },
-    FileMoved {
-        to: FileOnMountPath,
-        from: FileOnMountPath,
     },
 }
 #[derive(Serialize, Deserialize, Debug)]
