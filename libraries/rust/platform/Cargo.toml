@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 thiserror="1.0.30"
-tokio = { version = "1.16.1", features=["full"] }
+tokio = { version = "1.18.0", features=["full"] }
 async-trait = "0.1.52"
 serde = { version = "1.0.136", features=["derive"] }
 tracing="0.1.34"
