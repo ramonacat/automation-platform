@@ -3,7 +3,7 @@ use crate::mount::{Mount, PathInside};
 use crate::{create_event_metadata, HandleEventsError};
 use events::FileOnMountPath;
 use notify::DebouncedEvent;
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 use time::OffsetDateTime;
@@ -52,104 +52,151 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
     async fn handle_event(&self, item: DebouncedEvent) -> Result<(), HandleEventsError> {
         info!("Handling filesystem event: {:?}", item);
         match item {
-            DebouncedEvent::Create(x) => {
-                let mount_relative_path = PathInside::from_mount_list(self.mounts, &x)?;
-
-                let modfiied_date = Self::modified_date(x);
-                self.file_status_store
-                    .lock()
-                    .await
-                    .sync(&mount_relative_path, modfiied_date)
-                    .await?;
-
-                self.event_sender
-                    .lock()
-                    .await
-                    .send_file_created(
-                        events::FileCreated {
-                            path: mount_relative_path.into(),
-                        },
-                        create_event_metadata(),
-                    )
-                    .await?;
-            }
+            DebouncedEvent::Create(x) => self.handle_file_created(&x).await,
             DebouncedEvent::Chmod(x) | DebouncedEvent::Write(x) => {
-                let mount_relative_path = PathInside::from_mount_list(self.mounts, &x)?;
-                let modfiied_date = Self::modified_date(x);
-
-                self.file_status_store
-                    .lock()
-                    .await
-                    .sync(&mount_relative_path, modfiied_date)
-                    .await?;
-
-                self.event_sender
-                    .lock()
-                    .await
-                    .send_file_changed(
-                        events::FileChanged {
-                            path: mount_relative_path.into(),
-                        },
-                        create_event_metadata(),
-                    )
-                    .await?;
+                self.handle_file_modified(&x).await
             }
-            DebouncedEvent::Remove(x) => {
-                let mount_relative_path = PathInside::from_mount_list(self.mounts, &x)?;
-                self.file_status_store
-                    .lock()
-                    .await
-                    .delete(&mount_relative_path)
-                    .await?;
-
-                self.event_sender
-                    .lock()
-                    .await
-                    .send_file_deleted(
-                        events::FileDeleted {
-                            path: mount_relative_path.into(),
-                        },
-                        create_event_metadata(),
-                    )
-                    .await?;
+            DebouncedEvent::Remove(x) => self.handle_file_deleted(&x).await,
+            DebouncedEvent::Rename(x, y) => self.handle_file_renamed(&x, &y).await,
+            DebouncedEvent::Error(x, y) => {
+                error!(
+                    "Error: {} (at {})",
+                    x,
+                    y.map_or("".into(), |z| z.to_string_lossy().to_string())
+                );
+                Ok(())
             }
-            DebouncedEvent::Rename(x, y) => {
-                let path_relative_from = PathInside::from_mount_list(self.mounts, &x)?;
-                let path_relative_to = PathInside::from_mount_list(self.mounts, &y)?;
-
-                self.file_status_store
-                    .lock()
-                    .await
-                    .rename(&path_relative_from, &path_relative_to)
-                    .await?;
-
-                self.event_sender
-                    .lock()
-                    .await
-                    .send_file_moved(
-                        events::FileMoved {
-                            from: path_relative_from.into(),
-                            to: path_relative_to.into(),
-                        },
-                        create_event_metadata(),
-                    )
-                    .await?;
+            DebouncedEvent::Rescan => {
+                info!("Rescan!");
+                Ok(())
             }
-            DebouncedEvent::Error(x, y) => error!(
-                "Error: {} (at {})",
-                x,
-                y.map_or("".into(), |z| z.to_string_lossy().to_string())
-            ),
-            DebouncedEvent::Rescan => info!("Rescan!"),
-            DebouncedEvent::NoticeWrite(_) | DebouncedEvent::NoticeRemove(_) => {}
-        };
+            DebouncedEvent::NoticeWrite(_) | DebouncedEvent::NoticeRemove(_) => Ok(()),
+        }
+    }
+
+    async fn handle_file_renamed(&self, x: &Path, y: &Path) -> Result<(), HandleEventsError> {
+        let (_, is_dir) = Self::modified_date(y)?;
+
+        if is_dir {
+            return Ok(());
+        }
+
+        let path_relative_from = PathInside::from_mount_list(self.mounts, x)?;
+        let path_relative_to = PathInside::from_mount_list(self.mounts, y)?;
+
+        self.file_status_store
+            .lock()
+            .await
+            .rename(&path_relative_from, &path_relative_to)
+            .await?;
+
+        self.event_sender
+            .lock()
+            .await
+            .send_file_moved(
+                events::FileMoved {
+                    from: path_relative_from.into(),
+                    to: path_relative_to.into(),
+                },
+                create_event_metadata(),
+            )
+            .await?;
 
         Ok(())
     }
 
-    fn modified_date(x: PathBuf) -> OffsetDateTime {
-        // todo do not panic here
-        OffsetDateTime::from(std::fs::metadata(x).unwrap().modified().unwrap())
+    async fn handle_file_deleted(&self, x: &Path) -> Result<(), HandleEventsError> {
+        let mount_relative_path = PathInside::from_mount_list(self.mounts, x)?;
+
+        let (_, is_dir) = Self::modified_date(x)?;
+
+        if is_dir {
+            return Ok(());
+        }
+
+        self.file_status_store
+            .lock()
+            .await
+            .delete(&mount_relative_path)
+            .await?;
+
+        self.event_sender
+            .lock()
+            .await
+            .send_file_deleted(
+                events::FileDeleted {
+                    path: mount_relative_path.into(),
+                },
+                create_event_metadata(),
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    async fn handle_file_created(&self, x: &Path) -> Result<(), HandleEventsError> {
+        let mount_relative_path = PathInside::from_mount_list(self.mounts, x)?;
+
+        let (modified_date, is_dir) = Self::modified_date(x)?;
+
+        if is_dir {
+            return Ok(());
+        }
+
+        self.file_status_store
+            .lock()
+            .await
+            .sync(&mount_relative_path, modified_date)
+            .await?;
+
+        self.event_sender
+            .lock()
+            .await
+            .send_file_created(
+                events::FileCreated {
+                    path: mount_relative_path.into(),
+                },
+                create_event_metadata(),
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    async fn handle_file_modified(&self, x: &Path) -> Result<(), HandleEventsError> {
+        let mount_relative_path = PathInside::from_mount_list(self.mounts, x)?;
+        let (modified_date, is_dir) = Self::modified_date(x)?;
+
+        if is_dir {
+            return Ok(());
+        }
+
+        self.file_status_store
+            .lock()
+            .await
+            .sync(&mount_relative_path, modified_date)
+            .await?;
+
+        self.event_sender
+            .lock()
+            .await
+            .send_file_changed(
+                events::FileChanged {
+                    path: mount_relative_path.into(),
+                },
+                create_event_metadata(),
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    fn modified_date(x: &Path) -> Result<(OffsetDateTime, bool), HandleEventsError> {
+        let metadata = std::fs::metadata(x)?;
+        Ok((
+            OffsetDateTime::from(metadata.modified()?),
+            metadata.is_dir(),
+        ))
     }
 }
 
@@ -160,6 +207,7 @@ mod tests {
     use events::{FileChanged, FileCreated, FileDeleted, FileMoved, Metadata};
     use rpc_support::rpc_error::RpcError;
     use serde_json::{json, to_value, Value};
+    use std::path::PathBuf;
     use tempfile::TempDir;
 
     struct MockRpcClient {

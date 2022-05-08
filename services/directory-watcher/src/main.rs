@@ -83,6 +83,8 @@ pub enum HandleEventsError {
     Sync(#[from] Error),
     #[error("RPC call failed")]
     Rpc(#[from] rpc_support::rpc_error::RpcError),
+    #[error("IO error")]
+    Io(#[from] std::io::Error),
 }
 
 fn parse_mounts(directories_from_env: &str) -> Vec<Mount> {
