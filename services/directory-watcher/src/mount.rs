@@ -23,7 +23,7 @@ impl Mount {
 #[derive(Debug, Clone)]
 pub struct PathInside<'a> {
     mount: &'a Mount,
-    path: PathBuf,
+    path: String,
 }
 
 #[derive(Error, Debug, Eq, PartialEq)]
@@ -44,7 +44,7 @@ impl<'a> PathInside<'a> {
                 } else {
                     Ok(PathInside {
                         mount,
-                        path: relative_path.as_path().to_owned(),
+                        path: relative_path.as_path().to_string_lossy().replace('\\', "/"),
                     })
                 }
             },
@@ -61,7 +61,7 @@ impl<'a> PathInside<'a> {
         Err(Error::PathNotInMount)
     }
 
-    pub fn path(&'a self) -> &'a Path {
+    pub fn path(&'a self) -> &'a str {
         &self.path
     }
 
@@ -79,7 +79,7 @@ mod tests {
         let mount = Mount::new("some_id".into(), Path::new("/tmp/a/").to_path_buf());
         let result = PathInside::from_absolute(&mount, Path::new("/tmp/a/b/c/")).unwrap();
 
-        assert_eq!(result.path(), Path::new("b/c/"));
+        assert_eq!(result.path(), "b/c");
     }
 
     #[test]

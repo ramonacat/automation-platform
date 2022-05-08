@@ -4,16 +4,16 @@ use crate::file_status_store::{Error, Postgres};
 use crate::filesystem_events::FilesystemEventHandler;
 use crate::mount::Mount;
 use crate::scan::Scanner;
+use events::Metadata;
 use native_tls::TlsConnector;
-use notify::{RecursiveMode, Watcher};
-use platform::events::Service;
+use notify::{PollWatcher, RecursiveMode, Watcher};
 use platform::secrets::SecretProvider;
 use postgres_native_tls::MakeTlsConnector;
-use std::net::ToSocketAddrs;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use tokio::sync::Mutex;
 use tokio_postgres::Client;
+use uuid::Uuid;
 
 mod file_status_store;
 mod filesystem_events;
@@ -29,14 +29,22 @@ extern crate tracing;
 #[macro_use]
 extern crate async_trait;
 
+fn create_event_metadata() -> Metadata {
+    Metadata {
+        created_time: SystemTime::now(),
+        source: "directory-watcher".to_string(),
+        id: Uuid::new_v4(),
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let subscriber = tracing_subscriber::FmtSubscriber::new();
     let _guard = tracing::subscriber::set_default(subscriber);
 
     let secret_provider = SecretProvider::new("/etc/svc-events/secrets/");
-    let es_watcher = Service::new("svc-events:7654".to_socket_addrs()?.last().unwrap()).await?; // todo don't panic here
-    let es_scanner = Service::new("svc-events:7654".to_socket_addrs()?.last().unwrap()).await?; // todo don't panic here
+    let es_watcher = events::Client::new("svc-events:7654").await?;
+    let es_scanner = events::Client::new("svc-events:7654").await?;
     let configuration = platform::configuration::Configuration::new()?;
     let pg_client = Arc::new(Mutex::new(connect_to_postgres(&secret_provider).await?));
     let directories_from_env = configuration.get_string("$.mounts")?;
@@ -48,7 +56,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mounts = parse_mounts(&directories_from_env);
 
     let (sender, receiver) = std::sync::mpsc::channel();
-    let mut watcher = notify::watcher(sender, Duration::from_secs(1))?;
+    // The PollWatcher is used, because the inotify watcher does not work with NFS mounts.
+    // todo asses performance impact, find a better solution?
+    let mut watcher = PollWatcher::new(sender, Duration::from_secs(1))?;
     let filesystem_event_handler = FilesystemEventHandler::new(
         Arc::new(Mutex::new(es_watcher)),
         file_status_store.clone(),
@@ -71,8 +81,8 @@ pub enum HandleEventsError {
     Mount(#[from] mount::Error),
     #[error("Syncing the state failed")]
     Sync(#[from] Error),
-    #[error("Failed to publish an event")]
-    Events(#[from] platform::events::Error),
+    #[error("RPC call failed")]
+    Rpc(#[from] rpc_support::rpc_error::RpcError),
 }
 
 fn parse_mounts(directories_from_env: &str) -> Vec<Mount> {

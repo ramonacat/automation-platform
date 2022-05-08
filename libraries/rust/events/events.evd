@@ -9,19 +9,26 @@ struct FileOnMountPath {
     mount_id: string
 }
 
-message FileCreated {
+struct FileCreated {
     path: FileOnMountPath
 }
 
-message FileChanged {
+struct FileChanged {
     path: FileOnMountPath
 }
 
-message FileDeleted {
+struct FileDeleted {
     path: FileOnMountPath
 }
 
-message FileMoved {
+struct FileMoved {
     from: FileOnMountPath,
     to: FileOnMountPath
+}
+
+rpc {
+    send_file_created(FileCreated) -> void;
+    send_file_changed(FileChanged) -> void;
+    send_file_deleted(FileDeleted) -> void;
+    send_file_moved(FileMoved) -> void;
 }

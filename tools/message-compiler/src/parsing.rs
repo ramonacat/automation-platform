@@ -22,10 +22,7 @@ impl<'input> FieldRaw<'input> {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum DefinitionRaw<'input> {
-    Struct(IdentifierRaw<'input>, Vec<FieldRaw<'input>>),
-    Message(IdentifierRaw<'input>, Vec<FieldRaw<'input>>),
-}
+pub struct StructDefinitionRaw<'input>(pub IdentifierRaw<'input>, pub Vec<FieldRaw<'input>>);
 
 #[derive(Debug, PartialEq)]
 pub struct MetadataRaw<'input> {
@@ -47,20 +44,57 @@ impl<'input> MetadataRaw<'input> {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct RpcDefinitionRaw<'input> {
+    pub(crate) name: IdentifierRaw<'input>,
+    pub(crate) request: IdentifierRaw<'input>,
+    pub(crate) response: IdentifierRaw<'input>,
+}
+
+impl<'input> RpcDefinitionRaw<'input> {
+    #[must_use]
+    pub fn new(
+        name: IdentifierRaw<'input>,
+        input: IdentifierRaw<'input>,
+        output: IdentifierRaw<'input>,
+    ) -> Self {
+        Self {
+            name,
+            request: input,
+            response: output,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct RpcRaw<'input> {
+    pub(crate) definitions: Vec<RpcDefinitionRaw<'input>>,
+}
+
+impl<'input> RpcRaw<'input> {
+    #[must_use]
+    pub fn new(definitions: Vec<RpcDefinitionRaw<'input>>) -> Self {
+        Self { definitions }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct FileRaw<'input> {
     metadata: Option<MetadataRaw<'input>>,
-    definitions: Vec<DefinitionRaw<'input>>,
+    structs: Vec<StructDefinitionRaw<'input>>,
+    rpc: Option<RpcRaw<'input>>,
 }
 
 impl<'input> FileRaw<'input> {
     #[must_use]
     pub fn new(
         metadata: Option<MetadataRaw<'input>>,
-        definitions: Vec<DefinitionRaw<'input>>,
+        structs: Vec<StructDefinitionRaw<'input>>,
+        rpc: Option<RpcRaw<'input>>,
     ) -> Self {
         Self {
             metadata,
-            definitions,
+            structs,
+            rpc,
         }
     }
 
@@ -70,8 +104,13 @@ impl<'input> FileRaw<'input> {
     }
 
     #[must_use]
-    pub fn definitions(&self) -> &[DefinitionRaw<'input>] {
-        &self.definitions
+    pub fn structs(&self) -> &[StructDefinitionRaw<'input>] {
+        &self.structs
+    }
+
+    #[must_use]
+    pub fn rpc(&self) -> Option<&RpcRaw<'input>> {
+        self.rpc.as_ref()
     }
 }
 
@@ -99,7 +138,8 @@ mod test {
         assert_eq!(
             Ok(FileRaw::new(
                 None,
-                vec![DefinitionRaw::Struct(IdentifierRaw::new("A"), vec![])]
+                vec![StructDefinitionRaw(IdentifierRaw::new("A"), vec![])],
+                None
             )),
             r
         )
@@ -114,14 +154,14 @@ mod test {
             Ok(FileRaw::new(
                 None,
                 vec![
-                    DefinitionRaw::Struct(
+                    StructDefinitionRaw(
                         IdentifierRaw::new("A"),
                         vec![
                             FieldRaw::new(IdentifierRaw::new("f1"), IdentifierRaw::new("u32")),
                             FieldRaw::new(IdentifierRaw::new("f2"), IdentifierRaw::new("u64")),
                         ]
                     ),
-                    DefinitionRaw::Struct(
+                    StructDefinitionRaw(
                         IdentifierRaw::new("B"),
                         vec![
                             FieldRaw::new(IdentifierRaw::new("fx-1"), IdentifierRaw::new("A")),
@@ -131,14 +171,49 @@ mod test {
                             ),
                         ]
                     ),
-                    DefinitionRaw::Struct(
+                    StructDefinitionRaw(
                         IdentifierRaw::new("CoolStruct29"),
                         vec![
                             FieldRaw::new(IdentifierRaw::new("fx-1"), IdentifierRaw::new("B")),
                             FieldRaw::new(IdentifierRaw::new("fx-3"), IdentifierRaw::new("u8")),
                         ]
                     ),
-                ]
+                ],
+                None
+            )),
+            r
+        );
+    }
+
+    #[test]
+    pub fn can_parse_rpc_defintiion() {
+        let input = "struct request { f1: u32 } struct response { f2: u64 } rpc { call(request) -> response; }";
+        let r = parsing::grammar::RFileParser::new().parse(input);
+
+        assert_eq!(
+            Ok(FileRaw::new(
+                None,
+                vec![
+                    StructDefinitionRaw(
+                        IdentifierRaw::new("request"),
+                        vec![FieldRaw::new(
+                            IdentifierRaw::new("f1"),
+                            IdentifierRaw::new("u32")
+                        ),]
+                    ),
+                    StructDefinitionRaw(
+                        IdentifierRaw::new("response"),
+                        vec![FieldRaw::new(
+                            IdentifierRaw::new("f2"),
+                            IdentifierRaw::new("u64")
+                        ),]
+                    ),
+                ],
+                Some(RpcRaw::new(vec![RpcDefinitionRaw::new(
+                    IdentifierRaw::new("call"),
+                    IdentifierRaw::new("request"),
+                    IdentifierRaw::new("response")
+                )]))
             )),
             r
         );

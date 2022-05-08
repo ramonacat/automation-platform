@@ -1,18 +1,15 @@
 use crate::file_status_store::FileStatusStore;
 use crate::mount::{Mount, PathInside};
-use crate::HandleEventsError;
-use events::{FileOnMountPath, Message, MessagePayload, Metadata};
+use crate::{create_event_metadata, HandleEventsError};
+use events::FileOnMountPath;
 use notify::DebouncedEvent;
-use platform::events::EventSender;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
-use std::time::SystemTime;
 use time::OffsetDateTime;
 use tokio::sync::Mutex;
-use uuid::Uuid;
 
-pub struct FilesystemEventHandler<'a, T: EventSender + Sync + Send> {
+pub struct FilesystemEventHandler<'a, T: events::Rpc + Sync + Send> {
     event_sender: Arc<Mutex<T>>,
     file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
     mounts: &'a [Mount],
@@ -21,13 +18,13 @@ pub struct FilesystemEventHandler<'a, T: EventSender + Sync + Send> {
 impl From<PathInside<'_>> for FileOnMountPath {
     fn from(p: PathInside) -> Self {
         Self {
-            path: p.path().to_string_lossy().to_string(),
+            path: p.path().to_string(),
             mount_id: p.mount_id().to_string(),
         }
     }
 }
 
-impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
+impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
     pub fn new(
         event_sender: Arc<Mutex<T>>,
         file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
@@ -52,24 +49,6 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
         Ok(())
     }
 
-    // fixme move this into a common service
-    async fn send_event(&self, payload: MessagePayload) -> Result<(), HandleEventsError> {
-        self.event_sender
-            .lock()
-            .await
-            .send(Message {
-                metadata: Metadata {
-                    created_time: SystemTime::now(),
-                    source: "directory-watcher".to_string(),
-                    id: Uuid::new_v4(),
-                },
-                payload,
-            })
-            .await?;
-
-        Ok(())
-    }
-
     async fn handle_event(&self, item: DebouncedEvent) -> Result<(), HandleEventsError> {
         info!("Handling filesystem event: {:?}", item);
         match item {
@@ -82,10 +61,17 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .await
                     .sync(&mount_relative_path, modfiied_date)
                     .await?;
-                self.send_event(MessagePayload::FileCreated {
-                    path: mount_relative_path.into(),
-                })
-                .await?;
+
+                self.event_sender
+                    .lock()
+                    .await
+                    .send_file_created(
+                        events::FileCreated {
+                            path: mount_relative_path.into(),
+                        },
+                        create_event_metadata(),
+                    )
+                    .await?;
             }
             DebouncedEvent::Chmod(x) | DebouncedEvent::Write(x) => {
                 let mount_relative_path = PathInside::from_mount_list(self.mounts, &x)?;
@@ -97,10 +83,16 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .sync(&mount_relative_path, modfiied_date)
                     .await?;
 
-                self.send_event(MessagePayload::FileChanged {
-                    path: mount_relative_path.into(),
-                })
-                .await?;
+                self.event_sender
+                    .lock()
+                    .await
+                    .send_file_changed(
+                        events::FileChanged {
+                            path: mount_relative_path.into(),
+                        },
+                        create_event_metadata(),
+                    )
+                    .await?;
             }
             DebouncedEvent::Remove(x) => {
                 let mount_relative_path = PathInside::from_mount_list(self.mounts, &x)?;
@@ -110,10 +102,16 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .delete(&mount_relative_path)
                     .await?;
 
-                self.send_event(MessagePayload::FileDeleted {
-                    path: mount_relative_path.into(),
-                })
-                .await?;
+                self.event_sender
+                    .lock()
+                    .await
+                    .send_file_deleted(
+                        events::FileDeleted {
+                            path: mount_relative_path.into(),
+                        },
+                        create_event_metadata(),
+                    )
+                    .await?;
             }
             DebouncedEvent::Rename(x, y) => {
                 let path_relative_from = PathInside::from_mount_list(self.mounts, &x)?;
@@ -125,11 +123,17 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
                     .rename(&path_relative_from, &path_relative_to)
                     .await?;
 
-                self.send_event(MessagePayload::FileMoved {
-                    from: path_relative_from.into(),
-                    to: path_relative_to.into(),
-                })
-                .await?;
+                self.event_sender
+                    .lock()
+                    .await
+                    .send_file_moved(
+                        events::FileMoved {
+                            from: path_relative_from.into(),
+                            to: path_relative_to.into(),
+                        },
+                        create_event_metadata(),
+                    )
+                    .await?;
             }
             DebouncedEvent::Error(x, y) => error!(
                 "Error: {} (at {})",
@@ -153,18 +157,53 @@ impl<'a, T: EventSender + Sync + Send> FilesystemEventHandler<'a, T> {
 mod tests {
     use super::*;
     use crate::file_status_store::FileStatusSyncResult;
-    use platform::events::Error;
-    use serde_json::{to_value, Value};
+    use events::{FileChanged, FileCreated, FileDeleted, FileMoved, Metadata};
+    use rpc_support::rpc_error::RpcError;
+    use serde_json::{json, to_value, Value};
     use tempfile::TempDir;
 
-    struct MockEventSender {
+    struct MockRpcClient {
         events: Vec<Value>,
     }
 
     #[async_trait]
-    impl EventSender for MockEventSender {
-        async fn send<'a>(&mut self, event: Message) -> Result<(), Error> {
-            self.events.push(to_value(event).unwrap());
+    impl events::Rpc for MockRpcClient {
+        async fn send_file_created(
+            &mut self,
+            request: FileCreated,
+            _metadata: Metadata,
+        ) -> Result<(), RpcError> {
+            self.events.push(to_value(request).unwrap());
+
+            Ok(())
+        }
+
+        async fn send_file_deleted(
+            &mut self,
+            request: FileDeleted,
+            _metadata: Metadata,
+        ) -> Result<(), RpcError> {
+            self.events.push(to_value(request).unwrap());
+
+            Ok(())
+        }
+
+        async fn send_file_moved(
+            &mut self,
+            request: FileMoved,
+            _metadata: Metadata,
+        ) -> Result<(), RpcError> {
+            self.events.push(to_value(request).unwrap());
+
+            Ok(())
+        }
+
+        async fn send_file_changed(
+            &mut self,
+            request: FileChanged,
+            _metadata: Metadata,
+        ) -> Result<(), RpcError> {
+            self.events.push(to_value(request).unwrap());
 
             Ok(())
         }
@@ -211,7 +250,7 @@ mod tests {
         std::fs::write(temp.join("b/1"), "aaa").unwrap();
 
         let mounts = vec![Mount::new("mount_a".to_string(), PathBuf::from(temp))];
-        let event_sender = Arc::new(Mutex::new(MockEventSender { events: vec![] }));
+        let event_sender = Arc::new(Mutex::new(MockRpcClient { events: vec![] }));
         let handler = FilesystemEventHandler::new(
             event_sender.clone(),
             Arc::new(Mutex::new(MockFileStatusStore { sync_result })),
@@ -237,40 +276,57 @@ mod tests {
         .await;
         assert_eq!(1, events.len());
         assert_eq!(
-            &Value::String("FileCreated".into()),
-            events[0].get("payload").unwrap().get("type").unwrap()
+            json!({
+                "path": {
+                    "mount_id": "mount_a",
+                    "path": "b/1",
+                },
+            }),
+            events[0]
         );
     }
 
     #[tokio::test]
     async fn can_handle_file_change() {
         let temp = TempDir::new().unwrap();
+        let path = temp.path().join("b/1");
         let events = setup(
             &temp,
-            DebouncedEvent::Write(temp.path().join("b/1")),
+            DebouncedEvent::Write(path.clone()),
             FileStatusSyncResult::Modified,
         )
         .await;
         assert_eq!(1, events.len());
         assert_eq!(
-            &Value::String("FileChanged".into()),
-            events[0].get("payload").unwrap().get("type").unwrap()
+            json!({
+                "path": {
+                    "mount_id": "mount_a",
+                    "path": "b/1",
+                },
+            }),
+            events[0]
         );
     }
 
     #[tokio::test]
     async fn can_handle_file_removal() {
         let temp = TempDir::new().unwrap();
+        let path = temp.path().join("b/1");
         let events = setup(
             &temp,
-            DebouncedEvent::Remove(temp.path().join("b/1")),
+            DebouncedEvent::Remove(path.clone()),
             FileStatusSyncResult::Modified,
         )
         .await;
         assert_eq!(1, events.len());
         assert_eq!(
-            &Value::String("FileDeleted".into()),
-            events[0].get("payload").unwrap().get("type").unwrap()
+            json!({
+                "path": {
+                    "mount_id": "mount_a",
+                    "path": "b/1",
+                },
+            }),
+            events[0]
         );
     }
 
@@ -284,9 +340,19 @@ mod tests {
         )
         .await;
         assert_eq!(1, events.len());
+
         assert_eq!(
-            &Value::String("FileMoved".into()),
-            events[0].get("payload").unwrap().get("type").unwrap()
+            json!({
+                "from": {
+                    "mount_id": "mount_a",
+                    "path": "b/0",
+                },
+                "to": {
+                    "mount_id": "mount_a",
+                    "path": "b/1",
+                },
+            }),
+            events[0]
         );
     }
 }

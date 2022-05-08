@@ -1,8 +1,10 @@
 use crate::parsing::IdentifierRaw;
 use crate::parsing::FieldRaw;
-use crate::parsing::DefinitionRaw;
+use crate::parsing::StructDefinitionRaw;
 use crate::parsing::MetadataRaw;
 use crate::parsing::FileRaw;
+use crate::parsing::RpcDefinitionRaw;
+use crate::parsing::RpcRaw;
 grammar();
 
 RIdentifier:IdentifierRaw<'input> =
@@ -21,17 +23,35 @@ RFields:Vec<FieldRaw<'input>> = {
      }
 }
 
-RDefinition:DefinitionRaw<'input> = {
-    "struct" <name:RIdentifier> "{" <fields:RFields?> "}" => DefinitionRaw::Struct(name, fields.unwrap_or_else(|| vec![])),
-    "message" <name:RIdentifier> "{" <fields:RFields?> "}" => DefinitionRaw::Message(name, fields.unwrap_or_else(|| vec![]))
+RStructDefinition:StructDefinitionRaw<'input> = {
+    "struct" <name:RIdentifier> "{" <fields:RFields?> "}" => StructDefinitionRaw(name, fields.unwrap_or_else(|| vec![])),
 }
 
 RMetadata:MetadataRaw<'input> = {
     "metadata" "{" <fields:RFields?> "}" => MetadataRaw::new(fields.unwrap_or_else(|| vec![]))
 }
 
-RDefinitions:Vec<DefinitionRaw<'input>> = {
-    <rest:RDefinitions?> <st:RDefinition> => {
+RRPCDefinition:RpcDefinitionRaw<'input> = {
+    <name:RIdentifier> "(" <input_type:RIdentifier> ")" "->" <output_type:RIdentifier> => RpcDefinitionRaw::new(name, input_type, output_type)
+}
+
+RRPCDefinitions:Vec<RpcDefinitionRaw<'input>> = {
+    <rpc_def:RRPCDefinition> => vec![rpc_def],
+    <mut rest:RRPCDefinitions> ";" <rpc_def:RRPCDefinition?> => {
+        if let Some(rpc_def) = rpc_def {
+            rest.push(rpc_def);
+        }
+
+        rest
+    }
+}
+
+RRPC:RpcRaw<'input> = {
+    "rpc" "{" <definitions:RRPCDefinitions?> "}" => RpcRaw::new(definitions.unwrap_or_else(|| vec![]))
+}
+
+RDefinitions:Vec<StructDefinitionRaw<'input>> = {
+    <rest:RDefinitions?> <st:RStructDefinition> => {
         if let Some(mut rest) = rest {
             rest.push(st);
 
@@ -43,5 +63,5 @@ RDefinitions:Vec<DefinitionRaw<'input>> = {
 }
 
 pub RFile:FileRaw<'input> = {
-    <meta:RMetadata?> <definitions:RDefinitions> => FileRaw::new(meta, definitions)
+    <meta:RMetadata?> <definitions:RDefinitions> <rpc:RRPC?> => FileRaw::new(meta, definitions, rpc)
 }

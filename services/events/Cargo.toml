@@ -17,6 +17,8 @@ postgres-native-tls="0.5.0"
 native-tls="0.2.10"
 thiserror = "1.0.30"
 time = { version = "0.3.9", features=["local-offset", "parsing", "serde", "formatting"] }
+rpc-support = { path="../../libraries/rust/rpc-support"}
+async-trait = "0.1.53"
 
 platform = { path = "../../libraries/rust/platform" }
 events = { path = "../../libraries/rust/events" }

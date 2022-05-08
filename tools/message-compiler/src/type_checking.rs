@@ -1,4 +1,4 @@
-use crate::parsing::{DefinitionRaw, FieldRaw, FileRaw, IdentifierRaw};
+use crate::parsing::{FieldRaw, FileRaw, IdentifierRaw, StructDefinitionRaw};
 use petgraph::algo::toposort;
 use petgraph::graph::DiGraph;
 use std::collections::HashMap;
@@ -13,16 +13,25 @@ pub enum TypeCheckError {
         struct_name: String,
     },
     StructNotFound(String),
-    StructNotFoundMessageExists(String),
 }
 
 impl Display for TypeCheckError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            TypeCheckError::RepeatedName(name) => write!(f, "The type with name \"{}\" already exists", name),
-            TypeCheckError::RepeatedFieldName { field_name, struct_name } => write!(f, "A field with name \"{}\" already exists in struct \"{}\"", field_name, struct_name),
-            TypeCheckError::StructNotFound(name) => write!(f, "A struct with name \"{}\" does not exist", name),
-            TypeCheckError::StructNotFoundMessageExists(name) => write!(f, "A struct with name \"{}\" does not exist, but a message does. Did you mean for it to be a struct?", name)
+            TypeCheckError::RepeatedName(name) => {
+                write!(f, "The type with name \"{}\" already exists", name)
+            }
+            TypeCheckError::RepeatedFieldName {
+                field_name,
+                struct_name,
+            } => write!(
+                f,
+                "A field with name \"{}\" already exists in struct \"{}\"",
+                field_name, struct_name
+            ),
+            TypeCheckError::StructNotFound(name) => {
+                write!(f, "A struct with name \"{}\" does not exist", name)
+            }
         }
     }
 }
@@ -42,6 +51,7 @@ pub enum TypedFieldType {
     Instant,
     Guid,
     String,
+    Void,
     OtherStruct(String),
 }
 
@@ -69,25 +79,7 @@ pub struct TypedStruct {
     fields: Vec<TypedField>,
 }
 
-#[derive(Debug)]
-pub struct TypedMessage {
-    name: String,
-    fields: Vec<TypedField>,
-}
-
 impl TypedStruct {
-    #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    #[must_use]
-    pub fn fields(&self) -> &[TypedField] {
-        &self.fields
-    }
-}
-
-impl TypedMessage {
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
@@ -112,17 +104,12 @@ enum TypeCheckableFieldType<'a> {
     Instant,
     Guid,
     String,
+    Void,
     ToBeResolved(&'a str),
 }
 
 #[derive(Debug)]
 struct TypeCheckableStructDefinition<'input> {
-    name: String,
-    fields: HashMap<&'input str, TypeCheckableFieldType<'input>>,
-}
-
-#[derive(Debug)]
-struct TypeCheckableMessageDefinition<'input> {
     name: String,
     fields: HashMap<&'input str, TypeCheckableFieldType<'input>>,
 }
@@ -138,16 +125,49 @@ impl TypedMetadata {
     }
 }
 
+pub struct TypedRpcCall {
+    name: String,
+    request: TypedFieldType,
+    response: TypedFieldType,
+}
+
+impl TypedRpcCall {
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    #[must_use]
+    pub fn request(&self) -> &TypedFieldType {
+        &self.request
+    }
+
+    #[must_use]
+    pub fn response(&self) -> &TypedFieldType {
+        &self.response
+    }
+}
+
+pub struct TypedRpc {
+    pub calls: Vec<TypedRpcCall>,
+}
+
+impl TypedRpc {
+    #[must_use]
+    pub fn calls(&self) -> &[TypedRpcCall] {
+        &self.calls
+    }
+}
+
 pub struct TypedFile {
     pub structs: Vec<TypedStruct>,
-    pub messages: Vec<TypedMessage>,
     pub meta: TypedMetadata,
+    pub rpc: TypedRpc,
 }
 
 #[derive(Default)]
 pub struct TypeChecker<'input> {
     structs: HashMap<String, TypeCheckableStructDefinition<'input>>,
-    messages: HashMap<String, TypeCheckableMessageDefinition<'input>>,
 }
 
 impl<'input> TypeChecker<'input> {
@@ -157,7 +177,7 @@ impl<'input> TypeChecker<'input> {
     }
 
     fn check_duplicate(&'input self, name: &'input IdentifierRaw) -> Result<(), TypeCheckError> {
-        if self.structs.contains_key(name.0) || self.messages.contains_key(name.0) {
+        if self.structs.contains_key(name.0) {
             return Err(TypeCheckError::RepeatedName(name.0.to_string()));
         }
 
@@ -171,20 +191,7 @@ impl<'input> TypeChecker<'input> {
         let mut fields = HashMap::new();
 
         for field_raw in fields_raw {
-            let type_id = match field_raw.1 .0 {
-                "u8" => TypeCheckableFieldType::U8,
-                "u16" => TypeCheckableFieldType::U16,
-                "u32" => TypeCheckableFieldType::U32,
-                "u64" => TypeCheckableFieldType::U64,
-                "s8" => TypeCheckableFieldType::S8,
-                "s16" => TypeCheckableFieldType::S16,
-                "s32" => TypeCheckableFieldType::S32,
-                "s64" => TypeCheckableFieldType::S64,
-                "instant" => TypeCheckableFieldType::Instant,
-                "guid" => TypeCheckableFieldType::Guid,
-                "string" => TypeCheckableFieldType::String,
-                other => TypeCheckableFieldType::ToBeResolved(other),
-            };
+            let type_id = Self::resolve_raw_type(field_raw.1 .0);
 
             if fields.contains_key(field_raw.0 .0) {
                 return Err(TypeCheckError::RepeatedFieldName {
@@ -198,6 +205,24 @@ impl<'input> TypeChecker<'input> {
         Ok(fields)
     }
 
+    fn resolve_raw_type(field_raw: &str) -> TypeCheckableFieldType {
+        match field_raw {
+            "u8" => TypeCheckableFieldType::U8,
+            "u16" => TypeCheckableFieldType::U16,
+            "u32" => TypeCheckableFieldType::U32,
+            "u64" => TypeCheckableFieldType::U64,
+            "s8" => TypeCheckableFieldType::S8,
+            "s16" => TypeCheckableFieldType::S16,
+            "s32" => TypeCheckableFieldType::S32,
+            "s64" => TypeCheckableFieldType::S64,
+            "instant" => TypeCheckableFieldType::Instant,
+            "guid" => TypeCheckableFieldType::Guid,
+            "string" => TypeCheckableFieldType::String,
+            "void" => TypeCheckableFieldType::Void,
+            other => TypeCheckableFieldType::ToBeResolved(other),
+        }
+    }
+
     fn type_check_fields(
         &self,
         raw_fields: &HashMap<&str, TypeCheckableFieldType>,
@@ -207,35 +232,37 @@ impl<'input> TypeChecker<'input> {
         for (field_name, field_type) in raw_fields {
             fields.push(TypedField {
                 name: (*field_name).to_string(),
-                type_id: match field_type {
-                    TypeCheckableFieldType::U8 => TypedFieldType::U8,
-                    TypeCheckableFieldType::U16 => TypedFieldType::U16,
-                    TypeCheckableFieldType::U32 => TypedFieldType::U32,
-                    TypeCheckableFieldType::U64 => TypedFieldType::U64,
-                    TypeCheckableFieldType::S8 => TypedFieldType::S8,
-                    TypeCheckableFieldType::S16 => TypedFieldType::S16,
-                    TypeCheckableFieldType::S32 => TypedFieldType::S32,
-                    TypeCheckableFieldType::S64 => TypedFieldType::S64,
-                    TypeCheckableFieldType::Instant => TypedFieldType::Instant,
-                    TypeCheckableFieldType::Guid => TypedFieldType::Guid,
-                    TypeCheckableFieldType::String => TypedFieldType::String,
-                    TypeCheckableFieldType::ToBeResolved(type_name) => {
-                        if !self.structs.contains_key(*type_name) {
-                            return if self.messages.contains_key(*type_name) {
-                                Err(TypeCheckError::StructNotFoundMessageExists(
-                                    (*type_name).to_string(),
-                                ))
-                            } else {
-                                Err(TypeCheckError::StructNotFound((*type_name).to_string()))
-                            };
-                        }
-                        TypedFieldType::OtherStruct((*type_name).to_string())
-                    }
-                },
+                type_id: self.resolve_type(field_type)?,
             });
         }
 
         Ok(fields)
+    }
+
+    fn resolve_type(
+        &self,
+        field_type: &TypeCheckableFieldType,
+    ) -> Result<TypedFieldType, TypeCheckError> {
+        Ok(match field_type {
+            TypeCheckableFieldType::U8 => TypedFieldType::U8,
+            TypeCheckableFieldType::U16 => TypedFieldType::U16,
+            TypeCheckableFieldType::U32 => TypedFieldType::U32,
+            TypeCheckableFieldType::U64 => TypedFieldType::U64,
+            TypeCheckableFieldType::S8 => TypedFieldType::S8,
+            TypeCheckableFieldType::S16 => TypedFieldType::S16,
+            TypeCheckableFieldType::S32 => TypedFieldType::S32,
+            TypeCheckableFieldType::S64 => TypedFieldType::S64,
+            TypeCheckableFieldType::Instant => TypedFieldType::Instant,
+            TypeCheckableFieldType::Guid => TypedFieldType::Guid,
+            TypeCheckableFieldType::String => TypedFieldType::String,
+            TypeCheckableFieldType::Void => TypedFieldType::Void,
+            TypeCheckableFieldType::ToBeResolved(type_name) => {
+                if !self.structs.contains_key(*type_name) {
+                    return Err(TypeCheckError::StructNotFound((*type_name).to_string()));
+                }
+                TypedFieldType::OtherStruct((*type_name).to_string())
+            }
+        })
     }
 
     /// # Errors
@@ -243,35 +270,18 @@ impl<'input> TypeChecker<'input> {
     /// # Panics
     /// TODO MAKE THIS NOT EVER PANIC
     pub fn check(mut self, file: &FileRaw<'input>) -> Result<TypedFile, TypeCheckError> {
-        for definition_raw in file.definitions() {
-            match definition_raw {
-                DefinitionRaw::Struct(name, fields) => {
-                    self.check_duplicate(name)?;
+        for StructDefinitionRaw(name, fields) in file.structs() {
+            self.check_duplicate(name)?;
 
-                    let fields = Self::map_fields(fields, name.0)?;
+            let fields = Self::map_fields(fields, name.0)?;
 
-                    self.structs.insert(
-                        name.0.to_string(),
-                        TypeCheckableStructDefinition {
-                            name: name.0.to_string(),
-                            fields,
-                        },
-                    );
-                }
-                DefinitionRaw::Message(name, fields) => {
-                    self.check_duplicate(name)?;
-
-                    let fields = Self::map_fields(fields, name.0)?;
-
-                    self.messages.insert(
-                        name.0.to_string(),
-                        TypeCheckableMessageDefinition {
-                            name: name.0.to_string(),
-                            fields,
-                        },
-                    );
-                }
-            }
+            self.structs.insert(
+                name.0.to_string(),
+                TypeCheckableStructDefinition {
+                    name: name.0.to_string(),
+                    fields,
+                },
+            );
         }
 
         let mut metadata_fields = HashMap::new();
@@ -300,7 +310,6 @@ impl<'input> TypeChecker<'input> {
 
         let sorted = toposort(&graph, None).unwrap();
         let mut structs_typed = HashMap::new();
-        let mut messages_typed = vec![];
 
         for x in sorted {
             let node = graph.node_weight(x).unwrap();
@@ -312,21 +321,32 @@ impl<'input> TypeChecker<'input> {
             structs_typed.insert(node.name.clone(), typed_struct);
         }
 
-        for x in self.messages.values() {
-            let typed_message = TypedMessage {
-                name: x.name.clone(),
-                fields: self.type_check_fields(&x.fields)?,
-            };
-            messages_typed.push(typed_message);
-        }
-
         let meta_fields = self.type_check_fields(&metadata_fields)?;
+        let rpc = file.rpc().map(|rpc| {
+            let mut rpc_typed = HashMap::new();
+            for rpc_definition in &rpc.definitions {
+                let typed_rpc = TypedRpcCall {
+                    name: rpc_definition.name.0.to_string(),
+                    // todo no unwraps here!
+                    request: self
+                        .resolve_type(&Self::resolve_raw_type(rpc_definition.request.0))
+                        .unwrap(),
+                    response: self
+                        .resolve_type(&Self::resolve_raw_type(rpc_definition.response.0))
+                        .unwrap(),
+                };
+                rpc_typed.insert(rpc_definition.name.0.to_string(), typed_rpc);
+            }
+            rpc_typed
+        });
 
         Ok(TypedFile {
             structs: structs_typed.into_iter().map(|(_, v)| v).collect(),
-            messages: messages_typed,
             meta: TypedMetadata {
                 fields: meta_fields,
+            },
+            rpc: TypedRpc {
+                calls: rpc.map_or_else(Vec::new, |rpc| rpc.into_iter().map(|(_, v)| v).collect()),
             },
         })
     }
