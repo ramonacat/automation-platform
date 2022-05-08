@@ -1,15 +1,12 @@
+use crate::create_event_metadata;
 use crate::file_status_store::{FileStatusStore, FileStatusSyncResult};
 use crate::mount::{Mount, PathInside};
 use async_walkdir::{DirEntry, WalkDir};
-use events::{Message, MessagePayload, Metadata};
 use futures_lite::stream::StreamExt;
-use platform::events::EventSender;
 use std::fs::Metadata as FsMetadata;
 use std::sync::Arc;
-use std::time::SystemTime;
 use time::OffsetDateTime;
 use tokio::sync::Mutex;
-use uuid::Uuid;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -17,20 +14,20 @@ pub enum Error {
     Notify(#[from] notify::Error),
     #[error("IO error")]
     Io(#[from] std::io::Error),
-    #[error("Failure publishing the event")]
-    Event(#[from] platform::events::Error),
     #[error("Failed to get mount relative path")]
     MountRelativePath(#[from] crate::mount::Error),
     #[error("Failed to sync the state")]
     Sync(#[from] crate::file_status_store::Error),
+    #[error("RPC call failed")]
+    Rpc(#[from] rpc_support::rpc_error::RpcError),
 }
 
-pub struct Scanner<T: EventSender + Sync + Send> {
+pub struct Scanner<T: events::Rpc + Sync + Send> {
     event_sender: Arc<Mutex<T>>,
     file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
 }
 
-impl<T: EventSender + Sync + Send> Scanner<T> {
+impl<T: events::Rpc + Sync + Send> Scanner<T> {
     pub fn new(
         event_sender: Arc<Mutex<T>>,
         file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
@@ -66,24 +63,6 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
         Ok(())
     }
 
-    // fixme move this into a common service
-    async fn send_event(&self, payload: MessagePayload) -> Result<(), Error> {
-        self.event_sender
-            .lock()
-            .await
-            .send(Message {
-                metadata: Metadata {
-                    created_time: SystemTime::now(),
-                    source: "directory-watcher".to_string(),
-                    id: Uuid::new_v4(),
-                },
-                payload,
-            })
-            .await?;
-
-        Ok(())
-    }
-
     async fn sync_file(
         &mut self,
         dir: &Mount,
@@ -106,16 +85,28 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
         info!("Found file: {} ({:?})", path.to_string_lossy(), sync_status);
         match sync_status {
             FileStatusSyncResult::Created => {
-                self.send_event(MessagePayload::FileCreated {
-                    path: mount_relative_path.into(),
-                })
-                .await?;
+                self.event_sender
+                    .lock()
+                    .await
+                    .send_file_created(
+                        events::FileCreated {
+                            path: mount_relative_path.into(),
+                        },
+                        create_event_metadata(),
+                    )
+                    .await?;
             }
             FileStatusSyncResult::Modified => {
-                self.send_event(MessagePayload::FileChanged {
-                    path: mount_relative_path.into(),
-                })
-                .await?;
+                self.event_sender
+                    .lock()
+                    .await
+                    .send_file_changed(
+                        events::FileChanged {
+                            path: mount_relative_path.into(),
+                        },
+                        create_event_metadata(),
+                    )
+                    .await?;
             }
             FileStatusSyncResult::NotModified => {}
         }
@@ -127,16 +118,53 @@ impl<T: EventSender + Sync + Send> Scanner<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use events::{FileChanged, FileCreated, FileDeleted, FileMoved, Metadata};
+    use rpc_support::rpc_error::RpcError;
     use serde_json::{to_value, Value};
     use std::path::PathBuf;
 
-    struct MockEventSender {
+    struct MockRpcClient {
         events: Vec<Value>,
     }
+
     #[async_trait]
-    impl EventSender for MockEventSender {
-        async fn send<'a>(&mut self, event: Message) -> Result<(), platform::events::Error> {
-            self.events.push(to_value(event).unwrap());
+    impl events::Rpc for MockRpcClient {
+        async fn send_file_created(
+            &mut self,
+            request: FileCreated,
+            _metadata: Metadata,
+        ) -> Result<(), RpcError> {
+            self.events.push(to_value(request).unwrap());
+
+            Ok(())
+        }
+
+        async fn send_file_deleted(
+            &mut self,
+            request: FileDeleted,
+            _metadata: Metadata,
+        ) -> Result<(), RpcError> {
+            self.events.push(to_value(request).unwrap());
+
+            Ok(())
+        }
+
+        async fn send_file_moved(
+            &mut self,
+            request: FileMoved,
+            _metadata: Metadata,
+        ) -> Result<(), RpcError> {
+            self.events.push(to_value(request).unwrap());
+
+            Ok(())
+        }
+
+        async fn send_file_changed(
+            &mut self,
+            request: FileChanged,
+            _metadata: Metadata,
+        ) -> Result<(), RpcError> {
+            self.events.push(to_value(request).unwrap());
 
             Ok(())
         }
@@ -177,7 +205,7 @@ mod tests {
 
     #[tokio::test]
     pub async fn will_mark_preexisting_file_as_not_changed() {
-        let sender = Arc::new(Mutex::new(MockEventSender { events: vec![] }));
+        let sender = Arc::new(Mutex::new(MockRpcClient { events: vec![] }));
         let mut scanner = Scanner::new(sender.clone(), Arc::new(Mutex::new(MockFileStatusStore)));
         let tempdir = tempfile::TempDir::new().unwrap();
         let temp = tempdir.path();
@@ -203,9 +231,7 @@ mod tests {
             .iter()
             .position(|e| {
                 PathBuf::from(
-                    e.get("payload")
-                        .unwrap()
-                        .get("path")
+                    e.get("path")
                         .unwrap()
                         .get("path")
                         .unwrap()
@@ -217,26 +243,12 @@ mod tests {
 
         assert_eq!(
             &Value::String("mount_a".into()),
-            events[index]
-                .get("payload")
-                .unwrap()
-                .get("path")
-                .unwrap()
-                .get("mount_id")
-                .unwrap()
+            events[index].get("path").unwrap().get("mount_id").unwrap()
         );
-
-        assert_eq!(
-            &Value::String("FileCreated".into()),
-            events[index].get("payload").unwrap().get("type").unwrap()
-        );
-
         assert_eq!(
             PathBuf::from("a/b"),
             PathBuf::from(
                 events[index]
-                    .get("payload")
-                    .unwrap()
                     .get("path")
                     .unwrap()
                     .get("path")
@@ -250,9 +262,7 @@ mod tests {
             .iter()
             .position(|e| {
                 PathBuf::from(
-                    e.get("payload")
-                        .unwrap()
-                        .get("path")
+                    e.get("path")
                         .unwrap()
                         .get("path")
                         .unwrap()
@@ -265,8 +275,6 @@ mod tests {
         assert_eq!(
             &Value::String("mount_a".into()),
             events[index_b]
-                .get("payload")
-                .unwrap()
                 .get("path")
                 .unwrap()
                 .get("mount_id")
@@ -274,16 +282,9 @@ mod tests {
         );
 
         assert_eq!(
-            &Value::String("FileChanged".into()),
-            events[index_b].get("payload").unwrap().get("type").unwrap()
-        );
-
-        assert_eq!(
             PathBuf::from("b/c"),
             PathBuf::from(
                 events[index_b]
-                    .get("payload")
-                    .unwrap()
                     .get("path")
                     .unwrap()
                     .get("path")

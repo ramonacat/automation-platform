@@ -1,21 +1,104 @@
 #![deny(clippy::all, clippy::pedantic, clippy::nursery)]
 
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::{TcpListener, TcpStream};
-
 use std::error::Error;
-use std::future::Future;
-use std::net::SocketAddr;
-use tracing::{error, info};
+use tracing::info;
 
 use tokio_postgres::Client;
 
-use events::MessagePayload;
-use platform::events::{Response, Status};
+use events::{FileChanged, FileCreated, FileDeleted, FileMoved, Metadata, Rpc, Server};
+use platform::async_infra::run_with_error_handling;
 use postgres_native_tls::MakeTlsConnector;
-use std::fmt::{Debug, Formatter};
+use rpc_support::rpc_error::RpcError;
+use serde::Serialize;
 use std::sync::Arc;
-use thiserror::Error;
+use tokio::sync::Mutex;
+
+#[macro_use]
+extern crate async_trait;
+
+struct RpcServer {
+    postgres: Arc<Mutex<Client>>,
+}
+
+fn rpc_error_map(e: impl Error) -> RpcError {
+    RpcError::Custom(e.to_string())
+}
+
+impl RpcServer {
+    async fn save_event<T>(
+        &mut self,
+        name: &str,
+        message: T,
+        metadata: Metadata,
+    ) -> Result<(), RpcError>
+    where
+        T: Serialize + Send,
+    {
+        // fixme this is gross, is there a way to avoid reserializing?
+        let serde_value =
+            serde_json::to_value(serde_json::to_string(&message).map_err(rpc_error_map)?)
+                .map_err(rpc_error_map)?;
+        self.postgres
+            .lock()
+            .await
+            .execute(
+                "INSERT INTO events(id, created_timestamp, type, data) VALUES($1,$2,$3,$4)",
+                &[&metadata.id, &metadata.created_time, &name, &serde_value],
+            )
+            .await
+            .map_err(rpc_error_map)?;
+
+        info!(
+            "Message handled: {}",
+            serde_json::to_string(&message).map_err(rpc_error_map)?
+        );
+
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl Rpc for RpcServer {
+    async fn send_file_changed(
+        &mut self,
+        request: FileChanged,
+        metadata: Metadata,
+    ) -> Result<(), RpcError> {
+        self.save_event("FileChanged", request, metadata).await?;
+
+        Ok(())
+    }
+
+    async fn send_file_created(
+        &mut self,
+        request: FileCreated,
+        metadata: Metadata,
+    ) -> Result<(), RpcError> {
+        self.save_event("FileCreated", request, metadata).await?;
+
+        Ok(())
+    }
+
+    async fn send_file_deleted(
+        &mut self,
+        request: FileDeleted,
+        metadata: Metadata,
+    ) -> Result<(), RpcError> {
+        self.save_event("FileDeleted", request, metadata).await?;
+
+        Ok(())
+    }
+
+    async fn send_file_moved(
+        &mut self,
+        request: FileMoved,
+        metadata: Metadata,
+    ) -> Result<(), RpcError> {
+        self.save_event("FileMoved", request, metadata).await?;
+
+        Ok(())
+    }
+}
 
 #[tokio::main]
 #[tracing::instrument]
@@ -47,151 +130,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // todo make the bind addr/port configurable
-    let listener = TcpListener::bind("0.0.0.0:7654").await?;
+    let server = Server::new(
+        "0.0.0.0:7654",
+        Arc::new(Mutex::new(RpcServer {
+            postgres: Arc::new(Mutex::new(client)),
+        })),
+    )
+    .await?;
+    server.run().await?;
 
-    // todo can we get rid of the Arc? ThreadLocal?
-    let client = Arc::new(client);
-    loop {
-        let (socket, address) = listener.accept().await?;
-        info!("New client connected: {}", address);
-
-        let client = client.clone();
-        tokio::spawn(async move {
-            run_with_error_handling(async move {
-                let client = EventsClient::new(socket, address, client.as_ref());
-                client.handle().await?;
-
-                Ok::<_, ClientHandlingError>(())
-            })
-            .await;
-        });
-    }
-}
-
-async fn run_with_error_handling<TError>(callback: impl Future<Output = Result<(), TError>> + Send)
-where
-    TError: Error,
-{
-    if let Err(e) = callback.await {
-        error!("Task failed: {}", e);
-    }
-}
-
-#[derive(Error, Debug)]
-enum ClientHandlingError {
-    #[error("IO Error: {0}")]
-    IoError(#[from] std::io::Error),
-    #[error("Database Error: {0}")]
-    DatabaseError(#[from] tokio_postgres::Error),
-    #[error("JSON Parsing Failed: {0}")]
-    JsonParsingFailed(#[from] serde_json::Error),
-    #[error("Failed to construct the client: {0}")]
-    ClientConstructionFailed(#[from] EventsClientConstructionError),
-}
-
-struct EventsClient<'a> {
-    socket: TcpStream,
-    address: SocketAddr,
-    postgres: &'a Client,
-}
-
-impl Debug for EventsClient<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "EventsClient:{}", self.address)
-    }
-}
-
-#[derive(Debug, Error)]
-enum EventsClientConstructionError {
-    #[error("JSON Parsing Failed: {0}")]
-    JsonParsingFailed(#[from] serde_json::Error),
-    #[error("IO Error: {0}")]
-    IoError(#[from] std::io::Error),
-}
-
-#[derive(Error, Debug)]
-enum MessageHandlingError {
-    #[error("Database Error: {0}")]
-    DatabaseError(#[from] tokio_postgres::Error),
-    #[error("JSON Parsing Failed: {0}")]
-    JsonParsingFailed(#[from] serde_json::Error),
-    #[error("Invalid UUID: {0}")]
-    InvalidUuid(#[from] uuid::Error),
-    #[error("Invalid Date/Time: {0}")]
-    InvalidDateTime(#[from] time::error::Parse),
-}
-
-trait TypeName {
-    fn type_name(&self) -> &'static str;
-}
-
-// todo define a macro to do this automagically? use `strum_macros`?
-impl TypeName for MessagePayload {
-    fn type_name(&self) -> &'static str {
-        match self {
-            MessagePayload::FileMoved { .. } => "FileMoved",
-            MessagePayload::FileChanged { .. } => "FileChanged",
-            MessagePayload::FileCreated { .. } => "FileCreated",
-            MessagePayload::FileDeleted { .. } => "FileDeleted",
-        }
-    }
-}
-
-impl<'a> EventsClient<'a> {
-    pub const fn new(socket: TcpStream, address: SocketAddr, postgres: &'a Client) -> Self {
-        Self {
-            socket,
-            address,
-            postgres,
-        }
-    }
-
-    #[tracing::instrument]
-    async fn handle(mut self) -> Result<(), ClientHandlingError> {
-        let (mut reader, mut writer) = self.socket.split();
-        let reader = BufReader::new(&mut reader);
-        let mut lines = reader.lines();
-        while let Some(line) = lines.next_line().await? {
-            let response = match Self::handle_message(line, self.postgres).await {
-                Ok(_) => Response { status: Status::Ok },
-                Err(e) => {
-                    error!("Request processing failed: {:?}", e);
-                    Response {
-                        status: Status::Failed,
-                    }
-                }
-            };
-            info!("Sending response: {:?}", response);
-            writer.write_all(&serde_json::to_vec(&response)?).await?;
-            writer.write_all(b"\n").await?;
-        }
-
-        info!("Client disconnected");
-
-        Ok(())
-    }
-
-    async fn handle_message(
-        line: String,
-        postgres: &'_ Client,
-    ) -> Result<(), MessageHandlingError> {
-        let parsed: ::events::Message = serde_json::from_str(&line)?;
-        let value: serde_json::Value = serde_json::from_str(&line)?;
-
-        postgres
-            .execute(
-                "INSERT INTO events(id, created_timestamp, type, data) VALUES($1,$2,$3,$4)",
-                &[
-                    &parsed.metadata.id,
-                    &parsed.metadata.created_time,
-                    &parsed.payload.type_name(),
-                    &value,
-                ],
-            )
-            .await?;
-
-        info!("Message handled: {}", line);
-
-        Ok(())
-    }
+    Ok(())
 }

@@ -37,6 +37,10 @@ updates:
     schedule:
       interval: "daily"
   - package-ecosystem: "cargo"
+    directory: "libraries/rust/rpc-support/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "cargo"
     directory: "tools/message-compiler/"
     schedule:
       interval: "daily"

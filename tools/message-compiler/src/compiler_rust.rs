@@ -2,14 +2,11 @@ use crate::type_checking::{TypedField, TypedFieldType, TypedFile};
 
 #[must_use]
 pub fn compile(file: TypedFile) -> String {
-    let TypedFile {
-        structs,
-        messages,
-        meta,
-    } = file;
+    let TypedFile { structs, meta, rpc } = file;
 
     let mut result = String::new();
 
+    result += "use rpc_support::rpc_error::RpcError;\n";
     result += "use serde::{Deserialize, Serialize};\n";
 
     result += "#[derive(Serialize, Deserialize, Debug)]\n";
@@ -26,21 +23,22 @@ pub fn compile(file: TypedFile) -> String {
 
     result += "\n";
 
-    result += "#[derive(Serialize, Deserialize, Debug)]\n";
-    result += "#[serde(tag = \"type\")]\n";
-    result += "pub enum MessagePayload {\n";
-    for m in messages {
-        result += &format!("    {} {{\n", m.name());
-        result += &render_fields(m.fields(), false, 2);
-        result += "    },\n";
+    result += "#[async_trait]\n";
+    result += "pub trait Rpc {\n";
+
+    for r in rpc.calls() {
+        result += &format!(
+            r#"    async fn {}(
+        &mut self,
+        request: {},
+        metadata: Metadata,
+    ) -> Result<{}, RpcError>;
+"#,
+            r.name(),
+            to_rust_type(r.request()),
+            to_rust_type(r.response())
+        );
     }
-
-    result += "}\n";
-
-    result += "#[derive(Serialize, Deserialize, Debug)]\n";
-    result += "pub struct Message {\n";
-    result += "    pub metadata: Metadata,\n";
-    result += "    pub payload: MessagePayload,\n";
     result += "}\n";
 
     result
@@ -53,7 +51,7 @@ fn render_fields(fields: &[TypedField], public: bool, depth: usize) -> std::stri
     for f in fields {
         if let TypedFieldType::Instant = f.type_name() {
             result += &indent;
-            result += "#[serde(with = \"crate::system_time_serializer\")]\n";
+            result += "#[serde(with = \"rpc_support::system_time_serializer\")]\n";
         }
         result += &format!(
             "{}{}{}: {},\n",
@@ -80,6 +78,7 @@ fn to_rust_type(type_: &TypedFieldType) -> &str {
         TypedFieldType::Instant => "std::time::SystemTime",
         TypedFieldType::Guid => "::uuid::Uuid",
         TypedFieldType::String => "String",
+        TypedFieldType::Void => "()",
         TypedFieldType::OtherStruct(name) => name,
     }
 }

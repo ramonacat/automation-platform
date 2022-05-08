@@ -17,6 +17,7 @@ WORKDIR /opt/directory-watcher/services/directory-watcher/
 COPY --from=planner /opt/directory-watcher/services/directory-watcher/recipe.json recipe.json
 COPY libraries/rust/platform/ /opt/directory-watcher/libraries/rust/platform
 COPY libraries/rust/events/ /opt/directory-watcher/libraries/rust/events
+COPY libraries/rust/rpc-support/ /opt/directory-watcher/libraries/rust/rpc-support
 COPY tools/message-compiler/ /opt/directory-watcher/tools/message-compiler
 
 RUN cargo chef cook --release --recipe-path recipe.json

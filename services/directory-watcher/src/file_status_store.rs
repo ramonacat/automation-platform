@@ -1,4 +1,5 @@
 use crate::mount::PathInside;
+use std::ops::Sub;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tokio::sync::Mutex;
@@ -45,7 +46,7 @@ impl FileStatusStore for Postgres {
             .await
             .execute(
                 "DELETE FROM files WHERE mount_id=$1 AND path=$2",
-                &[&path.mount_id(), &path.path().to_string_lossy()],
+                &[&path.mount_id(), &path.path()],
             )
             .await?;
         Ok(())
@@ -63,11 +64,7 @@ impl FileStatusStore for Postgres {
             .await
             .execute(
                 "UPDATE files SET path=$1 WHERE mount_id=$2 AND path=$3",
-                &[
-                    &to.path().to_string_lossy(),
-                    &from.mount_id(),
-                    &from.path().to_string_lossy(),
-                ],
+                &[&to.path(), &from.mount_id(), &from.path()],
             )
             .await?;
         Ok(())
@@ -84,21 +81,17 @@ impl FileStatusStore for Postgres {
         let rows = transaction
             .query(
                 "SELECT modified_date FROM files WHERE mount_id=$1 AND path=$2 FOR UPDATE",
-                &[&path.mount_id(), &path.path().to_string_lossy()],
+                &[&path.mount_id(), &path.path()],
             )
             .await?;
 
         if let Some(row) = rows.get(0) {
             let current_modified_at = row.get::<_, OffsetDateTime>(0);
-            if current_modified_at != modified_at {
+            if current_modified_at.sub(modified_at).abs() > std::time::Duration::from_secs(5) {
                 transaction
                     .execute(
                         "UPDATE files SET modified_date=$1 WHERE mount_id=$2 AND path=$3",
-                        &[
-                            &modified_at,
-                            &path.mount_id(),
-                            &path.path().to_string_lossy(),
-                        ],
+                        &[&modified_at, &path.mount_id(), &path.path()],
                     )
                     .await?;
 
@@ -110,7 +103,7 @@ impl FileStatusStore for Postgres {
             Ok(FileStatusSyncResult::NotModified)
         } else {
             transaction
-                .execute("INSERT INTO files (id, mount_id, path, modified_date) VALUES(gen_random_uuid(), $1, $2, $3)", &[&path.mount_id(), &path.path().to_string_lossy(), &modified_at])
+                .execute("INSERT INTO files (id, mount_id, path, modified_date) VALUES(gen_random_uuid(), $1, $2, $3)", &[&path.mount_id(), &path.path(), &modified_at])
                 .await?;
 
             transaction.commit().await?;
