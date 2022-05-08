@@ -50,6 +50,11 @@ impl<T: events::Rpc + Sync + Send> Scanner<T> {
                 match walkdir.next().await {
                     Some(Ok(entry)) => {
                         let metadata = entry.metadata().await?;
+
+                        if metadata.is_dir() {
+                            continue;
+                        }
+
                         self.sync_file(dir, entry, metadata).await?;
                     }
                     Some(Err(e)) => {

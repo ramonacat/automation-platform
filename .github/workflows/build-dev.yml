@@ -70,7 +70,7 @@ jobs:
                 key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/composer.json') }}
                 restore-keys: ${{ runner.os }}-composer-
 
-            - run: cargo udeps --version || cargo +nightly install cargo-udeps
+            - run: cargo udeps --help || cargo +nightly install cargo-udeps
             - run: cargo audit --version || cargo install cargo-audit
 
             - working-directory: tools/dependabot-config-checker/
