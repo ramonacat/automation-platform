@@ -32,7 +32,7 @@ RMetadata:MetadataRaw<'input> = {
 }
 
 RRPCDefinition:RpcDefinitionRaw<'input> = {
-    <name:RIdentifier> "(" <input_type:RIdentifier> ")" "->" <output_type:RIdentifier> => RpcDefinitionRaw::new(name, input_type, output_type)
+    <name:RIdentifier> "(" <input_type:RIdentifier> ")" "->" <is_stream:"stream"?> <output_type:RIdentifier> => RpcDefinitionRaw::new(name, input_type, output_type, is_stream.is_some())
 }
 
 RRPCDefinitions:Vec<RpcDefinitionRaw<'input>> = {

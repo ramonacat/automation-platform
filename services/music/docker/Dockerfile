@@ -17,6 +17,9 @@ WORKDIR /opt/music/services/music/
 COPY --from=planner /opt/music/services/music/recipe.json recipe.json
 COPY libraries/rust/platform/ /opt/music/libraries/rust/platform
 COPY libraries/rust/events/ /opt/music/libraries/rust/events
+COPY libraries/rust/music/ /opt/music/libraries/rust/music
+COPY libraries/rust/rpc-support/ /opt/music/libraries/rust/rpc-support
+COPY tools/message-compiler/ /opt/music/tools/message-compiler
 
 RUN cargo chef cook --release --recipe-path recipe.json
 
@@ -31,11 +34,11 @@ COPY --from=cacher /usr/local/cargo /usr/local/cargo
 
 RUN cargo build --release
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install --no-install-recommends -y libssl1.1=1.1.1n-0+deb11u1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install --no-install-recommends -y libssl1.1=1.1.1o-1 && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /opt/music/services/music/target/release/music /opt/music/
+COPY --from=build /opt/music/services/music/target/release/svc-music /opt/music/
 COPY services/music/runtime.configuration.json /etc/ap/
 
-ENTRYPOINT ["/opt/music/music"]
+ENTRYPOINT ["/opt/music/svc-music"]

@@ -130,6 +130,7 @@ fn find_allowed_prefixes(workdir: &Path) -> Vec<String> {
     let mut all_prefixes = vec!["[All]".to_string(), "[CI]".to_string()];
     all_prefixes.append(&mut subprojects_to_prefixes("services"));
     all_prefixes.append(&mut subprojects_to_prefixes("tools"));
+    all_prefixes.append(&mut subprojects_to_prefixes("agents"));
     all_prefixes.append(&mut subprojects_to_prefixes("libraries/rust"));
     all_prefixes.append(&mut subprojects_to_prefixes("libraries/php"));
 

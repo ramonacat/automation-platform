@@ -1,14 +1,16 @@
 use crate::rpc_error::RpcError;
 use dashmap::DashMap;
+use futures::{Stream, StreamExt};
 use platform::async_infra::run_with_error_handling;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::pin::Pin;
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
-use tokio::sync::mpsc::Sender;
-use tracing::{error, info};
+use tokio::sync::mpsc::{Receiver, Sender};
+use tracing::{debug, error, info};
 
 pub mod rpc_error;
 pub mod system_time_serializer;
@@ -23,13 +25,22 @@ struct RequestEnvelope {
 struct ResponseEnvelope {
     pub request_id: u64,
     pub error: Option<RpcError>,
+    pub stream_end: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct StreamResponseEnvelope {
+    pub request_id: u64,
+    pub error: Option<RpcError>,
 }
 
 type WaitingResponses = DashMap<u64, Sender<(ResponseEnvelope, Option<String>)>>;
+type ActiveStreams = DashMap<u64, Sender<(ResponseEnvelope, Option<String>)>>;
 
 pub struct RawRpcClient {
-    writer: OwnedWriteHalf,
     waiting_responses: Arc<WaitingResponses>,
+    active_streams: Arc<ActiveStreams>,
+    request_tx: Sender<String>,
 }
 
 #[derive(Debug, Error)]
@@ -48,9 +59,10 @@ impl<T> From<tokio::sync::mpsc::error::SendError<T>> for RpcClientTaskError {
     }
 }
 
-async fn client_task(
+async fn client_response_task(
     read: OwnedReadHalf,
     waiting_responses: Arc<WaitingResponses>,
+    active_streams: Arc<ActiveStreams>,
 ) -> Result<(), RpcClientTaskError> {
     let mut reader = tokio::io::BufReader::new(read);
 
@@ -79,8 +91,11 @@ async fn client_task(
         if let Some((_, sender)) = waiting_responses.remove(&response_envelope.request_id) {
             sender
                 .send((response_envelope, Some(response_line)))
-                .await
-                .unwrap();
+                .await?;
+        } else if let Some(sender) = active_streams.get(&response_envelope.request_id) {
+            sender
+                .send((response_envelope, Some(response_line)))
+                .await?;
         } else {
             error!(
                 "Found response, but no request. Request ID: {}",
@@ -90,19 +105,40 @@ async fn client_task(
     }
 }
 
+async fn client_request_task(
+    mut writer: OwnedWriteHalf,
+    mut channel: Receiver<String>,
+) -> Result<(), RpcClientTaskError> {
+    while let Some(request_line) = channel.recv().await {
+        writer.write_all(request_line.as_bytes()).await?;
+        writer.flush().await?;
+    }
+
+    Ok(())
+}
+
 impl RawRpcClient {
     pub fn new(stream: tokio::net::TcpStream) -> Self {
         let (read, write) = stream.into_split();
-        let waiting_responses: Arc<WaitingResponses> = Arc::new(DashMap::new());
+        let waiting_responses = Arc::new(DashMap::new());
+        let active_streams = Arc::new(DashMap::new());
 
-        tokio::task::spawn(run_with_error_handling(client_task(
+        tokio::task::spawn(run_with_error_handling(client_response_task(
             read,
             waiting_responses.clone(),
+            active_streams.clone(),
+        )));
+
+        let (request_tx, request_rx) = tokio::sync::mpsc::channel(64);
+
+        tokio::task::spawn(run_with_error_handling(client_request_task(
+            write, request_rx,
         )));
 
         RawRpcClient {
-            writer: write,
             waiting_responses,
+            active_streams,
+            request_tx,
         }
     }
 
@@ -122,21 +158,16 @@ impl RawRpcClient {
     {
         let (tx, mut rx) = tokio::sync::mpsc::channel(1);
         self.waiting_responses.insert(id, tx);
-        let mut buffer = vec![];
-        buffer.extend_from_slice(
-            serde_json::to_string(&RequestEnvelope {
+
+        self.send_raw_request(
+            &RequestEnvelope {
                 method_name: method_name.to_string(),
                 request_id: id,
-            })?
-            .as_bytes(),
-        );
-        buffer.push(b'\n');
-        buffer.extend_from_slice(serde_json::to_string(&metadata)?.as_bytes());
-        buffer.push(b'\n');
-        buffer.extend_from_slice(serde_json::to_string(&request)?.as_bytes());
-        buffer.push(b'\n');
-
-        self.writer.write_all(&buffer).await?;
+            },
+            &metadata,
+            &request,
+        )
+        .await?;
 
         info!("Waiting for response");
         let (response_envelope, response_line) = rx
@@ -157,6 +188,87 @@ impl RawRpcClient {
         let response: TResponse = serde_json::from_str(&response_line)?;
 
         Ok(response)
+    }
+
+    async fn send_raw_request<TMetadata, TRequest>(
+        &mut self,
+        envelope: &RequestEnvelope,
+        metadata: &TMetadata,
+        request: &TRequest,
+    ) -> Result<(), RpcError>
+    where
+        TMetadata: Serialize,
+        TRequest: Serialize,
+    {
+        let mut buffer = String::new();
+        buffer.push_str(&serde_json::to_string(envelope)?);
+        buffer.push('\n');
+        buffer.push_str(&serde_json::to_string(&metadata)?);
+        buffer.push('\n');
+        buffer.push_str(&serde_json::to_string(&request)?);
+        buffer.push('\n');
+
+        self.request_tx.send(buffer).await?;
+
+        Ok(())
+    }
+
+    /// # Panics
+    /// FIXME make it never panic
+    /// # Errors
+    /// Can fail if sending the request fails
+    pub async fn send_rpc_stream_request<TRequest, TMetadata, TResponse>(
+        &mut self,
+        id: u64,
+        method_name: &str,
+        request: &TRequest,
+        metadata: &TMetadata,
+    ) -> Result<Box<dyn Stream<Item = Result<TResponse, RpcError>> + Unpin + Send>, RpcError>
+    where
+        TRequest: Serialize,
+        TMetadata: Serialize,
+        TResponse: DeserializeOwned,
+    {
+        let (tx, mut rx) = tokio::sync::mpsc::channel(64);
+        self.active_streams.insert(id, tx);
+
+        self.send_raw_request(
+            &RequestEnvelope {
+                method_name: method_name.to_string(),
+                request_id: id,
+            },
+            &metadata,
+            &request,
+        )
+        .await?;
+
+        info!("Stream request sent");
+
+        let rx_stream = Box::pin(async_stream::stream! {
+            while let Some(response_line) = rx.recv().await {
+                let is_end = response_line.0.stream_end;
+                yield response_line;
+
+                if is_end {
+                    break;
+                }
+            }
+
+            info!("Stream ended");
+        });
+
+        Ok(Box::new(rx_stream.map(
+            move |(response_envelope, contents): (ResponseEnvelope, Option<String>)| {
+                match response_envelope.error {
+                    None => {
+                        let contents = contents.unwrap_or_default();
+
+                        Ok(serde_json::from_str(&contents)?)
+                    }
+                    Some(e) => Err(e),
+                }
+            },
+        )))
     }
 }
 
@@ -203,6 +315,7 @@ pub async fn send_response<TResponse>(
     writer: &mut (impl AsyncWrite + Unpin),
     response: Result<TResponse, RpcError>,
     request_id: u64,
+    stream_end: bool, // todo: remove this argument from public API
 ) -> Result<(), RpcError>
 where
     TResponse: Serialize,
@@ -213,6 +326,7 @@ where
         serde_json::to_string(&ResponseEnvelope {
             request_id,
             error: response.as_ref().err().map(|e| (*e).clone()),
+            stream_end,
         })?
         .as_bytes(),
     );
@@ -224,5 +338,35 @@ where
     }
 
     writer.write_all(&buffer).await?;
+    Ok(())
+}
+
+/// # Errors
+/// Can fail if the response cannot be written to the stream
+pub async fn send_stream_response<TResponse>(
+    writer: &mut (impl AsyncWrite + Unpin),
+    response: Result<Box<dyn Stream<Item = Result<TResponse, RpcError>> + Unpin + Send>, RpcError>,
+    request_id: u64,
+) -> Result<(), RpcError>
+where
+    TResponse: Serialize,
+{
+    if let Ok(response) = response {
+        // todo is there a more optimal solution? (without peekable)
+        let mut response = response.peekable();
+
+        while let Some(item) = response.next().await {
+            send_response(
+                writer,
+                item,
+                request_id,
+                Pin::new(&mut response).peek().await.is_none(),
+            )
+            .await?;
+        }
+    } else if let Err(err) = response {
+        send_response(writer, Result::<(), _>::Err(err), request_id, true).await?;
+    }
+
     Ok(())
 }

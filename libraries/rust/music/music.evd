@@ -1,0 +1,14 @@
+metadata {
+}
+
+struct TrackPath {
+    path: string,
+}
+
+struct TrackData {
+    data: string,
+}
+
+rpc {
+    stream_track(TrackPath) -> stream TrackData;
+}

@@ -149,7 +149,7 @@ where
                         .send_file_changed(serde_json::from_str(&payload_line)?, metadata)
                         .await;
 
-                    send_response(&mut write, result, request_id).await?;
+                    send_response(&mut write, result, request_id, false).await?;
                 }
                 "send_file_deleted" => {
                     let result = rpc
@@ -158,7 +158,7 @@ where
                         .send_file_deleted(serde_json::from_str(&payload_line)?, metadata)
                         .await;
 
-                    send_response(&mut write, result, request_id).await?;
+                    send_response(&mut write, result, request_id, false).await?;
                 }
                 "send_file_created" => {
                     let result = rpc
@@ -167,7 +167,7 @@ where
                         .send_file_created(serde_json::from_str(&payload_line)?, metadata)
                         .await;
 
-                    send_response(&mut write, result, request_id).await?;
+                    send_response(&mut write, result, request_id, false).await?;
                 }
                 "send_file_moved" => {
                     let result = rpc
@@ -176,7 +176,7 @@ where
                         .send_file_moved(serde_json::from_str(&payload_line)?, metadata)
                         .await;
 
-                    send_response(&mut write, result, request_id).await?;
+                    send_response(&mut write, result, request_id, false).await?;
                 }
                 // fixme do not panic here!
                 _ => panic!("Unknown method name: {}", method_name),

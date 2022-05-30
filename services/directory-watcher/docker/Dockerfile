@@ -33,9 +33,9 @@ COPY --from=cacher /usr/local/cargo /usr/local/cargo
 
 RUN cargo build --release
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install --no-install-recommends -y libssl1.1=1.1.1n-0+deb11u1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install --no-install-recommends -y libssl1.1=1.1.1o-1 && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /opt/directory-watcher/services/directory-watcher/target/release/directory-watcher /opt/directory-watcher/
 COPY services/directory-watcher/runtime.configuration.json /etc/ap/

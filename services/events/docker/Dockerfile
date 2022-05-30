@@ -33,11 +33,10 @@ COPY --from=cacher /usr/local/cargo /usr/local/cargo
 
 RUN cargo build --release
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install --no-install-recommends -y libssl1.1=1.1.1n-0+deb11u1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install --no-install-recommends -y libssl1.1=1.1.1o-1 && rm -rf /var/lib/apt/lists/*
 
-COPY schemas/events.schema.json /etc/svc-events/schemas/events.schema.json
 COPY --from=build /opt/events/services/events/target/release/svc-events /opt/events/events
 
 ENTRYPOINT ["/opt/events/events"]

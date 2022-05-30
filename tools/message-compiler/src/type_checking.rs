@@ -129,6 +129,7 @@ pub struct TypedRpcCall {
     name: String,
     request: TypedFieldType,
     response: TypedFieldType,
+    is_stream: bool,
 }
 
 impl TypedRpcCall {
@@ -145,6 +146,11 @@ impl TypedRpcCall {
     #[must_use]
     pub fn response(&self) -> &TypedFieldType {
         &self.response
+    }
+
+    #[must_use]
+    pub fn is_stream(&self) -> bool {
+        self.is_stream
     }
 }
 
@@ -334,6 +340,7 @@ impl<'input> TypeChecker<'input> {
                     response: self
                         .resolve_type(&Self::resolve_raw_type(rpc_definition.response.0))
                         .unwrap(),
+                    is_stream: rpc_definition.is_stream,
                 };
                 rpc_typed.insert(rpc_definition.name.0.to_string(), typed_rpc);
             }
