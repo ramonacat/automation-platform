@@ -29,6 +29,14 @@ updates:
     schedule:
       interval: "daily"
   - package-ecosystem: "cargo"
+    directory: "services/music/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "cargo"
+    directory: "agents/music/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "cargo"
     directory: "libraries/rust/platform/"
     schedule:
       interval: "daily"
@@ -38,6 +46,10 @@ updates:
       interval: "daily"
   - package-ecosystem: "cargo"
     directory: "libraries/rust/rpc-support/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "cargo"
+    directory: "libraries/rust/music/"
     schedule:
       interval: "daily"
   - package-ecosystem: "cargo"
@@ -56,5 +68,10 @@ updates:
 
   - package-ecosystem: "docker"
     directory: "services/events/docker/"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "docker"
+    directory: "services/music/docker/"
     schedule:
       interval: "daily"
