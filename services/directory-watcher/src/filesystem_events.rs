@@ -1,7 +1,7 @@
 use crate::file_status_store::FileStatusStore;
 use crate::mount::{Mount, PathInside};
 use crate::{create_event_metadata, HandleEventsError};
-use events::FileOnMountPath;
+use events::{Event, FileOnMountPath};
 use notify::DebouncedEvent;
 use std::path::Path;
 use std::sync::mpsc::Receiver;
@@ -93,8 +93,8 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
         self.event_sender
             .lock()
             .await
-            .send_file_moved(
-                events::FileMoved {
+            .send_event(
+                Event::FileMoved {
                     from: path_relative_from.into(),
                     to: path_relative_to.into(),
                 },
@@ -123,8 +123,8 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
         self.event_sender
             .lock()
             .await
-            .send_file_deleted(
-                events::FileDeleted {
+            .send_event(
+                Event::FileDeleted {
                     path: mount_relative_path.into(),
                 },
                 create_event_metadata(),
@@ -152,8 +152,8 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
         self.event_sender
             .lock()
             .await
-            .send_file_created(
-                events::FileCreated {
+            .send_event(
+                Event::FileCreated {
                     path: mount_relative_path.into(),
                 },
                 create_event_metadata(),
@@ -180,8 +180,8 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
         self.event_sender
             .lock()
             .await
-            .send_file_changed(
-                events::FileChanged {
+            .send_event(
+                Event::FileChanged {
                     path: mount_relative_path.into(),
                 },
                 create_event_metadata(),
@@ -204,7 +204,7 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
 mod tests {
     use super::*;
     use crate::file_status_store::FileStatusSyncResult;
-    use events::{FileChanged, FileCreated, FileDeleted, FileMoved, Metadata};
+    use events::Metadata;
     use rpc_support::rpc_error::RpcError;
     use serde_json::{json, to_value, Value};
     use std::path::PathBuf;
@@ -216,39 +216,9 @@ mod tests {
 
     #[async_trait]
     impl events::Rpc for MockRpcClient {
-        async fn send_file_created(
+        async fn send_event(
             &mut self,
-            request: FileCreated,
-            _metadata: Metadata,
-        ) -> Result<(), RpcError> {
-            self.events.push(to_value(request).unwrap());
-
-            Ok(())
-        }
-
-        async fn send_file_deleted(
-            &mut self,
-            request: FileDeleted,
-            _metadata: Metadata,
-        ) -> Result<(), RpcError> {
-            self.events.push(to_value(request).unwrap());
-
-            Ok(())
-        }
-
-        async fn send_file_moved(
-            &mut self,
-            request: FileMoved,
-            _metadata: Metadata,
-        ) -> Result<(), RpcError> {
-            self.events.push(to_value(request).unwrap());
-
-            Ok(())
-        }
-
-        async fn send_file_changed(
-            &mut self,
-            request: FileChanged,
+            request: Event,
             _metadata: Metadata,
         ) -> Result<(), RpcError> {
             self.events.push(to_value(request).unwrap());
@@ -325,10 +295,12 @@ mod tests {
         assert_eq!(1, events.len());
         assert_eq!(
             json!({
+                "FileCreated": {
                 "path": {
                     "mount_id": "mount_a",
                     "path": "b/1",
                 },
+                    }
             }),
             events[0]
         );
@@ -347,10 +319,12 @@ mod tests {
         assert_eq!(1, events.len());
         assert_eq!(
             json!({
+                "FileChanged": {
                 "path": {
                     "mount_id": "mount_a",
                     "path": "b/1",
                 },
+                    }
             }),
             events[0]
         );
@@ -369,10 +343,12 @@ mod tests {
         assert_eq!(1, events.len());
         assert_eq!(
             json!({
-                "path": {
-                    "mount_id": "mount_a",
-                    "path": "b/1",
-                },
+                "FileDeleted": {
+                    "path": {
+                        "mount_id": "mount_a",
+                        "path": "b/1",
+                    },
+                }
             }),
             events[0]
         );
@@ -391,6 +367,7 @@ mod tests {
 
         assert_eq!(
             json!({
+                "FileMoved": {
                 "from": {
                     "mount_id": "mount_a",
                     "path": "b/0",
@@ -399,6 +376,7 @@ mod tests {
                     "mount_id": "mount_a",
                     "path": "b/1",
                 },
+                    }
             }),
             events[0]
         );

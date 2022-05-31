@@ -5,7 +5,7 @@ use tracing::info;
 
 use tokio_postgres::Client;
 
-use events::{FileChanged, FileCreated, FileDeleted, FileMoved, Metadata, Rpc, Server};
+use events::{Event, Metadata, Rpc, Server};
 use platform::async_infra::run_with_error_handling;
 use postgres_native_tls::MakeTlsConnector;
 use rpc_support::rpc_error::RpcError;
@@ -59,42 +59,18 @@ impl RpcServer {
 
 #[async_trait]
 impl Rpc for RpcServer {
-    async fn send_file_changed(
-        &mut self,
-        request: FileChanged,
-        metadata: Metadata,
-    ) -> Result<(), RpcError> {
-        self.save_event("FileChanged", request, metadata).await?;
-
-        Ok(())
-    }
-
-    async fn send_file_created(
-        &mut self,
-        request: FileCreated,
-        metadata: Metadata,
-    ) -> Result<(), RpcError> {
-        self.save_event("FileCreated", request, metadata).await?;
-
-        Ok(())
-    }
-
-    async fn send_file_deleted(
-        &mut self,
-        request: FileDeleted,
-        metadata: Metadata,
-    ) -> Result<(), RpcError> {
-        self.save_event("FileDeleted", request, metadata).await?;
-
-        Ok(())
-    }
-
-    async fn send_file_moved(
-        &mut self,
-        request: FileMoved,
-        metadata: Metadata,
-    ) -> Result<(), RpcError> {
-        self.save_event("FileMoved", request, metadata).await?;
+    async fn send_event(&mut self, request: Event, metadata: Metadata) -> Result<(), RpcError> {
+        self.save_event(
+            match request {
+                Event::FileDeleted { .. } => "FileDeleted",
+                Event::FileCreated { .. } => "FileCreated",
+                Event::FileMoved { .. } => "FileMoved",
+                Event::FileChanged { .. } => "FileChanged",
+            },
+            request,
+            metadata,
+        )
+        .await?;
 
         Ok(())
     }

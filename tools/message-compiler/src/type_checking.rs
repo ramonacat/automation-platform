@@ -1,4 +1,6 @@
-use crate::parsing::{FieldRaw, FileRaw, IdentifierRaw, StructDefinitionRaw};
+use crate::parsing::{
+    EnumDefinitionRaw, EnumVariantRaw, FieldRaw, FileRaw, IdentifierRaw, StructDefinitionRaw,
+};
 use petgraph::algo::toposort;
 use petgraph::graph::DiGraph;
 use std::collections::HashMap;
@@ -53,6 +55,7 @@ pub enum TypedFieldType {
     String,
     Void,
     OtherStruct(String),
+    Enum(String),
 }
 
 #[derive(Debug)]
@@ -92,6 +95,42 @@ impl TypedStruct {
 }
 
 #[derive(Debug)]
+pub struct TypedEnumVariant {
+    name: String,
+    fields: Vec<TypedField>,
+}
+
+impl TypedEnumVariant {
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    #[must_use]
+    pub fn fields(&self) -> &[TypedField] {
+        &self.fields
+    }
+}
+
+#[derive(Debug)]
+pub struct TypedEnum {
+    name: String,
+    variants: Vec<TypedEnumVariant>,
+}
+
+impl TypedEnum {
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    #[must_use]
+    pub fn variants(&self) -> &[TypedEnumVariant] {
+        &self.variants
+    }
+}
+
+#[derive(Debug)]
 enum TypeCheckableFieldType<'a> {
     U8,
     U16,
@@ -112,6 +151,17 @@ enum TypeCheckableFieldType<'a> {
 struct TypeCheckableStructDefinition<'input> {
     name: String,
     fields: HashMap<&'input str, TypeCheckableFieldType<'input>>,
+}
+
+#[derive(Debug)]
+struct TypeCheckableEnumVariant<'input> {
+    name: String,
+    fields: HashMap<&'input str, TypeCheckableFieldType<'input>>,
+}
+
+#[derive(Debug)]
+struct TypeCheckableEnumDefinition<'input> {
+    variants: HashMap<&'input str, TypeCheckableEnumVariant<'input>>,
 }
 
 pub struct TypedMetadata {
@@ -167,6 +217,7 @@ impl TypedRpc {
 
 pub struct TypedFile {
     pub structs: Vec<TypedStruct>,
+    pub enums: Vec<TypedEnum>,
     pub meta: TypedMetadata,
     pub rpc: TypedRpc,
 }
@@ -174,6 +225,7 @@ pub struct TypedFile {
 #[derive(Default)]
 pub struct TypeChecker<'input> {
     structs: HashMap<String, TypeCheckableStructDefinition<'input>>,
+    enums: HashMap<String, TypeCheckableEnumDefinition<'input>>,
 }
 
 impl<'input> TypeChecker<'input> {
@@ -263,10 +315,12 @@ impl<'input> TypeChecker<'input> {
             TypeCheckableFieldType::String => TypedFieldType::String,
             TypeCheckableFieldType::Void => TypedFieldType::Void,
             TypeCheckableFieldType::ToBeResolved(type_name) => {
-                if !self.structs.contains_key(*type_name) {
-                    return Err(TypeCheckError::StructNotFound((*type_name).to_string()));
+                if self.structs.contains_key(*type_name) {
+                    return Ok(TypedFieldType::OtherStruct((*type_name).to_string()));
+                } else if self.enums.contains_key(*type_name) {
+                    return Ok(TypedFieldType::Enum((*type_name).to_string()));
                 }
-                TypedFieldType::OtherStruct((*type_name).to_string())
+                return Err(TypeCheckError::StructNotFound((*type_name).to_string()));
             }
         })
     }
@@ -275,6 +329,7 @@ impl<'input> TypeChecker<'input> {
     /// May return an error when the type check fails
     /// # Panics
     /// TODO MAKE THIS NOT EVER PANIC
+    /// todo split into smaller functions
     pub fn check(mut self, file: &FileRaw<'input>) -> Result<TypedFile, TypeCheckError> {
         for StructDefinitionRaw(name, fields) in file.structs() {
             self.check_duplicate(name)?;
@@ -288,6 +343,16 @@ impl<'input> TypeChecker<'input> {
                     fields,
                 },
             );
+        }
+
+        for EnumDefinitionRaw { name, variants } in file.enums() {
+            // fixme check for name conflicts with structs
+            // fixme check for name conflicts with other enums
+
+            let variants = Self::map_enum_variants(variants, name.0)?;
+
+            self.enums
+                .insert(name.0.to_string(), TypeCheckableEnumDefinition { variants });
         }
 
         let mut metadata_fields = HashMap::new();
@@ -327,6 +392,26 @@ impl<'input> TypeChecker<'input> {
             structs_typed.insert(node.name.clone(), typed_struct);
         }
 
+        let enums = self
+            .enums
+            .iter()
+            .map(|(name, enum_definition)| {
+                let variants = enum_definition.variants.iter().map(|variant| {
+                    let fields = self.type_check_fields(&variant.1.fields).unwrap();
+
+                    TypedEnumVariant {
+                        name: variant.1.name.to_string(),
+                        fields,
+                    }
+                });
+
+                TypedEnum {
+                    name: name.clone(),
+                    variants: variants.collect(),
+                }
+            })
+            .collect();
+
         let meta_fields = self.type_check_fields(&metadata_fields)?;
         let rpc = file.rpc().map(|rpc| {
             let mut rpc_typed = HashMap::new();
@@ -349,6 +434,7 @@ impl<'input> TypeChecker<'input> {
 
         Ok(TypedFile {
             structs: structs_typed.into_iter().map(|(_, v)| v).collect(),
+            enums,
             meta: TypedMetadata {
                 fields: meta_fields,
             },
@@ -356,5 +442,24 @@ impl<'input> TypeChecker<'input> {
                 calls: rpc.map_or_else(Vec::new, |rpc| rpc.into_iter().map(|(_, v)| v).collect()),
             },
         })
+    }
+
+    fn map_enum_variants(
+        variants: &[EnumVariantRaw<'input>],
+        name: &str,
+    ) -> Result<HashMap<&'input str, TypeCheckableEnumVariant<'input>>, TypeCheckError> {
+        variants
+            .iter()
+            .map(|variant| {
+                let fields = Self::map_fields(&variant.fields, name)?;
+                Ok((
+                    variant.name.0,
+                    TypeCheckableEnumVariant {
+                        name: variant.name.0.to_string(),
+                        fields,
+                    },
+                ))
+            })
+            .collect()
     }
 }

@@ -2,7 +2,12 @@ use crate::type_checking::{TypedField, TypedFieldType, TypedFile};
 
 #[must_use]
 pub fn compile(file: TypedFile) -> String {
-    let TypedFile { structs, meta, rpc } = file;
+    let TypedFile {
+        structs,
+        meta,
+        rpc,
+        enums,
+    } = file;
 
     let mut result = String::new();
 
@@ -23,6 +28,19 @@ pub fn compile(file: TypedFile) -> String {
         result += "#[derive(Serialize, Deserialize, Debug)]\n";
         result += &format!("pub struct {} {{\n", s.name());
         result += &render_fields(s.fields(), true, 1);
+        result += "}\n";
+    }
+
+    for e in enums {
+        result += "#[derive(Serialize, Deserialize, Debug)]\n";
+        result += &format!("pub enum {} {{\n", e.name());
+        for v in e.variants() {
+            result += "    ";
+            result += v.name();
+            result += " {\n";
+            result += &render_fields(v.fields(), false, 2);
+            result += "    },\n";
+        }
         result += "}\n";
     }
 
@@ -91,6 +109,6 @@ fn to_rust_type(type_: &TypedFieldType) -> &str {
         TypedFieldType::Guid => "::uuid::Uuid",
         TypedFieldType::String => "String",
         TypedFieldType::Void => "()",
-        TypedFieldType::OtherStruct(name) => name,
+        TypedFieldType::OtherStruct(name) | TypedFieldType::Enum(name) => name,
     }
 }
