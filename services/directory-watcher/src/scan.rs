@@ -2,6 +2,7 @@ use crate::create_event_metadata;
 use crate::file_status_store::{FileStatusStore, FileStatusSyncResult};
 use crate::mount::{Mount, PathInside};
 use async_walkdir::{DirEntry, WalkDir};
+use events::Event;
 use futures_lite::stream::StreamExt;
 use std::fs::Metadata as FsMetadata;
 use std::sync::Arc;
@@ -93,8 +94,8 @@ impl<T: events::Rpc + Sync + Send> Scanner<T> {
                 self.event_sender
                     .lock()
                     .await
-                    .send_file_created(
-                        events::FileCreated {
+                    .send_event(
+                        Event::FileCreated {
                             path: mount_relative_path.into(),
                         },
                         create_event_metadata(),
@@ -105,8 +106,8 @@ impl<T: events::Rpc + Sync + Send> Scanner<T> {
                 self.event_sender
                     .lock()
                     .await
-                    .send_file_changed(
-                        events::FileChanged {
+                    .send_event(
+                        Event::FileChanged {
                             path: mount_relative_path.into(),
                         },
                         create_event_metadata(),
@@ -123,7 +124,7 @@ impl<T: events::Rpc + Sync + Send> Scanner<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use events::{FileChanged, FileCreated, FileDeleted, FileMoved, Metadata};
+    use events::Metadata;
     use rpc_support::rpc_error::RpcError;
     use serde_json::{to_value, Value};
     use std::path::PathBuf;
@@ -134,39 +135,9 @@ mod tests {
 
     #[async_trait]
     impl events::Rpc for MockRpcClient {
-        async fn send_file_created(
+        async fn send_event(
             &mut self,
-            request: FileCreated,
-            _metadata: Metadata,
-        ) -> Result<(), RpcError> {
-            self.events.push(to_value(request).unwrap());
-
-            Ok(())
-        }
-
-        async fn send_file_deleted(
-            &mut self,
-            request: FileDeleted,
-            _metadata: Metadata,
-        ) -> Result<(), RpcError> {
-            self.events.push(to_value(request).unwrap());
-
-            Ok(())
-        }
-
-        async fn send_file_moved(
-            &mut self,
-            request: FileMoved,
-            _metadata: Metadata,
-        ) -> Result<(), RpcError> {
-            self.events.push(to_value(request).unwrap());
-
-            Ok(())
-        }
-
-        async fn send_file_changed(
-            &mut self,
-            request: FileChanged,
+            request: Event,
             _metadata: Metadata,
         ) -> Result<(), RpcError> {
             self.events.push(to_value(request).unwrap());
@@ -236,7 +207,9 @@ mod tests {
             .iter()
             .position(|e| {
                 PathBuf::from(
-                    e.get("path")
+                    e.get("FileCreated")
+                        .unwrap()
+                        .get("path")
                         .unwrap()
                         .get("path")
                         .unwrap()
@@ -248,12 +221,20 @@ mod tests {
 
         assert_eq!(
             &Value::String("mount_a".into()),
-            events[index].get("path").unwrap().get("mount_id").unwrap()
+            events[index]
+                .get("FileCreated")
+                .unwrap()
+                .get("path")
+                .unwrap()
+                .get("mount_id")
+                .unwrap()
         );
         assert_eq!(
             PathBuf::from("a/b"),
             PathBuf::from(
                 events[index]
+                    .get("FileCreated")
+                    .unwrap()
                     .get("path")
                     .unwrap()
                     .get("path")
@@ -267,12 +248,18 @@ mod tests {
             .iter()
             .position(|e| {
                 PathBuf::from(
-                    e.get("path")
-                        .unwrap()
-                        .get("path")
-                        .unwrap()
-                        .as_str()
-                        .unwrap(),
+                    (if let Some(x) = e.get("FileCreated") {
+                        Some(x)
+                    } else {
+                        e.get("FileChanged")
+                    })
+                    .unwrap()
+                    .get("path")
+                    .unwrap()
+                    .get("path")
+                    .unwrap()
+                    .as_str()
+                    .unwrap(),
                 ) == PathBuf::from("b/c")
             })
             .unwrap();
@@ -280,6 +267,8 @@ mod tests {
         assert_eq!(
             &Value::String("mount_a".into()),
             events[index_b]
+                .get("FileChanged")
+                .unwrap()
                 .get("path")
                 .unwrap()
                 .get("mount_id")
@@ -290,6 +279,8 @@ mod tests {
             PathBuf::from("b/c"),
             PathBuf::from(
                 events[index_b]
+                    .get("FileChanged")
+                    .unwrap()
                     .get("path")
                     .unwrap()
                     .get("path")

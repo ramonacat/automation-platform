@@ -9,26 +9,13 @@ struct FileOnMountPath {
     mount_id: string
 }
 
-struct FileCreated {
-    path: FileOnMountPath
-}
-
-struct FileChanged {
-    path: FileOnMountPath
-}
-
-struct FileDeleted {
-    path: FileOnMountPath
-}
-
-struct FileMoved {
-    from: FileOnMountPath,
-    to: FileOnMountPath
+enum Event {
+    FileCreated(path: FileOnMountPath),
+    FileDeleted(path: FileOnMountPath),
+    FileChanged(path: FileOnMountPath),
+    FileMoved(from: FileOnMountPath, to: FileOnMountPath),
 }
 
 rpc {
-    send_file_created(FileCreated) -> void;
-    send_file_changed(FileChanged) -> void;
-    send_file_deleted(FileDeleted) -> void;
-    send_file_moved(FileMoved) -> void;
+    send_event(Event) -> void;
 }

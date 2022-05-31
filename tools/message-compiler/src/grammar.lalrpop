@@ -5,6 +5,8 @@ use crate::parsing::MetadataRaw;
 use crate::parsing::FileRaw;
 use crate::parsing::RpcDefinitionRaw;
 use crate::parsing::RpcRaw;
+use crate::parsing::EnumVariantRaw;
+use crate::parsing::EnumDefinitionRaw;
 grammar();
 
 RIdentifier:IdentifierRaw<'input> =
@@ -25,6 +27,26 @@ RFields:Vec<FieldRaw<'input>> = {
 
 RStructDefinition:StructDefinitionRaw<'input> = {
     "struct" <name:RIdentifier> "{" <fields:RFields?> "}" => StructDefinitionRaw(name, fields.unwrap_or_else(|| vec![])),
+}
+
+REnumVariant:EnumVariantRaw<'input> = {
+    <name:RIdentifier> => EnumVariantRaw::new(name, vec![]),
+    <name:RIdentifier> "(" <fields:RFields?> ")" => EnumVariantRaw::new(name, fields.unwrap_or_else(|| vec![])),
+}
+
+REnumBody:Vec<EnumVariantRaw<'input>> = {
+    <variant:REnumVariant> => vec![variant],
+    <mut rest:REnumBody> "," <variant:REnumVariant?> => {
+        if let Some(variant) = variant {
+            rest.push(variant);
+        }
+
+        rest
+    }
+}
+
+REnumDefinition:EnumDefinitionRaw<'input> = {
+    "enum" <name:RIdentifier> "{" <body:REnumBody?> "}" => EnumDefinitionRaw::new(name, body.unwrap_or_else(|| vec![])),
 }
 
 RMetadata:MetadataRaw<'input> = {
@@ -50,8 +72,8 @@ RRPC:RpcRaw<'input> = {
     "rpc" "{" <definitions:RRPCDefinitions?> "}" => RpcRaw::new(definitions.unwrap_or_else(|| vec![]))
 }
 
-RDefinitions:Vec<StructDefinitionRaw<'input>> = {
-    <rest:RDefinitions?> <st:RStructDefinition> => {
+RStructDefinitions:Vec<StructDefinitionRaw<'input>> = {
+    <rest:RStructDefinitions?> <st:RStructDefinition> => {
         if let Some(mut rest) = rest {
             rest.push(st);
 
@@ -62,6 +84,18 @@ RDefinitions:Vec<StructDefinitionRaw<'input>> = {
     }
 }
 
+REnumDefinitions:Vec<EnumDefinitionRaw<'input>> = {
+    <rest:REnumDefinitions?> <ed:REnumDefinition> => {
+        if let Some(mut rest) = rest {
+            rest.push(ed);
+
+            rest
+        } else {
+            vec![ed]
+        }
+    }
+}
+
 pub RFile:FileRaw<'input> = {
-    <meta:RMetadata?> <definitions:RDefinitions> <rpc:RRPC?> => FileRaw::new(meta, definitions, rpc)
+    <meta:RMetadata?> <structs:RStructDefinitions> <enums:REnumDefinitions?> <rpc:RRPC?> => FileRaw::new(meta, structs, enums.unwrap_or_else(|| vec![]), rpc)
 }

@@ -44,6 +44,32 @@ impl<'input> MetadataRaw<'input> {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct EnumVariantRaw<'input> {
+    pub(crate) name: IdentifierRaw<'input>,
+    pub(crate) fields: Vec<FieldRaw<'input>>,
+}
+
+impl<'input> EnumVariantRaw<'input> {
+    #[must_use]
+    pub fn new(name: IdentifierRaw<'input>, fields: Vec<FieldRaw<'input>>) -> Self {
+        Self { name, fields }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct EnumDefinitionRaw<'input> {
+    pub(crate) name: IdentifierRaw<'input>,
+    pub(crate) variants: Vec<EnumVariantRaw<'input>>,
+}
+
+impl<'input> EnumDefinitionRaw<'input> {
+    #[must_use]
+    pub fn new(name: IdentifierRaw<'input>, variants: Vec<EnumVariantRaw<'input>>) -> Self {
+        Self { name, variants }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct RpcDefinitionRaw<'input> {
     pub(crate) name: IdentifierRaw<'input>,
     pub(crate) request: IdentifierRaw<'input>,
@@ -84,6 +110,7 @@ impl<'input> RpcRaw<'input> {
 pub struct FileRaw<'input> {
     metadata: Option<MetadataRaw<'input>>,
     structs: Vec<StructDefinitionRaw<'input>>,
+    enums: Vec<EnumDefinitionRaw<'input>>,
     rpc: Option<RpcRaw<'input>>,
 }
 
@@ -92,11 +119,13 @@ impl<'input> FileRaw<'input> {
     pub fn new(
         metadata: Option<MetadataRaw<'input>>,
         structs: Vec<StructDefinitionRaw<'input>>,
+        enums: Vec<EnumDefinitionRaw<'input>>,
         rpc: Option<RpcRaw<'input>>,
     ) -> Self {
         Self {
             metadata,
             structs,
+            enums,
             rpc,
         }
     }
@@ -109,6 +138,11 @@ impl<'input> FileRaw<'input> {
     #[must_use]
     pub fn structs(&self) -> &[StructDefinitionRaw<'input>] {
         &self.structs
+    }
+
+    #[must_use]
+    pub fn enums(&self) -> &[EnumDefinitionRaw<'input>] {
+        &self.enums
     }
 
     #[must_use]
@@ -142,6 +176,7 @@ mod test {
             Ok(FileRaw::new(
                 None,
                 vec![StructDefinitionRaw(IdentifierRaw::new("A"), vec![])],
+                vec![],
                 None
             )),
             r
@@ -182,6 +217,7 @@ mod test {
                         ]
                     ),
                 ],
+                vec![],
                 None
             )),
             r
@@ -212,6 +248,7 @@ mod test {
                         ),]
                     ),
                 ],
+                vec![],
                 Some(RpcRaw::new(vec![RpcDefinitionRaw::new(
                     IdentifierRaw::new("call"),
                     IdentifierRaw::new("request"),
@@ -247,6 +284,7 @@ mod test {
                         ),]
                     ),
                 ],
+                vec![],
                 Some(RpcRaw::new(vec![RpcDefinitionRaw::new(
                     IdentifierRaw::new("call"),
                     IdentifierRaw::new("request"),

@@ -15,9 +15,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         \
         struct A { f0:u8 } \
         struct B { f1:u16, f2:A } \
+        enum Food {\
+            Carrot(length:u8),\
+            Apple(length:u8, roundness: u64),\
+        }\
         \
         rpc {\
             method(A) -> B;\
+            method2(Food) -> B;\
         }\
         \
         ",
