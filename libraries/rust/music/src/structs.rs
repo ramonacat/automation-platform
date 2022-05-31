@@ -5,12 +5,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Metadata {}
 #[derive(Serialize, Deserialize, Debug)]
-pub struct TrackPath {
-    pub path: String,
-}
-#[derive(Serialize, Deserialize, Debug)]
 pub struct TrackData {
     pub data: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TrackPath {
+    pub path: String,
 }
 
 #[async_trait::async_trait]

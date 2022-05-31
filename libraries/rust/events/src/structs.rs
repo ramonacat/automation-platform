@@ -11,13 +11,8 @@ pub struct Metadata {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileMoved {
-    pub to: FileOnMountPath,
     pub from: FileOnMountPath,
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct FileOnMountPath {
-    pub path: String,
-    pub mount_id: String,
+    pub to: FileOnMountPath,
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileChanged {
@@ -28,15 +23,20 @@ pub struct FileDeleted {
     pub path: FileOnMountPath,
 }
 #[derive(Serialize, Deserialize, Debug)]
+pub struct FileOnMountPath {
+    pub path: String,
+    pub mount_id: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FileCreated {
     pub path: FileOnMountPath,
 }
 
 #[async_trait::async_trait]
 pub trait Rpc {
-    async fn send_file_deleted(
+    async fn send_file_created(
         &mut self,
-        request: FileDeleted,
+        request: FileCreated,
         metadata: Metadata,
     ) -> Result<(), RpcError>;
     async fn send_file_changed(
@@ -44,14 +44,14 @@ pub trait Rpc {
         request: FileChanged,
         metadata: Metadata,
     ) -> Result<(), RpcError>;
-    async fn send_file_created(
-        &mut self,
-        request: FileCreated,
-        metadata: Metadata,
-    ) -> Result<(), RpcError>;
     async fn send_file_moved(
         &mut self,
         request: FileMoved,
+        metadata: Metadata,
+    ) -> Result<(), RpcError>;
+    async fn send_file_deleted(
+        &mut self,
+        request: FileDeleted,
         metadata: Metadata,
     ) -> Result<(), RpcError>;
 }
