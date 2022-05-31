@@ -26,6 +26,7 @@ final class ProjectFinder
 
         $result = array_merge($result, self::findIn($root, 'tools'));
         $result = array_merge($result, self::findIn($root, 'services'));
+        $result = array_merge($result, self::findIn($root, 'agents'));
 
         return array_merge($result, self::findIn($root, 'libraries' . DIRECTORY_SEPARATOR . '*'));
     }

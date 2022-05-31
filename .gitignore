@@ -7,14 +7,12 @@ build.log
 infection.log
 .phpunit.cache
 */*/build
-services/*/k8s/overlays/dev/
-!services/*/k8s/overlays/dev/kustomization.yaml
-**/k8s/overlays/dev/
-!**/k8s/overlays/dev/kustomization.yaml
 *.schema.json
 !schemas/*.schema.json
 runtime.configuration.json
 .build/
 configuration.local.json
 configuration.*.local.json
-/k8s/base/*
+/k8s/base/**
+/services/*/k8s/overlays/dev/**
+!/services/*/k8s/overlays/dev/kustomization.yaml

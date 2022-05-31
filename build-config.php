@@ -15,13 +15,14 @@ return static function (BuildDefinitionBuilder $builder) {
     $services = glob(__DIR__ . '/services/*');
     $libraries = glob(__DIR__ . '/libraries/*/*');
     $tools = glob(__DIR__ . '/tools/*');
+    $agents = glob(__DIR__ . '/agents/*');
 
     $builder->addTarget(
         'build',
         new NoOp(),
         array_map(
             static fn(string $path) => new TargetId($path, 'build'),
-            array_merge($tools, $libraries, $services)
+            array_merge($tools, $libraries, $services, $agents)
         )
     );
 
@@ -30,7 +31,7 @@ return static function (BuildDefinitionBuilder $builder) {
         new NoOp(),
         array_map(
             static fn(string $path) => new TargetId($path, 'fix'),
-            array_merge($tools, $libraries, $services)
+            array_merge($tools, $libraries, $services, $agents)
         )
     );
 

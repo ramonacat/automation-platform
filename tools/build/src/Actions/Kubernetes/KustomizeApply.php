@@ -33,7 +33,7 @@ final class KustomizeApply implements BuildAction
                 '-k',
                 $this->overridePath
             ],
-            10
+            30
         );
 
         return $process->run($output)

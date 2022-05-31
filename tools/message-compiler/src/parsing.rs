@@ -48,19 +48,22 @@ pub struct RpcDefinitionRaw<'input> {
     pub(crate) name: IdentifierRaw<'input>,
     pub(crate) request: IdentifierRaw<'input>,
     pub(crate) response: IdentifierRaw<'input>,
+    pub(crate) is_stream: bool,
 }
 
 impl<'input> RpcDefinitionRaw<'input> {
     #[must_use]
     pub fn new(
         name: IdentifierRaw<'input>,
-        input: IdentifierRaw<'input>,
-        output: IdentifierRaw<'input>,
+        request: IdentifierRaw<'input>,
+        response: IdentifierRaw<'input>,
+        is_stream: bool,
     ) -> Self {
         Self {
             name,
-            request: input,
-            response: output,
+            request,
+            response,
+            is_stream,
         }
     }
 }
@@ -212,7 +215,43 @@ mod test {
                 Some(RpcRaw::new(vec![RpcDefinitionRaw::new(
                     IdentifierRaw::new("call"),
                     IdentifierRaw::new("request"),
-                    IdentifierRaw::new("response")
+                    IdentifierRaw::new("response"),
+                    false
+                )]))
+            )),
+            r
+        );
+    }
+
+    #[test]
+    pub fn can_parse_rpc_stream_defintiion() {
+        let input = "struct request { f1: u32 } struct response { f2: u64 } rpc { call(request) -> stream response; }";
+        let r = parsing::grammar::RFileParser::new().parse(input);
+
+        assert_eq!(
+            Ok(FileRaw::new(
+                None,
+                vec![
+                    StructDefinitionRaw(
+                        IdentifierRaw::new("request"),
+                        vec![FieldRaw::new(
+                            IdentifierRaw::new("f1"),
+                            IdentifierRaw::new("u32")
+                        ),]
+                    ),
+                    StructDefinitionRaw(
+                        IdentifierRaw::new("response"),
+                        vec![FieldRaw::new(
+                            IdentifierRaw::new("f2"),
+                            IdentifierRaw::new("u64")
+                        ),]
+                    ),
+                ],
+                Some(RpcRaw::new(vec![RpcDefinitionRaw::new(
+                    IdentifierRaw::new("call"),
+                    IdentifierRaw::new("request"),
+                    IdentifierRaw::new("response"),
+                    true
                 )]))
             )),
             r
