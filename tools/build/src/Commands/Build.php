@@ -41,6 +41,7 @@ use function Safe\getcwd;
 use function Safe\json_encode;
 use function Safe\realpath;
 use function sprintf;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Webmozart\Assert\Assert;
 
 final class Build
@@ -67,8 +68,22 @@ final class Build
         $machineInfo = new MachineInfo();
         $changeTracker = new GitChangeTracker($logger);
 
+        try {
+            $stateId = $changeTracker->getCurrentStateId();
+        } catch (ProcessFailedException $e) {
+            $this
+                ->ansi
+                ->color([SGR::COLOR_FG_RED])
+                ->text('Failed to get current state ID: ')
+                ->nostyle()
+            ;
+            $this->ansi->text((string)$e . PHP_EOL . PHP_EOL);
+
+            throw $e;
+        }
+
         $buildFacts = new BuildFacts(
-            $changeTracker->getCurrentStateId(),
+            $stateId,
             $inPipeline,
             $machineInfo->logicalCores(),
             $machineInfo->physicalCores(),
