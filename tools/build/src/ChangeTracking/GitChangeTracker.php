@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild\ChangeTracking;
 
 use function array_map;
+use Bramus\Ansi\Ansi;
+use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
 use const DIRECTORY_SEPARATOR;
 use Exception;
 use function explode;
+use function implode;
 use Psr\Log\LoggerInterface;
 use function Safe\realpath;
 use function sha1;
@@ -20,8 +23,10 @@ use function trim;
 
 final class GitChangeTracker implements ChangeTracker
 {
-    public function __construct(private LoggerInterface $logger)
-    {
+    public function __construct(
+        private readonly LoggerInterface $logger,
+        private readonly Ansi     $ansi
+    ) {
     }
 
     public function getCurrentStateId(): string
@@ -79,25 +84,39 @@ final class GitChangeTracker implements ChangeTracker
     private function currentCommitHash(): string
     {
         $currentCommit = ['git', 'rev-parse', 'HEAD'];
-        $process = new Process($currentCommit);
-        $process->mustRun();
-
-        return trim($process->getOutput());
+        return $this->runGit($currentCommit);
     }
 
     private function rawDiffTo(string $commitHash): string
     {
-        $process = new Process(['git', 'diff', $commitHash]);
-        $process->mustRun();
-
-        return trim($process->getOutput());
+        return $this->runGit(['git', 'diff', $commitHash]);
     }
 
     private function repositoryRoot(): string
     {
-        $process = new Process(['git', 'rev-parse', '--show-toplevel']);
-        $process->mustRun();
+        return $this->runGit(['git', 'rev-parse', '--show-toplevel']);
+    }
 
-        return trim($process->getOutput());
+    /**
+     * @param list<string> $command
+     * @return string
+     */
+    private function runGit(array $command): string
+    {
+        try {
+            $process = new Process($command);
+            $process->mustRun();
+
+            return trim($process->getOutput());
+        } catch (Exception $e) {
+            $this
+                ->ansi
+                ->color([SGR::COLOR_FG_RED])
+                ->text('Failed to run git command: ' . implode(' ', $command))
+                ->nostyle()
+                ->text((string)$e);
+
+            throw $e;
+        }
     }
 }
