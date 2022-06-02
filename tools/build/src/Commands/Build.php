@@ -66,7 +66,7 @@ final class Build
         $logger = $this->createFileLogger($inPipeline);
 
         $machineInfo = new MachineInfo();
-        $changeTracker = new GitChangeTracker($logger);
+        $changeTracker = new GitChangeTracker($logger, $this->ansi);
 
         try {
             $stateId = $changeTracker->getCurrentStateId();
