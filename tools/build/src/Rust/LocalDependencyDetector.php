@@ -25,7 +25,7 @@ final class LocalDependencyDetector
     public function forProject(string $projectDirectory): array
     {
         try {
-            $process = new Process(['cargo', 'metadata', '--locked', '--all-features', '--color', 'never', '--manifest-path', $projectDirectory . DIRECTORY_SEPARATOR . 'Cargo.toml']);
+            $process = new Process(['cargo', 'metadata', '--all-features', '--color', 'never', '--manifest-path', $projectDirectory . DIRECTORY_SEPARATOR . 'Cargo.toml']);
             $process->mustRun();
         } catch (Exception $exception) {
             $this
