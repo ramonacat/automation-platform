@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Ramona\AutomationPlatformLibBuild\Definitions;
 
+use Bramus\Ansi\Ansi;
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
@@ -19,7 +20,7 @@ final class BuildDefinitionBuilderTest extends TestCase
 {
     public function testWillThrowIfNoTargetsAreDefined(): void
     {
-        $builder = new BuildDefinitionBuilder(__DIR__);
+        $builder = new BuildDefinitionBuilder(__DIR__, new Ansi());
 
         $this->expectException(InvalidBuildDefinitionBuilder::class);
         $this->expectExceptionMessage('No build targets were provided');
@@ -32,7 +33,7 @@ final class BuildDefinitionBuilderTest extends TestCase
 
     public function testWillAddAllTargetsFromTheGenerators(): void
     {
-        $builder = new BuildDefinitionBuilder(__DIR__);
+        $builder = new BuildDefinitionBuilder(__DIR__, new Ansi());
 
         $generatorA = $this->createMock(TargetGenerator::class);
         $generatorA->method('targets')->willReturn([
@@ -58,7 +59,7 @@ final class BuildDefinitionBuilderTest extends TestCase
 
     public function testCanAddDefaultTarget(): void
     {
-        $builder = new BuildDefinitionBuilder(__DIR__);
+        $builder = new BuildDefinitionBuilder(__DIR__, new Ansi());
 
         $generatorA = $this->createMock(TargetGenerator::class);
         $generatorA->method('targets')->willReturn([
