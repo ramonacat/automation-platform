@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Ramona\AutomationPlatformLibBuild;
 
+use Bramus\Ansi\Ansi;
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
@@ -46,7 +47,8 @@ final class DefaultBuildDefinitionsLoaderTest extends TestCase
     {
         return new DefaultBuildDefinitionsLoader(
             new BuildFacts('test', false, 1, 1),
-            Configuration::fromJsonString('{}')
+            Configuration::fromJsonString('{}'),
+            new Ansi()
         );
     }
 }

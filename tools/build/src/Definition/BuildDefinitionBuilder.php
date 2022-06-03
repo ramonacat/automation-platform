@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Definition;
 
+use Bramus\Ansi\Ansi;
 use function count;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
@@ -26,7 +27,7 @@ final class BuildDefinitionBuilder
      */
     private array $targetGenerators = [];
 
-    public function __construct(private string $path)
+    public function __construct(private readonly string $path, private readonly Ansi $ansi)
     {
     }
 
@@ -60,6 +61,11 @@ final class BuildDefinitionBuilder
     public function addTargetGenerator(TargetGenerator $targetGenerator): void
     {
         $this->targetGenerators[] = $targetGenerator;
+    }
+
+    public function addRustTargetGenerator(): void
+    {
+        $this->addTargetGenerator(new \Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator($this->path, $this->ansi));
     }
 
     /**

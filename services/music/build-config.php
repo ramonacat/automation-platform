@@ -6,15 +6,12 @@ use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\KustomizeOverride;
 use Ramona\AutomationPlatformLibBuild\Actions\PutRuntimeConfiguration;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
-use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
 use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 use Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator as DockerTargetGenerator;
 
 return static function (BuildDefinitionBuilder $builder) {
-    $rustTargetGenerator = new TargetGenerator(__DIR__);
-
-    $builder->addTargetGenerator($rustTargetGenerator);
+    $builder->addRustTargetGenerator();
 
     $builder->addTarget('put-runtime-config', new PutRuntimeConfiguration('runtime.configuration.json'));
 

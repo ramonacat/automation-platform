@@ -7,6 +7,7 @@ namespace Ramona\AutomationPlatformLibBuild\Rust;
 use function array_filter;
 use function array_map;
 use function array_values;
+use Bramus\Ansi\Ansi;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration as TargetConfiguration;
@@ -21,9 +22,11 @@ final class TargetGenerator implements TargetGeneratorInterface
      * @var non-empty-list<Target>
      */
     private array $targets;
+    private LocalDependencyDetector $dependencyDetector;
 
-    public function __construct(private string $projectDirectory)
+    public function __construct(private readonly string $projectDirectory, Ansi $ansi)
     {
+        $this->dependencyDetector = new LocalDependencyDetector($ansi);
         $this->targets = [
             new Target(new TargetId($this->projectDirectory, 'rust-clippy'), new RunProcess(['cargo', 'clippy', '--', '-D', 'clippy::pedantic', '-D', 'warnings'], timeoutSeconds: 600)),
             new Target(new TargetId($this->projectDirectory, 'rust-fmt-check'), new RunProcess(['cargo', 'fmt', '--', '--check'], timeoutSeconds: 600)),
@@ -59,9 +62,8 @@ final class TargetGenerator implements TargetGeneratorInterface
     public function defaultTargetIds(DefaultTargetKind $kind): array
     {
         $buildDependencies = [];
-        $deps = new LocalDependencyDetector();
 
-        foreach ($deps->forProject($this->projectDirectory) as $dependantProject) {
+        foreach ($this->dependencyDetector->forProject($this->projectDirectory) as $dependantProject) {
             $buildDependencies[] = new TargetId($dependantProject, 'build');
         }
 

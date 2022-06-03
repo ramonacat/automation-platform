@@ -5,15 +5,12 @@ use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\KustomizeApply;
 use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\KustomizeOverride;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
-use Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator;
 use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 
 return static function (BuildDefinitionBuilder $builder) {
-    $rustTargetGenerator = new TargetGenerator(__DIR__);
-
-    $builder->addTargetGenerator($rustTargetGenerator);
+    $builder->addRustTargetGenerator();
 
     $dockerTargetGenerator = new \Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator(__DIR__, 'image-service', 'automation-platform-svc-events', [], '../../', 'docker/Dockerfile');
     $builder->addTargetGenerator($dockerTargetGenerator);

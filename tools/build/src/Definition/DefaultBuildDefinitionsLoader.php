@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild\Definition;
 
 use function assert;
+use Bramus\Ansi\Ansi;
 use Closure;
 use const DIRECTORY_SEPARATOR;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
@@ -19,8 +20,11 @@ final class DefaultBuildDefinitionsLoader implements BuildDefinitionsLoader
     /** @var array<string, BuildDefinition> */
     private array $definitions = [];
 
-    public function __construct(private BuildFacts $buildFacts, private Configuration $configuration)
-    {
+    public function __construct(
+        private readonly BuildFacts $buildFacts,
+        private readonly Configuration $configuration,
+        private readonly Ansi $ansi
+    ) {
     }
 
     private function load(string $path): void
@@ -33,7 +37,7 @@ final class DefaultBuildDefinitionsLoader implements BuildDefinitionsLoader
             throw InvalidBuildDefinition::atPath($path);
         }
 
-        $buildDefinitionBuilder = new BuildDefinitionBuilder($path);
+        $buildDefinitionBuilder = new BuildDefinitionBuilder($path, $this->ansi);
         ($buildDefinition)($buildDefinitionBuilder);
         $this->definitions[$path] = $buildDefinitionBuilder->build($this->buildFacts, $this->configuration);
     }

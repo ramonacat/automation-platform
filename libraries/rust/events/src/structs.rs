@@ -16,17 +16,17 @@ pub struct FileOnMountPath {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Event {
+    FileMoved {
+        to: FileOnMountPath,
+        from: FileOnMountPath,
+    },
+    FileCreated {
+        path: FileOnMountPath,
+    },
     FileDeleted {
         path: FileOnMountPath,
     },
-    FileMoved {
-        from: FileOnMountPath,
-        to: FileOnMountPath,
-    },
     FileChanged {
-        path: FileOnMountPath,
-    },
-    FileCreated {
         path: FileOnMountPath,
     },
 }

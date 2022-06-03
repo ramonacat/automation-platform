@@ -100,7 +100,7 @@ final class Build
         $stateStorage = new DotBuildStateStorage($rootPath);
         $state = $stateStorage->get();
 
-        $buildDefinitionsLoader = new DefaultBuildDefinitionsLoader($buildFacts, $configuration);
+        $buildDefinitionsLoader = new DefaultBuildDefinitionsLoader($buildFacts, $configuration, $this->ansi);
 
         if (count($arguments) !== 1) {
             $this->printUsage($executableName, $buildDefinitionsLoader);
