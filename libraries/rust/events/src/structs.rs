@@ -11,20 +11,20 @@ pub struct Metadata {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileOnMountPath {
-    pub mount_id: String,
     pub path: String,
+    pub mount_id: String,
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Event {
-    FileMoved {
-        to: FileOnMountPath,
-        from: FileOnMountPath,
+    FileDeleted {
+        path: FileOnMountPath,
     },
     FileCreated {
         path: FileOnMountPath,
     },
-    FileDeleted {
-        path: FileOnMountPath,
+    FileMoved {
+        from: FileOnMountPath,
+        to: FileOnMountPath,
     },
     FileChanged {
         path: FileOnMountPath,
