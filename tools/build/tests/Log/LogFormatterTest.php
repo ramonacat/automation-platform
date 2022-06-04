@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Tests\Ramona\AutomationPlatformLibBuild\Log;
 
 use DateTimeImmutable;
-use Monolog\Logger;
+use Monolog\Level;
+use Monolog\LogRecord;
 use const PHP_EOL;
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
@@ -15,15 +16,14 @@ final class LogFormatterTest extends TestCase
 {
     public function testCanFormatARecordWithEmptyContext(): void
     {
-        $record = [
-            'datetime' => new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
-            'level' => Logger::INFO,
-            'level_name' => Logger::getLevelName(Logger::INFO),
-            'channel' => '',
-            'context' => [],
-            'extra' => [],
-            'message' => 'test test test'
-        ];
+        $record = new LogRecord(
+            new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
+            '',
+            Level::Info,
+            'test test test',
+            [],
+            []
+        );
 
         $formatter = new LogFormatter(false);
         $formatted = $formatter->format($record);
@@ -34,24 +34,22 @@ final class LogFormatterTest extends TestCase
     public function testCanFormatABatch(): void
     {
         $records = [
-            [
-                'datetime' => new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
-                'level' => Logger::INFO,
-                'level_name' => Logger::getLevelName(Logger::INFO),
-                'channel' => '',
-                'context' => [],
-                'extra' => [],
-                'message' => 'test test test'
-            ],
-            [
-                'datetime' => new DateTimeImmutable('2021-01-02 00:00:00+00:00'),
-                'level' => Logger::INFO,
-                'level_name' => Logger::getLevelName(Logger::INFO),
-                'channel' => '',
-                'context' => [],
-                'extra' => [],
-                'message' => '123'
-            ],
+            new LogRecord(
+                new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
+                '',
+                Level::Info,
+                'test test test',
+                [],
+                []
+            ),
+            new LogRecord(
+                new DateTimeImmutable('2021-01-02 00:00:00+00:00'),
+                '',
+                Level::Info,
+                '123',
+                [],
+                []
+            ),
         ];
 
         $formatter = new LogFormatter(false);
@@ -66,12 +64,12 @@ final class LogFormatterTest extends TestCase
 
     public function testCanFormatARecordWithContext(): void
     {
-        $record = [
-            'datetime' => new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
-            'level' => Logger::INFO,
-            'level_name' => Logger::getLevelName(Logger::INFO),
-            'channel' => '',
-            'context' => [
+        $record = new LogRecord(
+            new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
+            '',
+            Level::Info,
+            'test test test',
+            [
                 'a' => 'b',
                 'b' => 1,
                 'c' => false,
@@ -79,9 +77,8 @@ final class LogFormatterTest extends TestCase
                 'e' => (object)['a' => 1, 'b' => 2],
                 'f' => 'a' . PHP_EOL . 'b'
             ],
-            'extra' => [],
-            'message' => 'test test test'
-        ];
+            []
+        );
 
         $formatter = new LogFormatter(false);
         $formatted = $formatter->format($record);
@@ -106,15 +103,14 @@ final class LogFormatterTest extends TestCase
 
     public function testWillPrintExceptionDetailsInLocalMode(): void
     {
-        $record = [
-            'datetime' => new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
-            'level' => Logger::INFO,
-            'level_name' => Logger::getLevelName(Logger::INFO),
-            'channel' => '',
-            'context' => ['ex' => new RuntimeException('msg')],
-            'extra' => [],
-            'message' => 'test test test'
-        ];
+        $record = new LogRecord(
+            new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
+            '',
+            Level::Info,
+            'test test test',
+            ['ex' => new RuntimeException('msg')],
+            []
+        );
 
         $formatter = new LogFormatter(false);
         $formatted = $formatter->format($record);
@@ -130,15 +126,14 @@ final class LogFormatterTest extends TestCase
 
     public function testWillHideExceptionDetaisInCIMode(): void
     {
-        $record = [
-            'datetime' => new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
-            'level' => Logger::INFO,
-            'level_name' => Logger::getLevelName(Logger::INFO),
-            'channel' => '',
-            'context' => ['ex' => new RuntimeException('msg'), 'a' => 'b'],
-            'extra' => [],
-            'message' => 'test test test'
-        ];
+        $record = new LogRecord(
+            new DateTimeImmutable('2021-01-01 00:00:00+00:00'),
+            '',
+            Level::Info,
+            'test test test',
+            ['ex' => new RuntimeException('msg'), 'a' => 'b'],
+            []
+        );
 
         $formatter = new LogFormatter(true);
         $formatted = $formatter->format($record);
