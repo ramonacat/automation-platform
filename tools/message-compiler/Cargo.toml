@@ -8,6 +8,6 @@ edition = "2021"
 [dependencies]
 lalrpop-util = { version = "0.19.8", features=["lexer"] }
 regex = "1"
-petgraph = "0.6.0"
+petgraph = "0.6.2"
 [build-dependencies]
 lalrpop = { version = "0.19.8", features=["lexer"] }
