@@ -95,20 +95,21 @@ fn render_fields(fields: &[TypedField], public: bool, depth: usize) -> String {
     result
 }
 
-fn to_rust_type(type_: &TypedFieldType) -> &str {
+fn to_rust_type(type_: &TypedFieldType) -> String {
     match type_ {
-        TypedFieldType::U8 => "u8",
-        TypedFieldType::U16 => "u16",
-        TypedFieldType::U32 => "u32",
-        TypedFieldType::U64 => "u64",
-        TypedFieldType::S8 => "s8",
-        TypedFieldType::S16 => "s16",
-        TypedFieldType::S32 => "s32",
-        TypedFieldType::S64 => "s64",
-        TypedFieldType::Instant => "std::time::SystemTime",
-        TypedFieldType::Guid => "::uuid::Uuid",
-        TypedFieldType::String => "String",
-        TypedFieldType::Void => "()",
-        TypedFieldType::OtherStruct(name) | TypedFieldType::Enum(name) => name,
+        TypedFieldType::U8 => "u8".to_string(),
+        TypedFieldType::U16 => "u16".to_string(),
+        TypedFieldType::U32 => "u32".to_string(),
+        TypedFieldType::U64 => "u64".to_string(),
+        TypedFieldType::S8 => "s8".to_string(),
+        TypedFieldType::S16 => "s16".to_string(),
+        TypedFieldType::S32 => "s32".to_string(),
+        TypedFieldType::S64 => "s64".to_string(),
+        TypedFieldType::Instant => "std::time::SystemTime".to_string(),
+        TypedFieldType::Guid => "::uuid::Uuid".to_string(),
+        TypedFieldType::String => "String".to_string(),
+        TypedFieldType::Void => "()".to_string(),
+        TypedFieldType::OtherStruct(name) | TypedFieldType::Enum(name) => name.clone(),
+        TypedFieldType::Optional(type_) => format!("Option<{}>", to_rust_type(type_)),
     }
 }

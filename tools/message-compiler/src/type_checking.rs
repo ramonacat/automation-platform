@@ -1,5 +1,6 @@
 use crate::parsing::{
     EnumDefinitionRaw, EnumVariantRaw, FieldRaw, FileRaw, IdentifierRaw, StructDefinitionRaw,
+    TypeRaw,
 };
 use petgraph::algo::toposort;
 use petgraph::graph::DiGraph;
@@ -56,6 +57,7 @@ pub enum TypedFieldType {
     Void,
     OtherStruct(String),
     Enum(String),
+    Optional(Box<TypedFieldType>),
 }
 
 #[derive(Debug)]
@@ -145,6 +147,7 @@ enum TypeCheckableFieldType<'a> {
     String,
     Void,
     ToBeResolved(&'a str),
+    Optional(Box<TypeCheckableFieldType<'a>>),
 }
 
 #[derive(Debug)]
@@ -249,22 +252,22 @@ impl<'input> TypeChecker<'input> {
         let mut fields = HashMap::new();
 
         for field_raw in fields_raw {
-            let type_id = Self::resolve_raw_type(field_raw.1 .0);
+            let type_id = Self::resolve_raw_type(&field_raw.type_name);
 
-            if fields.contains_key(field_raw.0 .0) {
+            if fields.contains_key(field_raw.name.0) {
                 return Err(TypeCheckError::RepeatedFieldName {
-                    field_name: field_raw.0 .0.to_string(),
+                    field_name: field_raw.name.0.to_string(),
                     struct_name: struct_name.to_string(),
                 });
             }
-            fields.insert(field_raw.0 .0, type_id);
+            fields.insert(field_raw.name.0, type_id);
         }
 
         Ok(fields)
     }
 
-    fn resolve_raw_type(field_raw: &str) -> TypeCheckableFieldType {
-        match field_raw {
+    fn resolve_raw_type(type_raw: &TypeRaw<'input>) -> TypeCheckableFieldType<'input> {
+        let field_type = match type_raw.name.0 {
             "u8" => TypeCheckableFieldType::U8,
             "u16" => TypeCheckableFieldType::U16,
             "u32" => TypeCheckableFieldType::U32,
@@ -278,6 +281,12 @@ impl<'input> TypeChecker<'input> {
             "string" => TypeCheckableFieldType::String,
             "void" => TypeCheckableFieldType::Void,
             other => TypeCheckableFieldType::ToBeResolved(other),
+        };
+
+        if type_raw.optional {
+            TypeCheckableFieldType::Optional(Box::new(field_type))
+        } else {
+            field_type
         }
     }
 
@@ -321,6 +330,10 @@ impl<'input> TypeChecker<'input> {
                     return Ok(TypedFieldType::Enum((*type_name).to_string()));
                 }
                 return Err(TypeCheckError::StructNotFound((*type_name).to_string()));
+            }
+            TypeCheckableFieldType::Optional(type_) => {
+                let type_id = self.resolve_type(type_)?;
+                TypedFieldType::Optional(Box::new(type_id))
             }
         })
     }
@@ -420,10 +433,10 @@ impl<'input> TypeChecker<'input> {
                     name: rpc_definition.name.0.to_string(),
                     // todo no unwraps here!
                     request: self
-                        .resolve_type(&Self::resolve_raw_type(rpc_definition.request.0))
+                        .resolve_type(&Self::resolve_raw_type(&rpc_definition.request))
                         .unwrap(),
                     response: self
-                        .resolve_type(&Self::resolve_raw_type(rpc_definition.response.0))
+                        .resolve_type(&Self::resolve_raw_type(&rpc_definition.response))
                         .unwrap(),
                     is_stream: rpc_definition.is_stream,
                 };

@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }\
         \
         rpc {\
-            method(A) -> B;\
+            method(A?) -> B?;\
             method2(Food) -> B;\
         }\
         \
