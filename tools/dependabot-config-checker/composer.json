@@ -27,7 +27,7 @@
     },
     "require-dev": {
         "ramona/automation-platform-lib-coding-standard": "*",
-        "symplify/easy-coding-standard": "^10.0",
+        "symplify/easy-coding-standard": "^11.0",
         "vimeo/psalm": "^4.13",
         "phpunit/phpunit": "^9.5",
         "infection/infection": "^0.26.0",
