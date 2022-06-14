@@ -32,7 +32,7 @@
         "symfony/yaml": "^6.0"
     },
     "require-dev": {
-        "symplify/easy-coding-standard": "^9.4 || ^10.0",
+        "symplify/easy-coding-standard": "^9.4 || ^10.0 || ^11.0",
         "ramona/automation-platform-lib-coding-standard": "*",
         "vimeo/psalm": "^4.8",
         "phpunit/phpunit": "^9.5",

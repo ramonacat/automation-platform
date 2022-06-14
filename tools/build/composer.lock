@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "99c0418ffb9ab5494ddcfd9d8ca50854",
+    "content-hash": "c844bd0ae3417b623d4801420d24f388",
     "packages": [
         {
             "name": "bramus/ansi-php",
@@ -3167,13 +3167,13 @@
             "dist": {
                 "type": "path",
                 "url": "../../libraries/php/coding-standard",
-                "reference": "e1f32187bcdc16caa0068384208734488b10bf37"
+                "reference": "0585d79027f1567bfeec4aeb6f32eb1a596b00cc"
             },
             "require": {
                 "php": "^8.0",
                 "roave/security-advisories": "dev-latest",
                 "slevomat/coding-standard": "^7.0",
-                "symplify/easy-coding-standard": "^9.4 || ^10.0"
+                "symplify/easy-coding-standard": "^9.4 || ^10.0 || ^11.0"
             },
             "require-dev": {
                 "vimeo/psalm": "^4.13"
@@ -6841,16 +6841,16 @@
         },
         {
             "name": "symplify/easy-coding-standard",
-            "version": "10.3.0",
+            "version": "11.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symplify/easy-coding-standard.git",
-                "reference": "65a8f62fff719d5d70b3b71c0c2b220c17877110"
+                "reference": "452134abc6bc80482a9e2a85bc4f300fe773879b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symplify/easy-coding-standard/zipball/65a8f62fff719d5d70b3b71c0c2b220c17877110",
-                "reference": "65a8f62fff719d5d70b3b71c0c2b220c17877110",
+                "url": "https://api.github.com/repos/symplify/easy-coding-standard/zipball/452134abc6bc80482a9e2a85bc4f300fe773879b",
+                "reference": "452134abc6bc80482a9e2a85bc4f300fe773879b",
                 "shasum": ""
             },
             "require": {
@@ -6880,7 +6880,7 @@
             ],
             "description": "Prefixed scoped version of ECS package",
             "support": {
-                "source": "https://github.com/symplify/easy-coding-standard/tree/10.3.0"
+                "source": "https://github.com/symplify/easy-coding-standard/tree/11.0.3"
             },
             "funding": [
                 {
@@ -6892,7 +6892,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2022-06-09T23:15:55+00:00"
+            "time": "2022-06-13T23:35:50+00:00"
         },
         {
             "name": "theseer/tokenizer",
