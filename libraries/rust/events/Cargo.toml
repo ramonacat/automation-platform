@@ -15,7 +15,7 @@ tracing = "0.1.35"
 async-trait = "0.1.56"
 platform={path="../platform"}
 thiserror = "1.0.30"
-async-std = "1.11.0"
+async-std = "1.12.0"
 
 [build-dependencies]
 message-compiler={path= "../../../tools/message-compiler" }
