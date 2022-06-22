@@ -31,7 +31,7 @@
         "vimeo/psalm": "^4.13",
         "phpunit/phpunit": "^9.5",
         "infection/infection": "^0.26.0",
-        "slevomat/coding-standard": "^7.0"
+        "slevomat/coding-standard": "^8.0"
     },
     "config": {
         "allow-plugins": {
