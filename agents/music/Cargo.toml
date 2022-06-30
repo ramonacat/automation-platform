@@ -9,7 +9,7 @@ edition = "2021"
 tokio = { version = "1.19.2", features = ["full"] }
 futures-lite = "1.12.0"
 tracing = "0.1.35"
-tracing-subscriber = "0.3.11"
+tracing-subscriber = "0.3.12"
 
 platform = {path = "../../libraries/rust/platform/" }
 music = {path = "../../libraries/rust/music/" }
