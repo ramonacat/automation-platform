@@ -10,7 +10,7 @@ music = { path = "../../libraries/rust/music" }
 rpc-support = { path = "../../libraries/rust/rpc-support" }
 tokio={ version = "1.20.1", features = ["full"] }
 async-trait = "0.1.56"
-tracing = "0.1.35"
+tracing = "0.1.36"
 tracing-subscriber = "0.3.15"
 futures-core = "0.3.21"
 tokio-util = { version = "0.7.3", features=["full"] }
