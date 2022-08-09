@@ -9,7 +9,7 @@ edition = "2021"
 tokio = { version = "1.20.1", features = ["full"] }
 tracing="0.1.36"
 tracing-subscriber = "0.3.15"
-serde = { version = "1.0.141", features=["derive"] }
+serde = { version = "1.0.143", features=["derive"] }
 serde_json="1.0.74"
 tokio-postgres = { version = "0.7.5", features=["with-uuid-1", "with-time-0_3", "with-serde_json-1"] }
 uuid = { version = "1.1.2", features=["v4"] }
