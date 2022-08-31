@@ -14,7 +14,7 @@ tokio = { version = "1.20.1", features = ["full"] }
 tracing = "0.1.35"
 async-trait = "0.1.57"
 platform={path="../platform"}
-thiserror = "1.0.30"
+thiserror = "1.0.33"
 async-std = "1.12.0"
 
 [build-dependencies]
