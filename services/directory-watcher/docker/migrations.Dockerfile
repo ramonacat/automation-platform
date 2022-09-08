@@ -1,6 +1,6 @@
 FROM alpine:3
 
-RUN apk add --no-cache curl=7.83.1-r1
+RUN apk add --no-cache curl=7.83.1-r3
 RUN curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/download/v1.12.1/dbmate-linux-amd64 \
     && chmod +x /usr/local/bin/dbmate
 

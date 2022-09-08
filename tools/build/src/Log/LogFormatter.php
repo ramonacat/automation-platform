@@ -29,7 +29,8 @@ final class LogFormatter implements FormatterInterface
     {
         $dateTime = $record->datetime->format('Y-m-d H:i:sP');
         $channel = $record->channel === '' ? '' : "[{$record->channel}]";
-        $result = "[{$dateTime}][{$record->level->getName()}]$channel {$record->message}" . PHP_EOL;
+        $levelName = $record->level->getName();
+        $result = "[{$dateTime}][{$levelName}]$channel {$record->message}" . PHP_EOL;
 
         /** @psalm-suppress MixedAssignment */
         foreach ($record->context as $key => $value) {

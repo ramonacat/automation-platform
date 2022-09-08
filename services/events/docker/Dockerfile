@@ -9,7 +9,7 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 FROM rust:1.62.1-slim-bullseye AS cacher
 
-RUN apt-get update && apt-get install --no-install-recommends -y libssl-dev=1.1.1n-0+deb11u2 pkg-config=0.29.2-1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install --no-install-recommends -y libssl-dev=1.1.1n-0+deb11u3 pkg-config=0.29.2-1 && rm -rf /var/lib/apt/lists/*
 RUN cargo install cargo-chef
 
 WORKDIR /opt/events/services/events/
@@ -24,7 +24,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 
 FROM rust:1.62.1-slim-bullseye AS build
 
-RUN apt-get update && apt-get install --no-install-recommends -y libssl-dev=1.1.1n-0+deb11u2 pkg-config=0.29.2-1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install --no-install-recommends -y libssl-dev=1.1.1n-0+deb11u3 pkg-config=0.29.2-1 && rm -rf /var/lib/apt/lists/*
 
 COPY . /opt/events/
 WORKDIR /opt/events/services/events/
@@ -33,9 +33,9 @@ COPY --from=cacher /usr/local/cargo /usr/local/cargo
 
 RUN cargo build --release
 
-FROM debian:bookworm-slim
+FROM debian:bullseye-slim
 
-RUN apt-get update && apt-get install --no-install-recommends -y libssl1.1=1.1.1o-1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install --no-install-recommends -y libssl1.1=1.1.1n-0+deb11u3 && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /opt/events/services/events/target/release/svc-events /opt/events/events
 
