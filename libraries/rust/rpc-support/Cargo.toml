@@ -13,7 +13,7 @@ async-stream = "0.3.3"
 tracing = "0.1.35"
 dashmap = "5.3.4"
 thiserror = "1.0.30"
-futures = "0.3.21"
+futures = "0.3.24"
 platform={path="../platform"}
 
 [build-dependencies]
