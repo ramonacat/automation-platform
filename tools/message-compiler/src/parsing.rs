@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct IdentifierRaw<'input>(pub(crate) &'input str);
 
 impl<'input> IdentifierRaw<'input> {
@@ -8,7 +8,7 @@ impl<'input> IdentifierRaw<'input> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct TypeRaw<'input> {
     pub(crate) name: IdentifierRaw<'input>,
     pub(crate) optional: bool,
@@ -21,7 +21,7 @@ impl<'input> TypeRaw<'input> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct FieldRaw<'input> {
     pub(crate) name: IdentifierRaw<'input>,
     pub(crate) type_name: TypeRaw<'input>,
@@ -34,10 +34,10 @@ impl<'input> FieldRaw<'input> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct StructDefinitionRaw<'input>(pub IdentifierRaw<'input>, pub Vec<FieldRaw<'input>>);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct MetadataRaw<'input> {
     fields: Vec<FieldRaw<'input>>,
 }
@@ -56,7 +56,7 @@ impl<'input> MetadataRaw<'input> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct EnumVariantRaw<'input> {
     pub(crate) name: IdentifierRaw<'input>,
     pub(crate) fields: Vec<FieldRaw<'input>>,
@@ -69,7 +69,7 @@ impl<'input> EnumVariantRaw<'input> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct EnumDefinitionRaw<'input> {
     pub(crate) name: IdentifierRaw<'input>,
     pub(crate) variants: Vec<EnumVariantRaw<'input>>,
@@ -82,7 +82,7 @@ impl<'input> EnumDefinitionRaw<'input> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct RpcDefinitionRaw<'input> {
     pub(crate) name: IdentifierRaw<'input>,
     pub(crate) request: TypeRaw<'input>,
@@ -107,7 +107,7 @@ impl<'input> RpcDefinitionRaw<'input> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct RpcRaw<'input> {
     pub(crate) definitions: Vec<RpcDefinitionRaw<'input>>,
 }
@@ -119,7 +119,7 @@ impl<'input> RpcRaw<'input> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct FileRaw<'input> {
     metadata: Option<MetadataRaw<'input>>,
     structs: Vec<StructDefinitionRaw<'input>>,

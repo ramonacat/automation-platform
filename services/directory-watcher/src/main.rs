@@ -10,7 +10,7 @@ use notify::{PollWatcher, RecursiveMode, Watcher};
 use platform::secrets::SecretProvider;
 use postgres_native_tls::MakeTlsConnector;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 use tokio::sync::Mutex;
 use tokio_postgres::Client;
 use uuid::Uuid;
@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (sender, receiver) = std::sync::mpsc::channel();
     // The PollWatcher is used, because the inotify watcher does not work with NFS mounts.
     // todo asses performance impact, find a better solution?
-    let mut watcher = PollWatcher::new(sender, Duration::from_secs(1))?;
+    let mut watcher = PollWatcher::new(sender, notify::Config::default())?;
     let filesystem_event_handler = FilesystemEventHandler::new(
         Arc::new(Mutex::new(es_watcher)),
         file_status_store.clone(),
@@ -66,7 +66,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     for mount in &mounts {
-        watcher.watch(&mount.path(), RecursiveMode::Recursive)?;
+        watcher.watch(mount.path(), RecursiveMode::Recursive)?;
     }
 
     scanner.scan(&mounts).await?;
@@ -85,6 +85,10 @@ pub enum HandleEventsError {
     Rpc(#[from] rpc_support::rpc_error::RpcError),
     #[error("IO error")]
     Io(#[from] std::io::Error),
+    #[error("Notify error")]
+    NotifyError(#[from] notify::Error),
+    #[error("Path is missing")]
+    MissingPath,
 }
 
 fn parse_mounts(directories_from_env: &str) -> Vec<Mount> {

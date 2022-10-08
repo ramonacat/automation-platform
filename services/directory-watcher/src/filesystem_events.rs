@@ -2,7 +2,8 @@ use crate::file_status_store::FileStatusStore;
 use crate::mount::{Mount, PathInside};
 use crate::{create_event_metadata, HandleEventsError};
 use events::{Event, FileOnMountPath};
-use notify::DebouncedEvent;
+use notify::event::{ModifyKind, RenameMode};
+use notify::{Event as DebouncedEvent, EventKind}; // fixme rename to NotifyEvent?
 use std::path::Path;
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
@@ -39,11 +40,12 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
 
     pub async fn handle_events(
         &self,
-        receiver: Receiver<DebouncedEvent>,
+        receiver: Receiver<notify::Result<DebouncedEvent>>,
     ) -> Result<(), HandleEventsError> {
         info!("Waiting for filesystem events");
         for item in receiver {
-            self.handle_event(item).await?;
+            // TODO skip errors, but handle the rest
+            self.handle_event(item?).await?;
         }
 
         Ok(())
@@ -51,27 +53,40 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
 
     async fn handle_event(&self, item: DebouncedEvent) -> Result<(), HandleEventsError> {
         info!("Handling filesystem event: {:?}", item);
-        match item {
-            DebouncedEvent::Create(x) => self.handle_file_created(&x).await,
-            DebouncedEvent::Chmod(x) | DebouncedEvent::Write(x) => {
-                self.handle_file_modified(&x).await
+        match item.kind {
+            EventKind::Any | EventKind::Other => {
+                if let Some(path) = item.paths.first() {
+                    self.handle_file_modified(path).await?;
+                }
             }
-            DebouncedEvent::Remove(x) => self.handle_file_deleted(&x).await,
-            DebouncedEvent::Rename(x, y) => self.handle_file_renamed(&x, &y).await,
-            DebouncedEvent::Error(x, y) => {
-                error!(
-                    "Error: {} (at {})",
-                    x,
-                    y.map_or("".into(), |z| z.to_string_lossy().to_string())
-                );
-                Ok(())
+            EventKind::Create(_) => {
+                if let Some(path) = item.paths.first() {
+                    self.handle_file_created(path).await?;
+                }
             }
-            DebouncedEvent::Rescan => {
-                info!("Rescan!");
-                Ok(())
+            EventKind::Remove(_) => {
+                if let Some(path) = item.paths.first() {
+                    self.handle_file_deleted(path).await?;
+                }
             }
-            DebouncedEvent::NoticeWrite(_) | DebouncedEvent::NoticeRemove(_) => Ok(()),
+            EventKind::Modify(kind) => {
+                if kind == ModifyKind::Name(RenameMode::Both) {
+                    let path_from = item.paths.get(0).ok_or(HandleEventsError::MissingPath)?;
+                    let path_to = item.paths.get(1).ok_or(HandleEventsError::MissingPath)?;
+
+                    self.handle_file_renamed(path_from, path_to).await?;
+                } else if kind == ModifyKind::Name(RenameMode::From) {
+                    if let Some(path) = item.paths.first() {
+                        self.handle_file_deleted(path).await?;
+                    }
+                } else if let Some(path) = item.paths.first() {
+                    self.handle_file_modified(path).await?;
+                }
+            }
+            EventKind::Access(_) => {}
         }
+
+        Ok(())
     }
 
     async fn handle_file_renamed(&self, x: &Path, y: &Path) -> Result<(), HandleEventsError> {
@@ -105,14 +120,9 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
         Ok(())
     }
 
+    // TODO only send events in case we had the file in the database (i.e. an event about creation was sent before)
     async fn handle_file_deleted(&self, x: &Path) -> Result<(), HandleEventsError> {
         let mount_relative_path = PathInside::from_mount_list(self.mounts, x)?;
-
-        let (_, is_dir) = Self::modified_date(x)?;
-
-        if is_dir {
-            return Ok(());
-        }
 
         self.file_status_store
             .lock()
@@ -204,10 +214,13 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
 mod tests {
     use super::*;
     use crate::file_status_store::FileStatusSyncResult;
-    use events::Metadata;
+    use events::{Metadata, SubscribeRequest};
+    use futures_lite::Stream;
+    use notify::event::{CreateKind, DataChange, RemoveKind};
     use rpc_support::rpc_error::RpcError;
     use serde_json::{json, to_value, Value};
     use std::path::PathBuf;
+    use std::pin::Pin;
     use tempfile::TempDir;
 
     struct MockRpcClient {
@@ -224,6 +237,15 @@ mod tests {
             self.events.push(to_value(request).unwrap());
 
             Ok(())
+        }
+
+        async fn subscribe(
+            &mut self,
+            _request: SubscribeRequest,
+            _metadata: Metadata,
+        ) -> Result<Pin<Box<dyn Stream<Item = Result<Event, RpcError>> + Unpin + Send>>, RpcError>
+        {
+            todo!()
         }
     }
 
@@ -276,7 +298,7 @@ mod tests {
         );
         let (tx, rx) = std::sync::mpsc::channel();
 
-        tx.send(event).unwrap();
+        tx.send(Ok(event)).unwrap();
         drop(tx);
         handler.handle_events(rx).await.unwrap();
         let events = event_sender.lock().await.events.clone();
@@ -288,7 +310,8 @@ mod tests {
         let temp = TempDir::new().unwrap();
         let events = setup(
             &temp,
-            DebouncedEvent::Create(temp.path().join("b/1")),
+            DebouncedEvent::new(EventKind::Create(CreateKind::File))
+                .add_path(temp.path().join("b/1")),
             FileStatusSyncResult::Created,
         )
         .await;
@@ -312,7 +335,8 @@ mod tests {
         let path = temp.path().join("b/1");
         let events = setup(
             &temp,
-            DebouncedEvent::Write(path.clone()),
+            DebouncedEvent::new(EventKind::Modify(ModifyKind::Data(DataChange::Any)))
+                .add_path(path.clone()),
             FileStatusSyncResult::Modified,
         )
         .await;
@@ -336,7 +360,7 @@ mod tests {
         let path = temp.path().join("b/1");
         let events = setup(
             &temp,
-            DebouncedEvent::Remove(path.clone()),
+            DebouncedEvent::new(EventKind::Remove(RemoveKind::Any)).add_path(path.clone()),
             FileStatusSyncResult::Modified,
         )
         .await;
@@ -359,7 +383,9 @@ mod tests {
         let temp = TempDir::new().unwrap();
         let events = setup(
             &temp,
-            DebouncedEvent::Rename(temp.path().join("b/0"), temp.path().join("b/1")),
+            DebouncedEvent::new(EventKind::Modify(ModifyKind::Name(RenameMode::Both)))
+                .add_path(temp.path().join("b/0"))
+                .add_path(temp.path().join("b/1")),
             FileStatusSyncResult::Modified,
         )
         .await;

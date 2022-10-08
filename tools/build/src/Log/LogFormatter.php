@@ -29,7 +29,7 @@ final class LogFormatter implements FormatterInterface
     {
         $dateTime = $record->datetime->format('Y-m-d H:i:sP');
         $channel = $record->channel === '' ? '' : "[{$record->channel}]";
-        $levelName = $record->level->getName();
+        $levelName = $record->level->toPsrLogLevel();
         $result = "[{$dateTime}][{$levelName}]$channel {$record->message}" . PHP_EOL;
 
         /** @psalm-suppress MixedAssignment */

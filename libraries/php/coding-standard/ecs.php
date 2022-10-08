@@ -6,11 +6,11 @@ use PhpCsFixer\Fixer\ClassNotation\FinalClassFixer;
 use PhpCsFixer\Fixer\ControlStructure\SwitchCaseSemicolonToColonFixer;
 use SlevomatCodingStandard\Sniffs\Namespaces\AlphabeticallySortedUsesSniff;
 use SlevomatCodingStandard\Sniffs\Namespaces\ReferenceUsedNamesOnlySniff;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\EasyCodingStandard\Config\ECSConfig;
 use Symplify\EasyCodingStandard\ValueObject\Option;
 use Symplify\EasyCodingStandard\ValueObject\Set\SetList;
 
-return static function (ContainerConfigurator $containerConfigurator): void {
+return static function (ECSConfig $containerConfigurator): void {
     $services = $containerConfigurator->services();
     $services->set(AlphabeticallySortedUsesSniff::class);
     $services->set(ReferenceUsedNamesOnlySniff::class)

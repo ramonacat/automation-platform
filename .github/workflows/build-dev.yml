@@ -8,6 +8,9 @@ jobs:
               with:
                 fetch-depth: 0
 
+            - name: Set up ALSA dev
+              run: sudo apt-get install -y libasound2-dev
+
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v2
 

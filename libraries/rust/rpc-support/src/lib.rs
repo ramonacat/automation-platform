@@ -36,6 +36,8 @@ struct StreamResponseEnvelope {
 
 type WaitingResponses = DashMap<u64, Sender<(ResponseEnvelope, Option<String>)>>;
 type ActiveStreams = DashMap<u64, Sender<(ResponseEnvelope, Option<String>)>>;
+type ResponseStream<TResponse> =
+    Pin<Box<dyn Stream<Item = Result<TResponse, RpcError>> + Unpin + Send>>;
 
 pub struct RawRpcClient {
     waiting_responses: Arc<WaitingResponses>,
@@ -223,7 +225,7 @@ impl RawRpcClient {
         method_name: &str,
         request: &TRequest,
         metadata: &TMetadata,
-    ) -> Result<Box<dyn Stream<Item = Result<TResponse, RpcError>> + Unpin + Send>, RpcError>
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<TResponse, RpcError>> + Unpin + Send>>, RpcError>
     where
         TRequest: Serialize,
         TMetadata: Serialize,
@@ -246,22 +248,28 @@ impl RawRpcClient {
 
         let rx_stream = Box::pin(async_stream::stream! {
             while let Some(response_line) = rx.recv().await {
-                let is_end = response_line.0.stream_end;
-                yield response_line;
+                info!("Got response line: {:?}", response_line);
 
-                if is_end {
+                if response_line.0.stream_end {
                     break;
                 }
+
+                yield response_line;
             }
 
             info!("Stream ended");
         });
 
-        Ok(Box::new(rx_stream.map(
+        Ok(Box::pin(rx_stream.map(
             move |(response_envelope, contents): (ResponseEnvelope, Option<String>)| {
                 match response_envelope.error {
                     None => {
-                        let contents = contents.unwrap_or_default();
+                        let contents = contents.ok_or_else(|| {
+                            RpcError::Custom(format!(
+                                "No response for envelope {:?}",
+                                response_envelope
+                            ))
+                        })?;
 
                         Ok(serde_json::from_str(&contents)?)
                     }
@@ -345,25 +353,18 @@ where
 /// Can fail if the response cannot be written to the stream
 pub async fn send_stream_response<TResponse>(
     writer: &mut (impl AsyncWrite + Unpin),
-    response: Result<Box<dyn Stream<Item = Result<TResponse, RpcError>> + Unpin + Send>, RpcError>,
+    response: Result<ResponseStream<TResponse>, RpcError>,
     request_id: u64,
 ) -> Result<(), RpcError>
 where
     TResponse: Serialize,
 {
-    if let Ok(response) = response {
-        // todo is there a more optimal solution? (without peekable)
-        let mut response = response.peekable();
-
+    if let Ok(mut response) = response {
         while let Some(item) = response.next().await {
-            send_response(
-                writer,
-                item,
-                request_id,
-                Pin::new(&mut response).peek().await.is_none(),
-            )
-            .await?;
+            send_response(writer, item, request_id, false).await?;
         }
+
+        send_response(writer, Ok(()), request_id, true).await?;
     } else if let Err(err) = response {
         send_response(writer, Result::<(), _>::Err(err), request_id, true).await?;
     }

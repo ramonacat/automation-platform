@@ -28,7 +28,7 @@ final class LogFormatterTest extends TestCase
         $formatter = new LogFormatter(false);
         $formatted = $formatter->format($record);
 
-        self::assertEquals('[2021-01-01 00:00:00+00:00][INFO] test test test' . PHP_EOL, $formatted);
+        self::assertEquals('[2021-01-01 00:00:00+00:00][info] test test test' . PHP_EOL, $formatted);
     }
 
     public function testCanFormatABatch(): void
@@ -56,8 +56,8 @@ final class LogFormatterTest extends TestCase
         $formatted = $formatter->formatBatch($records);
 
         self::assertEquals(
-            '[2021-01-01 00:00:00+00:00][INFO] test test test' . PHP_EOL .
-            '[2021-01-02 00:00:00+00:00][INFO] 123' . PHP_EOL,
+            '[2021-01-01 00:00:00+00:00][info] test test test' . PHP_EOL .
+            '[2021-01-02 00:00:00+00:00][info] 123' . PHP_EOL,
             $formatted
         );
     }
@@ -84,7 +84,7 @@ final class LogFormatterTest extends TestCase
         $formatted = $formatter->format($record);
 
         self::assertEquals(
-            '[2021-01-01 00:00:00+00:00][INFO] test test test' . PHP_EOL
+            '[2021-01-01 00:00:00+00:00][info] test test test' . PHP_EOL
             . 'a: b' . PHP_EOL
             . 'b: 1' . PHP_EOL
             . 'c: false' . PHP_EOL
@@ -116,7 +116,7 @@ final class LogFormatterTest extends TestCase
         $formatted = $formatter->format($record);
 
         self::assertStringStartsWith(
-            '[2021-01-01 00:00:00+00:00][INFO] test test test' . PHP_EOL
+            '[2021-01-01 00:00:00+00:00][info] test test test' . PHP_EOL
             . 'ex:' . PHP_EOL
             . 'RuntimeException: msg' . PHP_EOL
             . '#0 ',
@@ -139,7 +139,7 @@ final class LogFormatterTest extends TestCase
         $formatted = $formatter->format($record);
 
         self::assertEquals(
-            '[2021-01-01 00:00:00+00:00][INFO] test test test' . PHP_EOL
+            '[2021-01-01 00:00:00+00:00][info] test test test' . PHP_EOL
             . 'ex: [RuntimeException][running in CI, exception details were redacted]' . PHP_EOL
             . 'a: b' . PHP_EOL,
             $formatted
