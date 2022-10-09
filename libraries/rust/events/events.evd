@@ -9,6 +9,10 @@ struct FileOnMountPath {
     mount_id: string
 }
 
+struct SubscribeRequest {
+    from: instant?,
+}
+
 enum Event {
     FileCreated(path: FileOnMountPath),
     FileDeleted(path: FileOnMountPath),
@@ -18,4 +22,5 @@ enum Event {
 
 rpc {
     send_event(Event) -> void;
+    subscribe(SubscribeRequest) -> stream Event;
 }

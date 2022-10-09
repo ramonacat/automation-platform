@@ -2,6 +2,7 @@ use crate::structs::{Metadata, Rpc, TrackData, TrackPath};
 use async_std::prelude::Stream;
 use rpc_support::rpc_error::RpcError;
 use rpc_support::{read_request, send_stream_response, RawRpcClient};
+use std::pin::Pin;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use thiserror::Error;
@@ -62,7 +63,8 @@ impl Rpc for Client {
         &mut self,
         request: TrackPath,
         metadata: Metadata,
-    ) -> Result<Box<dyn Stream<Item = Result<TrackData, RpcError>> + Unpin + Send>, RpcError> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<TrackData, RpcError>> + Unpin + Send>>, RpcError>
+    {
         self.raw
             .send_rpc_stream_request(
                 self.id.fetch_add(1, std::sync::atomic::Ordering::AcqRel),

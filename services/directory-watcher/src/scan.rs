@@ -124,10 +124,12 @@ impl<T: events::Rpc + Sync + Send> Scanner<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use events::Metadata;
+    use events::{Metadata, SubscribeRequest};
+    use futures_lite::Stream;
     use rpc_support::rpc_error::RpcError;
     use serde_json::{to_value, Value};
     use std::path::PathBuf;
+    use std::pin::Pin;
 
     struct MockRpcClient {
         events: Vec<Value>,
@@ -143,6 +145,15 @@ mod tests {
             self.events.push(to_value(request).unwrap());
 
             Ok(())
+        }
+
+        async fn subscribe(
+            &mut self,
+            _request: SubscribeRequest,
+            _metadata: Metadata,
+        ) -> Result<Pin<Box<dyn Stream<Item = Result<Event, RpcError>> + Unpin + Send>>, RpcError>
+        {
+            todo!()
         }
     }
 
@@ -199,7 +210,33 @@ mod tests {
             .await
             .unwrap();
 
-        let events = &sender.lock().await.events;
+        let mut events = sender.lock().await.events.clone();
+        events.sort_by(|a, b| {
+            a.as_object()
+                .unwrap()
+                .values()
+                .next()
+                .unwrap()
+                .get("path")
+                .unwrap()
+                .get("path")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .cmp(
+                    &b.as_object()
+                        .unwrap()
+                        .values()
+                        .next()
+                        .unwrap()
+                        .get("path")
+                        .unwrap()
+                        .get("path")
+                        .unwrap()
+                        .as_str()
+                        .unwrap(),
+                )
+        });
 
         assert_eq!(2, events.len());
 
@@ -208,7 +245,7 @@ mod tests {
             .position(|e| {
                 PathBuf::from(
                     e.get("FileCreated")
-                        .unwrap()
+                        .expect(format!("Not a FileCreated event {:?}", e).as_str())
                         .get("path")
                         .unwrap()
                         .get("path")

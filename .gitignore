@@ -16,3 +16,4 @@ configuration.*.local.json
 /k8s/base/**
 /services/*/k8s/overlays/dev/**
 !/services/*/k8s/overlays/dev/kustomization.yaml
+*.flac

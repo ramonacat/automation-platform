@@ -15,7 +15,7 @@ pub fn compile(file: TypedFile) -> String {
     result += "use rpc_support::rpc_error::RpcError;\n";
     result += "use serde::{Deserialize, Serialize};\n";
 
-    result += "#[derive(Serialize, Deserialize, Debug)]\n";
+    result += "#[derive(Serialize, Deserialize, Debug, Clone)]\n";
     if meta.fields().is_empty() {
         result += "pub struct Metadata {}\n";
     } else {
@@ -25,14 +25,14 @@ pub fn compile(file: TypedFile) -> String {
     }
 
     for s in structs {
-        result += "#[derive(Serialize, Deserialize, Debug)]\n";
+        result += "#[derive(Serialize, Deserialize, Debug, Clone)]\n";
         result += &format!("pub struct {} {{\n", s.name());
         result += &render_fields(s.fields(), true, 1);
         result += "}\n";
     }
 
     for e in enums {
-        result += "#[derive(Serialize, Deserialize, Debug)]\n";
+        result += "#[derive(Serialize, Deserialize, Debug, Clone)]\n";
         result += &format!("pub enum {} {{\n", e.name());
         for v in e.variants() {
             result += "    ";
@@ -55,17 +55,18 @@ pub fn compile(file: TypedFile) -> String {
         &mut self,
         request: {},
         metadata: Metadata,
-    ) -> Result<{}, RpcError>;
+    ) -> {};
 "#,
             r.name(),
             to_rust_type(r.request()),
             if r.is_stream() {
                 format!(
-                    "Box<dyn Stream<Item = Result<{}, RpcError>> + Unpin + Send>",
+                    // {}
+                    "Result<\n        std::pin::Pin<Box<dyn Stream<Item = Result<{}, RpcError>> + Unpin + Send>>,\n        RpcError,\n    >",
                     to_rust_type(r.response())
                 )
             } else {
-                to_rust_type(r.response()).to_string()
+                format!("Result<{}, RpcError>", to_rust_type(r.response()))
             }
         );
     }
