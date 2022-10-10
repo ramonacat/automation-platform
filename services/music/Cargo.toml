@@ -12,7 +12,7 @@ rpc-support = { path = "../../libraries/rust/rpc-support" }
 platform = { path = "../../libraries/rust/platform" }
 
 
-tokio={ version = "1.21.1", features = ["full"] }
+tokio={ version = "1.21.2", features = ["full"] }
 async-trait = "0.1.57"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"
