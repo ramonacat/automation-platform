@@ -4,29 +4,34 @@ use rpc_support::rpc_error::RpcError;
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Metadata {
-    pub id: ::uuid::Uuid,
-    #[serde(with = "rpc_support::system_time_serializer")]
-    pub created_time: std::time::SystemTime,
     pub source: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct SubscribeRequest {
-    pub from: Option<std::time::SystemTime>,
+pub struct Event {
+    pub id: ::uuid::Uuid,
+    pub data: EventKind,
+    #[serde(with = "rpc_support::system_time_serializer")]
+    pub created_time: std::time::SystemTime,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FileOnMountPath {
-    pub path: String,
     pub mount_id: String,
+    pub path: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Event {
-    FileCreated {
-        path: FileOnMountPath,
-    },
+pub struct SubscribeRequest {
+    pub id: ::uuid::Uuid,
+    pub from: Option<std::time::SystemTime>,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum EventKind {
     FileDeleted {
         path: FileOnMountPath,
     },
     FileChanged {
+        path: FileOnMountPath,
+    },
+    FileCreated {
         path: FileOnMountPath,
     },
     FileMoved {

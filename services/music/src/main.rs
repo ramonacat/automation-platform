@@ -7,6 +7,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio_util::io::ReaderStream;
+use uuid::Uuid;
 
 struct RpcServer {}
 
@@ -53,11 +54,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut stream = client
                 .subscribe(
-                    events::SubscribeRequest { from: None },
+                    events::SubscribeRequest {
+                        id: Uuid::new_v4(),
+                        from: None,
+                    },
                     events::Metadata {
-                        // TODO most of this meta makes sense only for send_event
-                        created_time: std::time::SystemTime::now(),
-                        id: uuid::Uuid::new_v4(),
                         source: "music".to_string(),
                     },
                 )
@@ -68,7 +69,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             Ok(())
-            // client.
         },
     ));
 

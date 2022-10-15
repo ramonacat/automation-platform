@@ -164,7 +164,14 @@ struct TypeCheckableEnumVariant<'input> {
 
 #[derive(Debug)]
 struct TypeCheckableEnumDefinition<'input> {
+    name: String,
     variants: HashMap<&'input str, TypeCheckableEnumVariant<'input>>,
+}
+
+#[derive(Debug)]
+enum TypeCheckableDataDefinition<'input> {
+    Struct(&'input TypeCheckableStructDefinition<'input>),
+    Enum(&'input TypeCheckableEnumDefinition<'input>),
 }
 
 pub struct TypedMetadata {
@@ -343,6 +350,7 @@ impl<'input> TypeChecker<'input> {
     /// # Panics
     /// TODO MAKE THIS NOT EVER PANIC
     /// todo split into smaller functions
+    #[allow(clippy::too_many_lines)]
     pub fn check(mut self, file: &FileRaw<'input>) -> Result<TypedFile, TypeCheckError> {
         for StructDefinitionRaw(name, fields) in file.structs() {
             self.check_duplicate(name)?;
@@ -364,8 +372,13 @@ impl<'input> TypeChecker<'input> {
 
             let variants = Self::map_enum_variants(variants, name.0)?;
 
-            self.enums
-                .insert(name.0.to_string(), TypeCheckableEnumDefinition { variants });
+            self.enums.insert(
+                name.0.to_string(),
+                TypeCheckableEnumDefinition {
+                    name: name.0.to_string(),
+                    variants,
+                },
+            );
         }
 
         let mut metadata_fields = HashMap::new();
@@ -376,8 +389,13 @@ impl<'input> TypeChecker<'input> {
         let mut graph = DiGraph::new();
         let mut node_ids = HashMap::new();
         for struct_definition in self.structs.values() {
-            let ix = graph.add_node(struct_definition);
+            let ix = graph.add_node(TypeCheckableDataDefinition::Struct(struct_definition));
             node_ids.insert(struct_definition.name.to_string(), ix);
+        }
+
+        for enum_definition in self.enums.values() {
+            let ix = graph.add_node(TypeCheckableDataDefinition::Enum(enum_definition));
+            node_ids.insert(enum_definition.name.to_string(), ix);
         }
 
         for struct_definition in self.structs.values() {
@@ -394,36 +412,39 @@ impl<'input> TypeChecker<'input> {
 
         let sorted = toposort(&graph, None).unwrap();
         let mut structs_typed = HashMap::new();
+        let mut enums_typed = HashMap::new();
 
         for x in sorted {
             let node = graph.node_weight(x).unwrap();
 
-            let typed_struct = TypedStruct {
-                name: node.name.clone(),
-                fields: self.type_check_fields(&node.fields)?,
-            };
-            structs_typed.insert(node.name.clone(), typed_struct);
-        }
-
-        let enums = self
-            .enums
-            .iter()
-            .map(|(name, enum_definition)| {
-                let variants = enum_definition.variants.iter().map(|variant| {
-                    let fields = self.type_check_fields(&variant.1.fields).unwrap();
-
-                    TypedEnumVariant {
-                        name: variant.1.name.to_string(),
-                        fields,
-                    }
-                });
-
-                TypedEnum {
-                    name: name.clone(),
-                    variants: variants.collect(),
+            match node {
+                TypeCheckableDataDefinition::Struct(struct_node) => {
+                    let typed_struct = TypedStruct {
+                        name: struct_node.name.clone(),
+                        fields: self.type_check_fields(&struct_node.fields)?,
+                    };
+                    structs_typed.insert(struct_node.name.clone(), typed_struct);
                 }
-            })
-            .collect();
+                TypeCheckableDataDefinition::Enum(enum_node) => {
+                    let variants = enum_node.variants.iter().map(|variant| {
+                        let fields = self.type_check_fields(&variant.1.fields).unwrap();
+
+                        TypedEnumVariant {
+                            name: variant.1.name.to_string(),
+                            fields,
+                        }
+                    });
+
+                    enums_typed.insert(
+                        enum_node.name.clone(),
+                        TypedEnum {
+                            name: enum_node.name.clone(),
+                            variants: variants.collect(),
+                        },
+                    );
+                }
+            }
+        }
 
         let meta_fields = self.type_check_fields(&metadata_fields)?;
         let rpc = file.rpc().map(|rpc| {
@@ -447,7 +468,7 @@ impl<'input> TypeChecker<'input> {
 
         Ok(TypedFile {
             structs: structs_typed.into_iter().map(|(_, v)| v).collect(),
-            enums,
+            enums: enums_typed.into_iter().map(|(_, v)| v).collect(),
             meta: TypedMetadata {
                 fields: meta_fields,
             },
