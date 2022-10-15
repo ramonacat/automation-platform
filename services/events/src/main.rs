@@ -7,13 +7,12 @@ use tracing::{debug, info};
 
 use tokio_postgres::Client;
 
-use events::{Event, Metadata, Rpc, Server, SubscribeRequest};
+use events::{Event, EventKind, Metadata, Rpc, Server, SubscribeRequest};
 use futures_lite::stream::StreamExt;
 use futures_lite::Stream;
 use platform::async_infra::run_with_error_handling;
 use postgres_native_tls::MakeTlsConnector;
 use rpc_support::rpc_error::RpcError;
-use serde::Serialize;
 use std::sync::Arc;
 use std::time::SystemTime;
 use tokio::sync::mpsc::Sender;
@@ -146,22 +145,15 @@ impl RpcServer {
         }
     }
 
-    async fn save_event<T>(
-        &mut self,
-        name: &str,
-        message: T,
-        metadata: Metadata,
-    ) -> Result<(), RpcError>
-    where
-        T: Serialize + Send,
-    {
+    async fn save_event(&mut self, name: &str, message: Event) -> Result<(), RpcError> {
         let serde_value = serde_json::to_value(&message).map_err(rpc_error_map)?;
+
         self.postgres
             .lock()
             .await
             .execute(
                 "INSERT INTO events(id, created_timestamp, type, data) VALUES($1,$2,$3,$4)",
-                &[&metadata.id, &metadata.created_time, &name, &serde_value],
+                &[&message.id, &message.created_time, &name, &serde_value],
             )
             .await
             .map_err(rpc_error_map)?;
@@ -180,13 +172,13 @@ impl Rpc for RpcServer {
     async fn subscribe(
         &mut self,
         request: SubscribeRequest,
-        metadata: Metadata,
+        _metadata: Metadata,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<Event, RpcError>> + Unpin + Send>>, RpcError> {
         let (tx, rx) = tokio::sync::mpsc::channel(100);
 
         // FIXME add a method on the handler for that
         self.subscription_handler.subscriptions.insert(
-            metadata.id,
+            request.id,
             Subscription {
                 tx,
                 cursor: request.from,
@@ -198,18 +190,16 @@ impl Rpc for RpcServer {
         Ok(Box::pin(stream))
     }
 
-    // TODO move the data from metadata into the actual Event (add a wrapper struct)
-    async fn send_event(&mut self, request: Event, metadata: Metadata) -> Result<(), RpcError> {
-        let created_time = metadata.created_time;
+    async fn send_event(&mut self, request: Event, _metadata: Metadata) -> Result<(), RpcError> {
+        let created_time = request.created_time;
         self.save_event(
-            match request {
-                Event::FileDeleted { .. } => "FileDeleted",
-                Event::FileCreated { .. } => "FileCreated",
-                Event::FileMoved { .. } => "FileMoved",
-                Event::FileChanged { .. } => "FileChanged",
+            match request.data {
+                EventKind::FileDeleted { .. } => "FileDeleted",
+                EventKind::FileCreated { .. } => "FileCreated",
+                EventKind::FileMoved { .. } => "FileMoved",
+                EventKind::FileChanged { .. } => "FileChanged",
             },
             request,
-            metadata,
         )
         .await?;
 

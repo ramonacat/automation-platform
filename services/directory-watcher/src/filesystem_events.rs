@@ -7,8 +7,10 @@ use notify::{Event as DebouncedEvent, EventKind}; // fixme rename to NotifyEvent
 use std::path::Path;
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
+use std::time::SystemTime;
 use time::OffsetDateTime;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 pub struct FilesystemEventHandler<'a, T: events::Rpc + Sync + Send> {
     event_sender: Arc<Mutex<T>>,
@@ -109,9 +111,13 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
             .lock()
             .await
             .send_event(
-                Event::FileMoved {
-                    from: path_relative_from.into(),
-                    to: path_relative_to.into(),
+                Event {
+                    id: Uuid::new_v4(),
+                    created_time: std::time::SystemTime::now(),
+                    data: events::EventKind::FileMoved {
+                        from: path_relative_from.into(),
+                        to: path_relative_to.into(),
+                    },
                 },
                 create_event_metadata(),
             )
@@ -134,8 +140,12 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
             .lock()
             .await
             .send_event(
-                Event::FileDeleted {
-                    path: mount_relative_path.into(),
+                Event {
+                    created_time: SystemTime::now(),
+                    id: Uuid::new_v4(),
+                    data: events::EventKind::FileDeleted {
+                        path: mount_relative_path.into(),
+                    },
                 },
                 create_event_metadata(),
             )
@@ -163,8 +173,12 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
             .lock()
             .await
             .send_event(
-                Event::FileCreated {
-                    path: mount_relative_path.into(),
+                Event {
+                    created_time: SystemTime::now(),
+                    id: Uuid::new_v4(),
+                    data: events::EventKind::FileCreated {
+                        path: mount_relative_path.into(),
+                    },
                 },
                 create_event_metadata(),
             )
@@ -191,8 +205,12 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
             .lock()
             .await
             .send_event(
-                Event::FileChanged {
-                    path: mount_relative_path.into(),
+                Event {
+                    created_time: SystemTime::now(),
+                    id: Uuid::new_v4(),
+                    data: events::EventKind::FileChanged {
+                        path: mount_relative_path.into(),
+                    },
                 },
                 create_event_metadata(),
             )
@@ -317,7 +335,7 @@ mod tests {
         .await;
         assert_eq!(1, events.len());
         assert_eq!(
-            json!({
+            &json!({
                 "FileCreated": {
                 "path": {
                     "mount_id": "mount_a",
@@ -325,7 +343,7 @@ mod tests {
                 },
                     }
             }),
-            events[0]
+            events[0].get("data").unwrap()
         );
     }
 
@@ -342,7 +360,7 @@ mod tests {
         .await;
         assert_eq!(1, events.len());
         assert_eq!(
-            json!({
+            &json!({
                 "FileChanged": {
                 "path": {
                     "mount_id": "mount_a",
@@ -350,7 +368,7 @@ mod tests {
                 },
                     }
             }),
-            events[0]
+            events[0].get("data").unwrap()
         );
     }
 
@@ -366,7 +384,7 @@ mod tests {
         .await;
         assert_eq!(1, events.len());
         assert_eq!(
-            json!({
+            &json!({
                 "FileDeleted": {
                     "path": {
                         "mount_id": "mount_a",
@@ -374,7 +392,7 @@ mod tests {
                     },
                 }
             }),
-            events[0]
+            events[0].get("data").unwrap()
         );
     }
 
@@ -392,7 +410,7 @@ mod tests {
         assert_eq!(1, events.len());
 
         assert_eq!(
-            json!({
+            &json!({
                 "FileMoved": {
                 "from": {
                     "mount_id": "mount_a",
@@ -404,7 +422,7 @@ mod tests {
                 },
                     }
             }),
-            events[0]
+            events[0].get("data").unwrap()
         );
     }
 }

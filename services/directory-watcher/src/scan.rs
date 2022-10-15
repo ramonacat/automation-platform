@@ -2,12 +2,13 @@ use crate::create_event_metadata;
 use crate::file_status_store::{FileStatusStore, FileStatusSyncResult};
 use crate::mount::{Mount, PathInside};
 use async_walkdir::{DirEntry, WalkDir};
-use events::Event;
+use events::{Event, EventKind};
 use futures_lite::stream::StreamExt;
 use std::fs::Metadata as FsMetadata;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -95,8 +96,12 @@ impl<T: events::Rpc + Sync + Send> Scanner<T> {
                     .lock()
                     .await
                     .send_event(
-                        Event::FileCreated {
-                            path: mount_relative_path.into(),
+                        Event {
+                            id: Uuid::new_v4(),
+                            created_time: std::time::SystemTime::now(),
+                            data: EventKind::FileCreated {
+                                path: mount_relative_path.into(),
+                            },
                         },
                         create_event_metadata(),
                     )
@@ -107,8 +112,12 @@ impl<T: events::Rpc + Sync + Send> Scanner<T> {
                     .lock()
                     .await
                     .send_event(
-                        Event::FileChanged {
-                            path: mount_relative_path.into(),
+                        Event {
+                            id: Uuid::new_v4(),
+                            created_time: std::time::SystemTime::now(),
+                            data: EventKind::FileChanged {
+                                path: mount_relative_path.into(),
+                            },
                         },
                         create_event_metadata(),
                     )
@@ -214,6 +223,10 @@ mod tests {
         events.sort_by(|a, b| {
             a.as_object()
                 .unwrap()
+                .get("data")
+                .unwrap()
+                .as_object()
+                .unwrap()
                 .values()
                 .next()
                 .unwrap()
@@ -225,6 +238,10 @@ mod tests {
                 .unwrap()
                 .cmp(
                     &b.as_object()
+                        .unwrap()
+                        .get("data")
+                        .unwrap()
+                        .as_object()
                         .unwrap()
                         .values()
                         .next()
@@ -244,7 +261,9 @@ mod tests {
             .iter()
             .position(|e| {
                 PathBuf::from(
-                    e.get("FileCreated")
+                    e.get("data")
+                        .unwrap()
+                        .get("FileCreated")
                         .expect(format!("Not a FileCreated event {:?}", e).as_str())
                         .get("path")
                         .unwrap()
@@ -259,6 +278,8 @@ mod tests {
         assert_eq!(
             &Value::String("mount_a".into()),
             events[index]
+                .get("data")
+                .unwrap()
                 .get("FileCreated")
                 .unwrap()
                 .get("path")
@@ -270,6 +291,8 @@ mod tests {
             PathBuf::from("a/b"),
             PathBuf::from(
                 events[index]
+                    .get("data")
+                    .unwrap()
                     .get("FileCreated")
                     .unwrap()
                     .get("path")
@@ -285,10 +308,10 @@ mod tests {
             .iter()
             .position(|e| {
                 PathBuf::from(
-                    (if let Some(x) = e.get("FileCreated") {
+                    (if let Some(x) = e.get("data").unwrap().get("FileCreated") {
                         Some(x)
                     } else {
-                        e.get("FileChanged")
+                        e.get("data").unwrap().get("FileChanged")
                     })
                     .unwrap()
                     .get("path")
@@ -304,6 +327,8 @@ mod tests {
         assert_eq!(
             &Value::String("mount_a".into()),
             events[index_b]
+                .get("data")
+                .unwrap()
                 .get("FileChanged")
                 .unwrap()
                 .get("path")
@@ -316,6 +341,8 @@ mod tests {
             PathBuf::from("b/c"),
             PathBuf::from(
                 events[index_b]
+                    .get("data")
+                    .unwrap()
                     .get("FileChanged")
                     .unwrap()
                     .get("path")

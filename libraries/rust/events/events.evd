@@ -1,6 +1,4 @@
 metadata {
-    created_time: instant,
-    id: guid,
     source: string
 }
 
@@ -9,11 +7,18 @@ struct FileOnMountPath {
     mount_id: string
 }
 
+struct Event {
+    id: guid,
+    created_time: instant,
+    data: EventKind
+}
+
 struct SubscribeRequest {
+    id: guid,
     from: instant?,
 }
 
-enum Event {
+enum EventKind {
     FileCreated(path: FileOnMountPath),
     FileDeleted(path: FileOnMountPath),
     FileChanged(path: FileOnMountPath),

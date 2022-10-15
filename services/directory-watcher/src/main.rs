@@ -10,10 +10,8 @@ use notify::{PollWatcher, RecursiveMode, Watcher};
 use platform::secrets::SecretProvider;
 use postgres_native_tls::MakeTlsConnector;
 use std::sync::Arc;
-use std::time::SystemTime;
 use tokio::sync::Mutex;
 use tokio_postgres::Client;
-use uuid::Uuid;
 
 mod file_status_store;
 mod filesystem_events;
@@ -31,9 +29,7 @@ extern crate async_trait;
 
 fn create_event_metadata() -> Metadata {
     Metadata {
-        created_time: SystemTime::now(),
         source: "directory-watcher".to_string(),
-        id: Uuid::new_v4(),
     }
 }
 
