@@ -6778,16 +6778,16 @@
         },
         {
             "name": "symplify/easy-coding-standard",
-            "version": "11.1.12",
+            "version": "11.1.13",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symplify/easy-coding-standard.git",
-                "reference": "b8d3807b2317cadda1e6fd80f4dccf02226800ed"
+                "reference": "9a2a2f7bec947308807b715a228996edc77c2e7e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symplify/easy-coding-standard/zipball/b8d3807b2317cadda1e6fd80f4dccf02226800ed",
-                "reference": "b8d3807b2317cadda1e6fd80f4dccf02226800ed",
+                "url": "https://api.github.com/repos/symplify/easy-coding-standard/zipball/9a2a2f7bec947308807b715a228996edc77c2e7e",
+                "reference": "9a2a2f7bec947308807b715a228996edc77c2e7e",
                 "shasum": ""
             },
             "require": {
@@ -6817,7 +6817,7 @@
             ],
             "description": "Prefixed scoped version of ECS package",
             "support": {
-                "source": "https://github.com/symplify/easy-coding-standard/tree/11.1.12"
+                "source": "https://github.com/symplify/easy-coding-standard/tree/11.1.13"
             },
             "funding": [
                 {
@@ -6829,7 +6829,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2022-10-24T19:28:59+00:00"
+            "time": "2022-10-26T11:12:35+00:00"
         },
         {
             "name": "theseer/tokenizer",
