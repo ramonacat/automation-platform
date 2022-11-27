@@ -1256,9 +1256,14 @@ name = "platform"
 version = "0.1.0"
 dependencies = [
  "jsonpath-rust",
+ "native-tls",
+ "pathdiff",
+ "postgres-native-tls",
  "serde",
  "serde_json",
  "thiserror",
+ "tokio",
+ "tokio-postgres",
  "tracing",
 ]
 

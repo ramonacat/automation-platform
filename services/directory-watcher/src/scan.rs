@@ -1,9 +1,9 @@
 use crate::create_event_metadata;
 use crate::file_status_store::{FileStatusStore, FileStatusSyncResult};
-use crate::mount::{Mount, PathInside};
 use async_walkdir::{DirEntry, WalkDir};
-use events::{Event, EventKind};
+use events::{Event, EventKind, FileOnMountPath};
 use futures_lite::stream::StreamExt;
+use platform::mounts::Mount;
 use std::fs::Metadata as FsMetadata;
 use std::sync::Arc;
 use time::OffsetDateTime;
@@ -17,7 +17,7 @@ pub enum Error {
     #[error("IO error")]
     Io(#[from] std::io::Error),
     #[error("Failed to get mount relative path")]
-    MountRelativePath(#[from] crate::mount::Error),
+    MountRelativePath(#[from] platform::mounts::MountError),
     #[error("Failed to sync the state")]
     Sync(#[from] crate::file_status_store::Error),
     #[error("RPC call failed")]
@@ -27,22 +27,26 @@ pub enum Error {
 pub struct Scanner<T: events::Rpc + Sync + Send> {
     event_sender: Arc<Mutex<T>>,
     file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
+    mounts: Arc<Mutex<platform::mounts::Provider>>,
 }
 
 impl<T: events::Rpc + Sync + Send> Scanner<T> {
     pub fn new(
         event_sender: Arc<Mutex<T>>,
         file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
+        mounts: Arc<Mutex<platform::mounts::Provider>>,
     ) -> Self {
         Self {
             event_sender,
             file_status_store,
+            mounts,
         }
     }
 
-    pub async fn scan(&mut self, mounts: &[Mount]) -> Result<(), Error> {
+    pub async fn scan(&mut self) -> Result<(), Error> {
         // todo check for deleted files that are still in the DB
-        // todo push this to its own thread?
+        // todo push this to its own thread/task?
+        let mounts = self.mounts.lock().await.mounts();
         for dir in mounts {
             info!("Watching: {} ({})", dir.path().to_string_lossy(), dir.id());
 
@@ -57,7 +61,7 @@ impl<T: events::Rpc + Sync + Send> Scanner<T> {
                             continue;
                         }
 
-                        self.sync_file(dir, entry, metadata).await?;
+                        self.sync_file(&dir, entry, metadata).await?;
                     }
                     Some(Err(e)) => {
                         error!("Failed to read path {}", e);
@@ -78,7 +82,11 @@ impl<T: events::Rpc + Sync + Send> Scanner<T> {
     ) -> Result<(), Error> {
         let path = entry.path();
 
-        let mount_relative_path = PathInside::from_absolute(dir, &path)?;
+        let mount_relative_path = self
+            .mounts
+            .lock()
+            .await
+            .path_inside_from_filesystem_path_with_mount(&path, dir)?;
         let sync_status = self
             .file_status_store
             .lock()
@@ -100,7 +108,10 @@ impl<T: events::Rpc + Sync + Send> Scanner<T> {
                             id: Uuid::new_v4(),
                             created_time: std::time::SystemTime::now(),
                             data: EventKind::FileCreated {
-                                path: mount_relative_path.into(),
+                                path: FileOnMountPath {
+                                    path: mount_relative_path.path().to_string(),
+                                    mount_id: mount_relative_path.mount_id().to_string(),
+                                },
                             },
                         },
                         create_event_metadata(),
@@ -116,7 +127,10 @@ impl<T: events::Rpc + Sync + Send> Scanner<T> {
                             id: Uuid::new_v4(),
                             created_time: std::time::SystemTime::now(),
                             data: EventKind::FileChanged {
-                                path: mount_relative_path.into(),
+                                path: FileOnMountPath {
+                                    path: mount_relative_path.path().to_string(),
+                                    mount_id: mount_relative_path.mount_id().to_string(),
+                                },
                             },
                         },
                         create_event_metadata(),
@@ -135,6 +149,7 @@ mod tests {
     use super::*;
     use events::{Metadata, SubscribeRequest};
     use futures_lite::Stream;
+    use platform::mounts::{PathInside, Provider};
     use rpc_support::rpc_error::RpcError;
     use serde_json::{to_value, Value};
     use std::path::PathBuf;
@@ -171,22 +186,22 @@ mod tests {
     impl FileStatusStore for MockFileStatusStore {
         async fn delete(
             &mut self,
-            _path: &PathInside<'_>,
+            _path: &PathInside,
         ) -> Result<(), crate::file_status_store::Error> {
             todo!()
         }
 
         async fn rename(
             &mut self,
-            _from: &PathInside<'_>,
-            _to: &PathInside<'_>,
+            _from: &PathInside,
+            _to: &PathInside,
         ) -> Result<(), crate::file_status_store::Error> {
             todo!()
         }
 
         async fn sync(
             &mut self,
-            path: &PathInside<'_>,
+            path: &PathInside,
             _modified_at: OffsetDateTime,
         ) -> Result<FileStatusSyncResult, crate::file_status_store::Error> {
             if path.path().ends_with("a/b") {
@@ -202,9 +217,16 @@ mod tests {
     #[tokio::test]
     pub async fn will_mark_preexisting_file_as_not_changed() {
         let sender = Arc::new(Mutex::new(MockRpcClient { events: vec![] }));
-        let mut scanner = Scanner::new(sender.clone(), Arc::new(Mutex::new(MockFileStatusStore)));
         let tempdir = tempfile::TempDir::new().unwrap();
         let temp = tempdir.path();
+        let mut scanner = Scanner::new(
+            sender.clone(),
+            Arc::new(Mutex::new(MockFileStatusStore)),
+            Arc::new(Mutex::new(Provider::new(vec![Mount::new(
+                "mount_a".into(),
+                temp.to_path_buf(),
+            )]))),
+        );
 
         std::fs::create_dir(temp.join("a")).unwrap();
         std::fs::create_dir(temp.join("b")).unwrap();
@@ -214,10 +236,7 @@ mod tests {
         std::fs::write(temp.join("b/c"), "test").unwrap();
         std::fs::write(temp.join("c/d"), "test").unwrap();
 
-        scanner
-            .scan(&[Mount::new("mount_a".into(), temp.to_path_buf())])
-            .await
-            .unwrap();
+        scanner.scan().await.unwrap();
 
         let mut events = sender.lock().await.events.clone();
         events.sort_by(|a, b| {

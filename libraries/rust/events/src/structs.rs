@@ -7,27 +7,24 @@ pub struct Metadata {
     pub source: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Event {
-    pub id: ::uuid::Uuid,
-    pub data: EventKind,
-    #[serde(with = "rpc_support::system_time_serializer")]
-    pub created_time: std::time::SystemTime,
+pub struct FileOnMountPath {
+    pub path: String,
+    pub mount_id: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FileOnMountPath {
-    pub mount_id: String,
-    pub path: String,
+pub struct Event {
+    #[serde(with = "rpc_support::system_time_serializer")]
+    pub created_time: std::time::SystemTime,
+    pub data: EventKind,
+    pub id: ::uuid::Uuid,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SubscribeRequest {
-    pub id: ::uuid::Uuid,
     pub from: Option<std::time::SystemTime>,
+    pub id: ::uuid::Uuid,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum EventKind {
-    FileDeleted {
-        path: FileOnMountPath,
-    },
     FileChanged {
         path: FileOnMountPath,
     },
@@ -35,8 +32,11 @@ pub enum EventKind {
         path: FileOnMountPath,
     },
     FileMoved {
-        from: FileOnMountPath,
         to: FileOnMountPath,
+        from: FileOnMountPath,
+    },
+    FileDeleted {
+        path: FileOnMountPath,
     },
 }
 

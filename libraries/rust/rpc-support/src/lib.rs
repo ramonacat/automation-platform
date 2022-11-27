@@ -248,8 +248,6 @@ impl RawRpcClient {
 
         let rx_stream = Box::pin(async_stream::stream! {
             while let Some(response_line) = rx.recv().await {
-                info!("Got response line: {:?}", response_line);
-
                 if response_line.0.stream_end {
                     break;
                 }
