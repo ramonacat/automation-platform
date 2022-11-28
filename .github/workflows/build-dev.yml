@@ -39,7 +39,7 @@ jobs:
               name: Cache Docker layers
               uses: actions/cache@v3
               with:
-                path: /tmp/.buildx-cache
+                path: /mnt/.buildx-cache
                 key: ${{ runner.os }}-buildx-v3-${{ github.sha }}
                 restore-keys: |
                   ${{ runner.os }}-buildx-v3-
@@ -96,4 +96,4 @@ jobs:
                 # https://github.com/moby/buildkit/issues/1896
                 name: Move cache
                 run: |
-                    ([ -e /tmp/.buildx-cache-new ] && rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache) || true
+                    ([ -e /mnt/.buildx-cache-new ] && rm -rf /mnt/.buildx-cache && mv /mnt/.buildx-cache-new /mnt/.buildx-cache) || true

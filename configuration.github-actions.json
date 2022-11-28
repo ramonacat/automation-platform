@@ -6,9 +6,9 @@
                 "buildx",
                 "build",
                 "--cache-from",
-                "type=local,src=/tmp/.buildx-cache",
+                "type=local,src=/mnt/.buildx-cache",
                 "--cache-to",
-                "type=local,dest=/tmp/.buildx-cache-new,mode=max"
+                "type=local,dest=/mnt/.buildx-cache-new,mode=max"
             ]
         }
     }
