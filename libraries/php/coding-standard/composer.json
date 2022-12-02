@@ -10,7 +10,7 @@
     "roave/security-advisories": "dev-latest"
   },
   "require-dev": {
-    "vimeo/psalm": "^4.13"
+    "vimeo/psalm": "^4.13 || ^5.0"
   },
   "bin": [
     "bin/build.php"
