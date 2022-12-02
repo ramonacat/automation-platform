@@ -729,9 +729,9 @@ dependencies = [
 
 [[package]]
 name = "jsonpath-rust"
-version = "0.1.6"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41131a7cbe7d07d533194afb1563503446dff84474155aec24f9ff972ab6ca18"
+checksum = "6a253c3700953a3f08b978b5a24fa2bb1670b1e6b1a85383a847fa4277148872"
 dependencies = [
  "pest",
  "pest_derive",
@@ -1001,6 +1001,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "pathdiff"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8835116a5c179084a830efb3adc117ab007512b535bc1a21c991d3b32a6b44dd"
+
+[[package]]
 name = "percent-encoding"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1115,9 +1121,14 @@ name = "platform"
 version = "0.1.0"
 dependencies = [
  "jsonpath-rust",
+ "native-tls",
+ "pathdiff",
+ "postgres-native-tls",
  "serde",
  "serde_json",
  "thiserror",
+ "tokio",
+ "tokio-postgres",
  "tracing",
 ]
 

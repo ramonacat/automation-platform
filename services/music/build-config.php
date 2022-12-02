@@ -27,6 +27,16 @@ return static function (BuildDefinitionBuilder $builder) {
     );
     $builder->addTargetGenerator($dockerTargetGenerator);
 
+    $dockerMigrationsTargetGenerator = new DockerTargetGenerator(
+        __DIR__,
+        'image-migrations',
+        'automation-platform-svc-migrations-music',
+        [],
+        '.',
+        'docker/migrations.Dockerfile'
+    );
+    $builder->addTargetGenerator($dockerMigrationsTargetGenerator);
+
     // todo this is copy-pasted from directory-watcher, there should be something more generalised for this
     $builder->addTarget(
         'generate-kustomize-override',
@@ -37,6 +47,13 @@ return static function (BuildDefinitionBuilder $builder) {
                 new KustomizeOverride(
                     '$.spec.template.metadata.labels.app',
                     fn() => 'svc-music'
+                ),
+                new KustomizeOverride(
+                    '$.spec.template.spec.initContainers[0]',
+                    fn(Context $c) => [
+                        'name' => 'migrations',
+                        'image' => $c->artifactCollector()->getByKey(__DIR__, 'image-migrations')->name()
+                    ]
                 ),
                 new KustomizeOverride(
                     '$.spec.template.spec.containers[0]',
@@ -57,6 +74,12 @@ return static function (BuildDefinitionBuilder $builder) {
                 new KustomizeOverride(
                     '$.spec.template.spec.volumes',
                     fn(Context $c) => [
+                        [
+                            'name' => 'music-ap-music-credentials',
+                            'secret' => [
+                                'secretName' => 'music.ap-music.credentials.postgresql.acid.zalan.do'
+                            ]
+                        ],
                         ...array_map(
                             static fn(array $mount) => [
                                 'name' => $mount['name'],

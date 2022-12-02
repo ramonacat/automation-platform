@@ -1,5 +1,4 @@
 use crate::file_status_store::FileStatusStore;
-use crate::mount::{Mount, PathInside};
 use crate::{create_event_metadata, HandleEventsError};
 use events::{Event, FileOnMountPath};
 use notify::event::{ModifyKind, RenameMode};
@@ -12,26 +11,17 @@ use time::OffsetDateTime;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-pub struct FilesystemEventHandler<'a, T: events::Rpc + Sync + Send> {
+pub struct FilesystemEventHandler<T: events::Rpc + Sync + Send> {
     event_sender: Arc<Mutex<T>>,
     file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
-    mounts: &'a [Mount],
+    mounts: Arc<Mutex<platform::mounts::Provider>>,
 }
 
-impl From<PathInside<'_>> for FileOnMountPath {
-    fn from(p: PathInside) -> Self {
-        Self {
-            path: p.path().to_string(),
-            mount_id: p.mount_id().to_string(),
-        }
-    }
-}
-
-impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
+impl<T: events::Rpc + Sync + Send> FilesystemEventHandler<T> {
     pub fn new(
         event_sender: Arc<Mutex<T>>,
         file_status_store: Arc<Mutex<dyn FileStatusStore + Send>>,
-        mounts: &'a [Mount],
+        mounts: Arc<Mutex<platform::mounts::Provider>>,
     ) -> Self {
         Self {
             event_sender,
@@ -98,8 +88,16 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
             return Ok(());
         }
 
-        let path_relative_from = PathInside::from_mount_list(self.mounts, x)?;
-        let path_relative_to = PathInside::from_mount_list(self.mounts, y)?;
+        let path_relative_from = self
+            .mounts
+            .lock()
+            .await
+            .path_inside_from_filesystem_path(x)?;
+        let path_relative_to = self
+            .mounts
+            .lock()
+            .await
+            .path_inside_from_filesystem_path(y)?;
 
         self.file_status_store
             .lock()
@@ -115,8 +113,14 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
                     id: Uuid::new_v4(),
                     created_time: std::time::SystemTime::now(),
                     data: events::EventKind::FileMoved {
-                        from: path_relative_from.into(),
-                        to: path_relative_to.into(),
+                        from: FileOnMountPath {
+                            path: path_relative_from.path().to_string(),
+                            mount_id: path_relative_from.mount_id().to_string(),
+                        },
+                        to: FileOnMountPath {
+                            path: path_relative_to.path().to_string(),
+                            mount_id: path_relative_to.mount_id().to_string(),
+                        },
                     },
                 },
                 create_event_metadata(),
@@ -128,7 +132,11 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
 
     // TODO only send events in case we had the file in the database (i.e. an event about creation was sent before)
     async fn handle_file_deleted(&self, x: &Path) -> Result<(), HandleEventsError> {
-        let mount_relative_path = PathInside::from_mount_list(self.mounts, x)?;
+        let mount_relative_path = self
+            .mounts
+            .lock()
+            .await
+            .path_inside_from_filesystem_path(x)?;
 
         self.file_status_store
             .lock()
@@ -144,7 +152,10 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
                     created_time: SystemTime::now(),
                     id: Uuid::new_v4(),
                     data: events::EventKind::FileDeleted {
-                        path: mount_relative_path.into(),
+                        path: FileOnMountPath {
+                            path: mount_relative_path.path().to_string(),
+                            mount_id: mount_relative_path.mount_id().to_string(),
+                        },
                     },
                 },
                 create_event_metadata(),
@@ -155,7 +166,11 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
     }
 
     async fn handle_file_created(&self, x: &Path) -> Result<(), HandleEventsError> {
-        let mount_relative_path = PathInside::from_mount_list(self.mounts, x)?;
+        let mount_relative_path = self
+            .mounts
+            .lock()
+            .await
+            .path_inside_from_filesystem_path(x)?;
 
         let (modified_date, is_dir) = Self::modified_date(x)?;
 
@@ -177,7 +192,10 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
                     created_time: SystemTime::now(),
                     id: Uuid::new_v4(),
                     data: events::EventKind::FileCreated {
-                        path: mount_relative_path.into(),
+                        path: FileOnMountPath {
+                            path: mount_relative_path.path().to_string(),
+                            mount_id: mount_relative_path.mount_id().to_string(),
+                        },
                     },
                 },
                 create_event_metadata(),
@@ -188,7 +206,11 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
     }
 
     async fn handle_file_modified(&self, x: &Path) -> Result<(), HandleEventsError> {
-        let mount_relative_path = PathInside::from_mount_list(self.mounts, x)?;
+        let mount_relative_path = self
+            .mounts
+            .lock()
+            .await
+            .path_inside_from_filesystem_path(x)?;
         let (modified_date, is_dir) = Self::modified_date(x)?;
 
         if is_dir {
@@ -209,7 +231,10 @@ impl<'a, T: events::Rpc + Sync + Send> FilesystemEventHandler<'a, T> {
                     created_time: SystemTime::now(),
                     id: Uuid::new_v4(),
                     data: events::EventKind::FileChanged {
-                        path: mount_relative_path.into(),
+                        path: FileOnMountPath {
+                            path: mount_relative_path.path().to_string(),
+                            mount_id: mount_relative_path.mount_id().to_string(),
+                        },
                     },
                 },
                 create_event_metadata(),
@@ -235,6 +260,7 @@ mod tests {
     use events::{Metadata, SubscribeRequest};
     use futures_lite::Stream;
     use notify::event::{CreateKind, DataChange, RemoveKind};
+    use platform::mounts::{Mount, PathInside, Provider};
     use rpc_support::rpc_error::RpcError;
     use serde_json::{json, to_value, Value};
     use std::path::PathBuf;
@@ -275,22 +301,22 @@ mod tests {
     impl FileStatusStore for MockFileStatusStore {
         async fn delete(
             &mut self,
-            _path: &PathInside<'_>,
+            _path: &PathInside,
         ) -> Result<(), crate::file_status_store::Error> {
             Ok(())
         }
 
         async fn rename(
             &mut self,
-            _from: &PathInside<'_>,
-            _to: &PathInside<'_>,
+            _from: &PathInside,
+            _to: &PathInside,
         ) -> Result<(), crate::file_status_store::Error> {
             Ok(())
         }
 
         async fn sync(
             &mut self,
-            _path: &PathInside<'_>,
+            _path: &PathInside,
             _modified_at: OffsetDateTime,
         ) -> Result<FileStatusSyncResult, crate::file_status_store::Error> {
             Ok(self.sync_result)
@@ -312,7 +338,7 @@ mod tests {
         let handler = FilesystemEventHandler::new(
             event_sender.clone(),
             Arc::new(Mutex::new(MockFileStatusStore { sync_result })),
-            &mounts,
+            Arc::new(Mutex::new(Provider::new(mounts))),
         );
         let (tx, rx) = std::sync::mpsc::channel();
 

@@ -1,4 +1,4 @@
-use crate::mount::PathInside;
+use platform::mounts::PathInside;
 use std::ops::Sub;
 use std::sync::Arc;
 use time::OffsetDateTime;
@@ -20,11 +20,11 @@ pub enum Error {
 
 #[async_trait]
 pub trait FileStatusStore {
-    async fn delete(&mut self, path: &PathInside<'_>) -> Result<(), Error>;
-    async fn rename(&mut self, from: &PathInside<'_>, to: &PathInside<'_>) -> Result<(), Error>;
+    async fn delete(&mut self, path: &PathInside) -> Result<(), Error>;
+    async fn rename(&mut self, from: &PathInside, to: &PathInside) -> Result<(), Error>;
     async fn sync(
         &mut self,
-        path: &PathInside<'_>,
+        path: &PathInside,
         modified_at: OffsetDateTime,
     ) -> Result<FileStatusSyncResult, Error>;
 }
@@ -40,7 +40,7 @@ impl Postgres {
 
 #[async_trait]
 impl FileStatusStore for Postgres {
-    async fn delete(&mut self, path: &PathInside<'_>) -> Result<(), Error> {
+    async fn delete(&mut self, path: &PathInside) -> Result<(), Error> {
         self.pg_client
             .lock()
             .await
@@ -52,7 +52,7 @@ impl FileStatusStore for Postgres {
         Ok(())
     }
 
-    async fn rename(&mut self, from: &PathInside<'_>, to: &PathInside<'_>) -> Result<(), Error> {
+    async fn rename(&mut self, from: &PathInside, to: &PathInside) -> Result<(), Error> {
         assert_eq!(
             from.mount_id(),
             to.mount_id(),
@@ -72,7 +72,7 @@ impl FileStatusStore for Postgres {
 
     async fn sync(
         &mut self,
-        path: &PathInside<'_>,
+        path: &PathInside,
         modified_at: OffsetDateTime,
     ) -> Result<FileStatusSyncResult, Error> {
         let mut postgres = self.pg_client.lock().await;

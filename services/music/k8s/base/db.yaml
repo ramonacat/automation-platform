@@ -1,0 +1,19 @@
+apiVersion: "acid.zalan.do/v1"
+kind: postgresql
+metadata:
+  name: ap-music
+  namespace: default
+spec:
+  teamId: "ap"
+  volume:
+    size: 1Gi
+  numberOfInstances: 2
+  users:
+    ap:
+      - superuser
+      - createdb
+    music: []
+  databases:
+    music: ap  # dbname: owner
+  postgresql:
+    version: "14"

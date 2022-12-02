@@ -14,8 +14,22 @@ spec:
       labels:
         app: svc-music
     spec:
+      initContainers:
+        - name: migrations
+          image: automation-platform-svc-migrations-music:latest
+          volumeMounts:
+            - name: music-ap-music-credentials
+              mountPath: "/etc/svc-events/secrets/music.ap-music.credentials"
+              readOnly: true
       containers:
         - name: app
           image: automation-platform-svc-music:latest # todo find out how to handle this for prod
           imagePullPolicy: Never # todo this will of course break in prod
-      volumes: []
+          volumeMounts:
+            - name: music-ap-music-credentials
+              mountPath: "/etc/svc-events/secrets/music.ap-music.credentials"
+              readOnly: true
+      volumes:
+        - name: music-ap-music-credentials
+          secret:
+            secretName: music.ap-music.credentials.postgresql.acid.zalan.do
