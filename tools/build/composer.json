@@ -38,7 +38,7 @@
         "phpunit/phpunit": "^9.5",
         "psalm/plugin-symfony": "^3.0 || ^4.0",
         "infection/infection": "^0.25.3 || ^0.26.0",
-        "psalm/plugin-phpunit": "^0.16.1 || ^0.17.0"
+        "psalm/plugin-phpunit": "^0.16.1 || ^0.17.0 || ^0.18.0"
     },
     "bin": [
         "bin/build.php"
