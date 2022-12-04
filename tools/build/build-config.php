@@ -12,7 +12,7 @@ return static function (BuildDefinitionBuilder $builder) {
         new TargetGenerator(
             __DIR__,
             new Configuration(
-                minMsi: 92,
+                minMsi: 91,
                 minCoveredMsi: 94
             )
         )
