@@ -13,6 +13,6 @@ jsonpath-rust = "0.2.0"
 tracing = "0.1.37"
 tokio = { version = "1.21.2", features=["full"] }
 tokio-postgres = { version = "0.7.7", features = ["with-time-0_3"] }
-native-tls = "0.2.10"
+native-tls = "0.2.11"
 postgres-native-tls = "0.5.0"
 pathdiff="0.2.1"
