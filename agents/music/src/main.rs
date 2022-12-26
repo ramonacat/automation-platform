@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let fr = FlacReader::new(&*vec)?;
     for (name, value) in fr.tags() {
-        println!("{}: {}", name, value);
+        println!("{name}: {value}");
     }
     println!("=====");
 

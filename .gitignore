@@ -17,3 +17,6 @@ configuration.*.local.json
 /services/*/k8s/overlays/dev/**
 !/services/*/k8s/overlays/dev/kustomization.yaml
 *.flac
+*.profraw
+*.profdata
+tests_coverage.json

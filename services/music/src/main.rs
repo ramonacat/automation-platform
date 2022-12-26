@@ -54,7 +54,7 @@ impl Rpc for RpcServer {
 
 impl From<Error> for RpcError {
     fn from(err: Error) -> Self {
-        RpcError::Custom(format!("{:?}", err))
+        RpcError::Custom(format!("{err:?}"))
     }
 }
 
@@ -63,7 +63,7 @@ fn to_rpc_error<T>(e: T) -> RpcError
 where
     T: std::error::Error,
 {
-    RpcError::Custom(format!("{:?}", e))
+    RpcError::Custom(format!("{e:?}"))
 }
 
 #[tokio::main]

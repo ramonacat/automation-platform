@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let type_checker = TypeChecker::new();
     let typed_file = type_checker.check(&ast)?;
     let rust = compiler_rust::compile(typed_file);
-    println!("{}", rust);
+    println!("{rust}");
 
     Ok(())
 }

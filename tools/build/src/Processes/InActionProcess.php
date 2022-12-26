@@ -14,14 +14,23 @@ final class InActionProcess
     /**
      * @param list<string> $command
      * @param int $timeout
+     * @param array<string, string> $additionalEnvironmentVariables
      */
-    public function __construct(private string $workingDirectory, private array $command, private int $timeout)
-    {
+    public function __construct(
+        private string $workingDirectory,
+        private array $command,
+        private int $timeout,
+        private array $additionalEnvironmentVariables = []
+    ) {
     }
 
     public function run(TargetOutput $output, string $standardIn = ''): bool
     {
-        $process = new Process($this->command, $this->workingDirectory);
+        $process = new Process(
+            $this->command,
+            $this->workingDirectory,
+            env: $this->additionalEnvironmentVariables + $_ENV
+        );
 
         $process->setTimeout($this->timeout);
         $process->setInput($standardIn);

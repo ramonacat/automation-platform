@@ -130,7 +130,7 @@ where
                     send_stream_response(&mut write, result, request_id).await?;
                 }
                 // fixme do not panic here!
-                _ => panic!("Unknown method name: {}", method_name),
+                _ => panic!("Unknown method name: {method_name}"),
             };
         }
     }

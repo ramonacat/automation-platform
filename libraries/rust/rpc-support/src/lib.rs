@@ -57,7 +57,7 @@ pub enum RpcClientTaskError {
 
 impl<T> From<tokio::sync::mpsc::error::SendError<T>> for RpcClientTaskError {
     fn from(e: tokio::sync::mpsc::error::SendError<T>) -> Self {
-        RpcClientTaskError::Mpsc(format!("{}", e))
+        RpcClientTaskError::Mpsc(format!("{e}"))
     }
 }
 
