@@ -22,18 +22,17 @@ impl Display for TypeCheckError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             TypeCheckError::RepeatedName(name) => {
-                write!(f, "The type with name \"{}\" already exists", name)
+                write!(f, "The type with name \"{name}\" already exists")
             }
             TypeCheckError::RepeatedFieldName {
                 field_name,
                 struct_name,
             } => write!(
                 f,
-                "A field with name \"{}\" already exists in struct \"{}\"",
-                field_name, struct_name
+                "A field with name \"{field_name}\" already exists in struct \"{struct_name}\""
             ),
             TypeCheckError::StructNotFound(name) => {
-                write!(f, "A struct with name \"{}\" does not exist", name)
+                write!(f, "A struct with name \"{name}\" does not exist")
             }
         }
     }
@@ -467,13 +466,13 @@ impl<'input> TypeChecker<'input> {
         });
 
         Ok(TypedFile {
-            structs: structs_typed.into_iter().map(|(_, v)| v).collect(),
-            enums: enums_typed.into_iter().map(|(_, v)| v).collect(),
+            structs: structs_typed.into_values().collect(),
+            enums: enums_typed.into_values().collect(),
             meta: TypedMetadata {
                 fields: meta_fields,
             },
             rpc: TypedRpc {
-                calls: rpc.map_or_else(Vec::new, |rpc| rpc.into_iter().map(|(_, v)| v).collect()),
+                calls: rpc.map_or_else(Vec::new, |rpc| rpc.into_values().collect()),
             },
         })
     }

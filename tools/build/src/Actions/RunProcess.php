@@ -21,17 +21,24 @@ final class RunProcess implements BuildAction
     /**
      * @param list<string> $command
      * @param list<Artifact> $artifacts
+     * @param array<string, string> $additionalEnvironmentVariables
      */
     public function __construct(
         private array $command,
         private array $artifacts = [],
-        private int $timeoutSeconds = self::DEFAULT_TIMEOUT
+        private int $timeoutSeconds = self::DEFAULT_TIMEOUT,
+        private array $additionalEnvironmentVariables = []
     ) {
     }
 
     public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult
     {
-        $process = new InActionProcess($workingDirectory, $this->command, $this->timeoutSeconds);
+        $process = new InActionProcess(
+            $workingDirectory,
+            $this->command,
+            $this->timeoutSeconds,
+            $this->additionalEnvironmentVariables,
+        );
 
         $commandName = implode(' ', $this->command);
 

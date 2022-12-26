@@ -7,7 +7,9 @@ namespace Ramona\AutomationPlatformLibBuild\Artifacts;
 use Bramus\Ansi\Ansi;
 use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
 use function count;
+use function get_class;
 use const PHP_EOL;
+use ReflectionClass;
 
 /**
  * @implements Publisher<Artifact>
@@ -46,9 +48,23 @@ final class LogOnlyPublisher implements Publisher
             ->nostyle();
 
         foreach ($this->artifacts as $artifact) {
+            $artifactName = get_class($artifact);
+            $artifactReflection = new ReflectionClass($artifact);
+            foreach ($artifactReflection->getAttributes() as $attribute) {
+                if ($attribute->getName() === DisplayName::class) {
+                    $attributeInstance = $attribute->newInstance();
+                    /** @var DisplayName $attributeInstance */
+                    $artifactName = $attributeInstance->name();
+                }
+            }
+
             $this
                 ->ansi
                 ->text('    * ')
+                ->color([SGR::COLOR_FG_PURPLE])
+                ->text($artifactName)
+                ->nostyle()
+                ->text(' ')
                 ->text($artifact->name())
                 ->text(PHP_EOL);
         }
