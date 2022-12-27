@@ -10,7 +10,7 @@ tokio = { version = "1.23.0", features = ["full"] }
 tokio-stream = "0.1.11"
 tracing="0.1.37"
 tracing-subscriber = "0.3.16"
-serde = { version = "1.0.150", features=["derive"] }
+serde = { version = "1.0.152", features=["derive"] }
 serde_json="1.0.89"
 tokio-postgres = { version = "0.7.7", features=["with-uuid-1", "with-time-0_3", "with-serde_json-1"] }
 uuid = { version = "1.2.1", features=["v4"] }
