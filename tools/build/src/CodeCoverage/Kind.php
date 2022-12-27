@@ -7,4 +7,5 @@ namespace Ramona\AutomationPlatformLibBuild\CodeCoverage;
 enum Kind
 {
     case LlvmJson;
+    case Clover;
 }

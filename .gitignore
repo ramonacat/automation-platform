@@ -20,3 +20,4 @@ configuration.*.local.json
 *.profraw
 *.profdata
 tests_coverage.json
+coverage.xml

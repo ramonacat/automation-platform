@@ -31,7 +31,6 @@ final class TargetGenerator implements TargetGeneratorInterface
         $this->targets = [
             new Target(new TargetId($this->projectDirectory, 'php-type-check'), new RunProcess(['php', 'vendor/bin/psalm'])),
             new Target(new TargetId($this->projectDirectory, 'php-coding-standard'), new RunProcess(['php', 'vendor/bin/ecs'])),
-            // The config file here is a temporary solution until https://github.com/maglnet/ComposerRequireChecker/pull/320 is done and merged
             new Target(
                 new TargetId($this->projectDirectory, 'php-check-transitive-deps'),
                 new RunProcess(
@@ -53,7 +52,7 @@ final class TargetGenerator implements TargetGeneratorInterface
             ),
             new Target(new TargetId($this->projectDirectory, 'php-check-unused-deps'), new RunProcess(['composer-unused'], [], 60)),
             new Target(new TargetId($this->projectDirectory, 'php-cs-fix'), new RunProcess(['php', 'vendor/bin/ecs', '--fix'])),
-            new Target(new TargetId($this->projectDirectory, 'php-tests-unit'), new RunProcess(['php', 'vendor/bin/phpunit'], timeoutSeconds: 600), [new TargetId($this->projectDirectory, 'php-type-check')]),
+            new Target(new TargetId($this->projectDirectory, 'php-tests-unit'), new RunUnitTests(), [new TargetId($this->projectDirectory, 'php-type-check')]),
 
         ];
     }
