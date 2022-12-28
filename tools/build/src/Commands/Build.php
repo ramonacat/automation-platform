@@ -14,6 +14,7 @@ use Exception;
 use function get_class;
 use function getenv;
 use function implode;
+use function is_a;
 use function is_string;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -22,6 +23,7 @@ use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\Artifacts\LogOnlyPublisher;
+use Ramona\AutomationPlatformLibBuild\Artifacts\Publisher;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\ChangeTracking\GitChangeTracker;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
@@ -49,10 +51,19 @@ final class Build
     private string $workingDirectory;
     private Ansi $ansi;
 
+    /**
+     * @var list<Publisher> $artifactPublishers
+     */
+    private array $artifactPublishers;
+
     public function __construct()
     {
         $this->workingDirectory = realpath(getcwd());
         $this->ansi = new Ansi(new StreamWriter('php://stdout'));
+        $this->artifactPublishers = [
+            new LogOnlyPublisher($this->ansi),
+            new \Ramona\AutomationPlatformLibBuild\CodeCoverage\Publisher(),
+        ];
     }
 
     /**
@@ -161,12 +172,15 @@ final class Build
      */
     private function publishArtifacts(array $artifacts): void
     {
-        $artifactPublisher = new LogOnlyPublisher($this->ansi);
-        foreach ($artifacts as $artifact) {
-            $artifactPublisher->publish($artifact);
-        }
+        foreach ($this->artifactPublishers as $artifactPublisher) {
+            foreach ($artifacts as $artifact) {
+                if (is_a($artifact, $artifactPublisher->publishes())) {
+                    $artifactPublisher->publish($artifact);
+                }
+            }
 
-        $artifactPublisher->print();
+            $artifactPublisher->print($this->ansi);
+        }
     }
 
     private function printException(BuildFacts $buildFacts, Exception $e): void

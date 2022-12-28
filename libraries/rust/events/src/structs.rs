@@ -7,9 +7,9 @@ pub struct Metadata {
     pub source: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct SubscribeRequest {
-    pub id: ::uuid::Uuid,
-    pub from: Option<std::time::SystemTime>,
+pub struct FileOnMountPath {
+    pub path: String,
+    pub mount_id: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Event {
@@ -19,34 +19,29 @@ pub struct Event {
     pub data: EventKind,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FileOnMountPath {
-    pub path: String,
-    pub mount_id: String,
+pub struct SubscribeRequest {
+    pub from: Option<std::time::SystemTime>,
+    pub id: ::uuid::Uuid,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum EventKind {
-    FileCreated {
-        path: FileOnMountPath,
-    },
     FileDeleted {
         path: FileOnMountPath,
     },
-    FileMoved {
-        from: FileOnMountPath,
-        to: FileOnMountPath,
-    },
     FileChanged {
+        path: FileOnMountPath,
+    },
+    FileMoved {
+        to: FileOnMountPath,
+        from: FileOnMountPath,
+    },
+    FileCreated {
         path: FileOnMountPath,
     },
 }
 
 #[async_trait::async_trait]
 pub trait Rpc {
-    async fn send_event(
-        &mut self,
-        request: Event,
-        metadata: Metadata,
-    ) -> Result<(), RpcError>;
     async fn subscribe(
         &mut self,
         request: SubscribeRequest,
@@ -55,4 +50,9 @@ pub trait Rpc {
         std::pin::Pin<Box<dyn Stream<Item = Result<Event, RpcError>> + Unpin + Send>>,
         RpcError,
     >;
+    async fn send_event(
+        &mut self,
+        request: Event,
+        metadata: Metadata,
+    ) -> Result<(), RpcError>;
 }

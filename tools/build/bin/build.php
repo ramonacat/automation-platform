@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Ramona\AutomationPlatformLibBuild\Commands\Build;
+use Ramona\AutomationPlatformLibBuild\CodeCoverage\Publisher;
 
 if (PHP_SAPI !== 'cli') {
     echo 'Exiting, not a CLI SAPI';
