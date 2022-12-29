@@ -138,7 +138,7 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
 
         try {
             /** @var array<string, float>|false|null $originalCoverage */
-            $originalCoverage = json_decode($this->git->runGit(['git', 'show', $context->buildFacts()->baseReference() . ':.build/coverage.json']));
+            $originalCoverage = json_decode($this->git->runGit(['git', 'show', $context->buildFacts()->baseReference() . ':.build/coverage.json']), true);
         } catch (Exception $e) {
             $ansi
                 ->color([SGR::COLOR_FG_RED])
@@ -160,7 +160,7 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
             if (!isset($originalCoverage[$path])) {
                 $coverageChange = $coverage;
             } else {
-                $coverageChange = $originalCoverage[$path] - $coverage;
+                $coverageChange = $coverage - $originalCoverage[$path];
             }
 
             if ($coverageChange < 0.0) {
@@ -214,6 +214,8 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
                 ->bold()
                 ->text('! No positive coverage changes' . PHP_EOL)
                 ->nostyle();
+
+            throw new RuntimeException('No positive coverage changes');
         } else {
             $ansi
                 ->color([SGR::COLOR_FG_GREEN])
