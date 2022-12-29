@@ -9,6 +9,7 @@ use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
 use function count;
 use function get_class;
 use const PHP_EOL;
+use Ramona\AutomationPlatformLibBuild\Context;
 use ReflectionClass;
 
 /**
@@ -35,7 +36,7 @@ final class LogOnlyPublisher implements Publisher
         $this->artifacts[] = $artifact;
     }
 
-    public function print(Ansi $ansi): void
+    public function print(Ansi $ansi, Context $context): void
     {
         if (count($this->artifacts) === 0) {
             return;

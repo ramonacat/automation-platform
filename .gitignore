@@ -10,7 +10,7 @@ infection.log
 *.schema.json
 !schemas/*.schema.json
 runtime.configuration.json
-.build/
+.build/state
 configuration.local.json
 configuration.*.local.json
 /k8s/base/**

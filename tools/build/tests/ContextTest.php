@@ -47,6 +47,6 @@ final class ContextTest extends TestCase
 
     private function createBuildFacts(): BuildFacts
     {
-        return new BuildFacts('test', false, 1, 1);
+        return new BuildFacts('test', false, 1, 1, 'main');
     }
 }
