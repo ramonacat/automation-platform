@@ -29,6 +29,7 @@
         "symfony/process": "^5.3 || ^6.0",
         "psr/log": "^2.0 | ^3.0",
         "webmozart/assert": "^1.10",
+        "webmozart/path-util": "^2.3",
         "galbar/jsonpath": "^2.0",
         "symfony/yaml": "^6.0"
     },

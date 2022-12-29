@@ -11,28 +11,28 @@ final class BuildFactsTest extends TestCase
 {
     public function testHasBuildId(): void
     {
-        $facts = new BuildFacts('test', false, 1, 1);
+        $facts = new BuildFacts('test', false, 1, 1, 'main');
 
         self::assertSame('test', $facts->buildId());
     }
 
     public function testHasLogicalCores(): void
     {
-        $facts = new BuildFacts('test', false, 1, 2);
+        $facts = new BuildFacts('test', false, 1, 2, 'main');
 
         self::assertSame(1, $facts->logicalCores());
     }
 
     public function testHasPhysicalCores(): void
     {
-        $facts = new BuildFacts('test', false, 1, 2);
+        $facts = new BuildFacts('test', false, 1, 2, 'main');
 
         self::assertSame(2, $facts->physicalCores());
     }
 
     public function testHasPipelineStatus(): void
     {
-        $facts = new BuildFacts('test', true, 1, 2);
+        $facts = new BuildFacts('test', true, 1, 2, 'main');
 
         self::assertTrue($facts->inPipeline());
     }

@@ -32,6 +32,7 @@ use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildExecutor;
 use Ramona\AutomationPlatformLibBuild\Definition\DefaultBuildDefinitionsLoader;
+use Ramona\AutomationPlatformLibBuild\Git;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use Ramona\AutomationPlatformLibBuild\MachineInfo;
 use Ramona\AutomationPlatformLibBuild\Output\StyledBuildOutput;
@@ -56,14 +57,27 @@ final class Build
      */
     private array $artifactPublishers;
 
+    private readonly Git $git;
+
     public function __construct()
     {
         $this->workingDirectory = realpath(getcwd());
         $this->ansi = new Ansi(new StreamWriter('php://stdout'));
+        $this->git = new Git($this->ansi);
         $this->artifactPublishers = [
             new LogOnlyPublisher($this->ansi),
-            new \Ramona\AutomationPlatformLibBuild\CodeCoverage\Publisher(),
+            new \Ramona\AutomationPlatformLibBuild\CodeCoverage\Publisher($this->git),
         ];
+    }
+
+    public function getBaseReference(): string
+    {
+        $baseRef = getenv('GITHUB_BASE_REF');
+        if ($baseRef === false || $baseRef === '') {
+            $baseRef = 'origin/main';
+        }
+
+        return $this->git->runGit(['git', 'rev-parse', $baseRef]);
     }
 
     /**
@@ -77,7 +91,7 @@ final class Build
         $logger = $this->createFileLogger($inPipeline);
 
         $machineInfo = new MachineInfo();
-        $changeTracker = new GitChangeTracker($logger, $this->ansi);
+        $changeTracker = new GitChangeTracker($logger, $this->ansi, $this->git);
 
         try {
             $stateId = $changeTracker->getCurrentStateId();
@@ -98,6 +112,7 @@ final class Build
             $inPipeline,
             $machineInfo->logicalCores(),
             $machineInfo->physicalCores(),
+            $this->getBaseReference(),
         );
 
         $environment = $options['environment'] ?? 'dev';
@@ -131,8 +146,9 @@ final class Build
 
         $this->printBuildFacts($buildFacts);
 
+        $context = new Context($configuration, new Collector(), $buildFacts);
         try {
-            $result = $buildExecutor->executeTarget(new TargetId(getcwd(), $arguments[0]), new Context($configuration, new Collector(), $buildFacts));
+            $result = $buildExecutor->executeTarget(new TargetId(getcwd(), $arguments[0]), $context);
         } catch (TargetDoesNotExist $exception) {
             $this
                 ->ansi
@@ -154,7 +170,7 @@ final class Build
         }
 
         $stateStorage->set($state);
-        $this->publishArtifacts($result->artifacts());
+        $this->publishArtifacts($result->artifacts(), $context);
         return 0;
     }
 
@@ -170,7 +186,7 @@ final class Build
     /**
      * @param list<Artifact> $artifacts
      */
-    private function publishArtifacts(array $artifacts): void
+    private function publishArtifacts(array $artifacts, Context $context): void
     {
         foreach ($this->artifactPublishers as $artifactPublisher) {
             foreach ($artifacts as $artifact) {
@@ -179,7 +195,7 @@ final class Build
                 }
             }
 
-            $artifactPublisher->print($this->ansi);
+            $artifactPublisher->print($this->ansi, $context);
         }
     }
 

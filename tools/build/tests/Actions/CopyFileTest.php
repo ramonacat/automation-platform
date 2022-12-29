@@ -34,7 +34,7 @@ final class CopyFileTest extends TestCase
         $action = new CopyFile($sourceFilename, $targetFilename);
         $action->execute(
             $this->createMock(TargetOutput::class),
-            new Context(Configuration::fromJsonString('{}'), new Collector(), new BuildFacts('test', false, 1, 1)),
+            new Context(Configuration::fromJsonString('{}'), new Collector(), new BuildFacts('test', false, 1, 1, 'main')),
             $tempdir
         );
 

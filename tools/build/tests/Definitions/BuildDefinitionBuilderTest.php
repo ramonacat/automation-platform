@@ -26,7 +26,7 @@ final class BuildDefinitionBuilderTest extends TestCase
         $this->expectExceptionMessage('No build targets were provided');
 
         $builder->build(
-            new BuildFacts('test', false, 1, 2),
+            new BuildFacts('test', false, 1, 2, 'main'),
             Configuration::fromJsonString('{}')
         );
     }
@@ -50,7 +50,7 @@ final class BuildDefinitionBuilderTest extends TestCase
         $builder->addTargetGenerator($generatorB);
 
         $buildDefinition = $builder->build(
-            new BuildFacts('test', false, 1, 2),
+            new BuildFacts('test', false, 1, 2, 'main'),
             Configuration::fromJsonString('{}')
         );
 
@@ -81,7 +81,7 @@ final class BuildDefinitionBuilderTest extends TestCase
         $builder->addDefaultTarget(DefaultTargetKind::Build);
 
         $buildDefinition = $builder->build(
-            new BuildFacts('test', false, 1, 2),
+            new BuildFacts('test', false, 1, 2, 'main'),
             Configuration::fromJsonString('{}')
         );
 

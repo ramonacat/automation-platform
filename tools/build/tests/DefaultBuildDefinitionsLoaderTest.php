@@ -46,7 +46,7 @@ final class DefaultBuildDefinitionsLoaderTest extends TestCase
     private function createLoader(): DefaultBuildDefinitionsLoader
     {
         return new DefaultBuildDefinitionsLoader(
-            new BuildFacts('test', false, 1, 1),
+            new BuildFacts('test', false, 1, 1, 'main'),
             Configuration::fromJsonString('{}'),
             new Ansi()
         );
