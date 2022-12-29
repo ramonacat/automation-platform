@@ -35,14 +35,13 @@ final class LogOnlyPublisher implements Publisher
         $this->artifacts[] = $artifact;
     }
 
-    public function print(): void
+    public function print(Ansi $ansi): void
     {
         if (count($this->artifacts) === 0) {
             return;
         }
 
-        $this
-            ->ansi
+        $ansi
             ->color([SGR::COLOR_FG_YELLOW])
             ->text('Generated artifacts: ' . PHP_EOL)
             ->nostyle();
@@ -58,8 +57,7 @@ final class LogOnlyPublisher implements Publisher
                 }
             }
 
-            $this
-                ->ansi
+            $ansi
                 ->text('    * ')
                 ->color([SGR::COLOR_FG_PURPLE])
                 ->text($artifactName)
