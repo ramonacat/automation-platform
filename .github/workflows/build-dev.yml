@@ -68,6 +68,7 @@ jobs:
             - run: cargo udeps --help || cargo +nightly install cargo-udeps
             - run: cargo audit --version || cargo install cargo-audit
             - run: cargo llvm-cov --version || cargo install cargo-llvm-cov
+            - run: rm -rf ~/.cargo/registry 
 
             - working-directory: tools/dependabot-config-checker/
               run: composer install
