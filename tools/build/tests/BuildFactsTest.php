@@ -36,4 +36,11 @@ final class BuildFactsTest extends TestCase
 
         self::assertTrue($facts->inPipeline());
     }
+
+    public function testHasBaseReference(): void
+    {
+        $facts = new BuildFacts('test', false, 1, 2, 'main');
+
+        self::assertSame('main', $facts->baseReference());
+    }
 }
