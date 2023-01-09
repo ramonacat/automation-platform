@@ -12,7 +12,7 @@ uuid = { version = "1.2.2", features=["v4", "serde"] }
 rpc-support = { path="../rpc-support"}
 tokio = { version = "1.23.0", features = ["full"] }
 tracing = "0.1.37"
-async-trait = "0.1.60"
+async-trait = "0.1.61"
 platform={path="../platform"}
 thiserror = "1.0.35"
 async-std = "1.12.0"
