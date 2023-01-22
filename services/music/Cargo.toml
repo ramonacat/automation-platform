@@ -11,7 +11,7 @@ events = { path = "../../libraries/rust/events" }
 rpc-support = { path = "../../libraries/rust/rpc-support" }
 platform = { path = "../../libraries/rust/platform" }
 
-tokio={ version = "1.23.0", features = ["full"] }
+tokio={ version = "1.23.1", features = ["full"] }
 tokio-postgres = { version = "0.7.7", features = ["with-time-0_3", "with-uuid-1", "with-serde_json-1"] }
 async-trait = "0.1.60"
 tracing = "0.1.37"
