@@ -1,4 +1,4 @@
-FROM rust:1.66.0-slim-bullseye AS build
+FROM rust:1.66.1-slim-bullseye AS build
 
 RUN apt-get update && apt-get install --no-install-recommends -y libssl-dev=1.1.1n-0+deb11u3 pkg-config=0.29.2-1 && rm -rf /var/lib/apt/lists/*
 
