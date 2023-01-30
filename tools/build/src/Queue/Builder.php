@@ -14,9 +14,6 @@ final class Builder
     {
     }
 
-    /**
-     * @todo extract this to its own class?
-     */
     public function build(TargetId $desiredTarget): TargetQueue
     {
         $leftToBuild = new TargetQueue();

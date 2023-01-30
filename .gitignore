@@ -21,3 +21,4 @@ configuration.*.local.json
 *.profdata
 tests_coverage.json
 coverage.xml
+build-times.log

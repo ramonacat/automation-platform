@@ -17,6 +17,7 @@ use function json_encode;
 use const JSON_PRETTY_PRINT;
 use function number_format;
 use const PHP_EOL;
+use Ramona\AutomationPlatformLibBuild\Artifacts\UnexpectedArtifactType;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Git;
 use RuntimeException;
@@ -44,8 +45,7 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
     public function publish(\Ramona\AutomationPlatformLibBuild\Artifacts\Artifact $artifact): void
     {
         if (!($artifact instanceof Artifact)) {
-            // TODO better exception type
-            throw new RuntimeException('Artifact is not of type CodeCoverage\Artifact');
+            throw UnexpectedArtifactType::fromArtifact(Artifact::class, $artifact);
         }
 
         match ($artifact->kind()) {
