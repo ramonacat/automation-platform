@@ -8,78 +8,24 @@ jobs:
               with:
                 fetch-depth: 0
 
-            - name: Set up ALSA dev
-              run: sudo apt-get install -y libasound2-dev
-
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v2
-
-            - uses: actions-rs/toolchain@v1
+            - uses: cachix/install-nix-action@v17
               with:
-                toolchain: stable
-                default: true
+                nix_path: nixpkgs=channel:nixos-unstable
 
-            - uses: actions-rs/toolchain@v1
+            - uses: cachix/cachix-action@v11
               with:
-                toolchain: nightly
-                default: false
-
-            - uses: actions/cache@v3
-              with:
-                path: |
-                    ~/.cargo/bin/
-                    ~/.cargo/registry/index/
-                    ~/.cargo/registry/cache/
-                    ~/.cargo/git/db/
-                    **/target/
-                key: ${{ runner.os }}-cargo-v3-${{ hashFiles('**/Cargo.lock') }}
-                restore-keys: ${{ runner.os }}-cargo-v3-
-
-            -
-              name: Cache Build state
-              uses: actions/cache@v3
-              with:
-                path: .build/
-                key: ${{ runner.os }}-buildstate-v3-${{ github.sha }}
-                restore-keys: |
-                  ${{ runner.os }}-buildstate-v3-
-
-            - name: Setup PHP
-              uses: shivammathur/setup-php@v2
-              with:
-                php-version: '8.1'
-                tools: composer, composer-require-checker
-
-            - name: Setup composer-unused
-              run: composer global require icanhazstring/composer-unused
-
-            - name: Get composer cache directory
-              working-directory: tools/build/
-              id: composer-cache
-              run: echo "::set-output name=dir::$(composer config cache-files-dir)"
-
-            - name: Cache dependencies
-              uses: actions/cache@v3
-              with:
-                path: ${{ steps.composer-cache.outputs.dir }}
-                key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/composer.json') }}
-                restore-keys: ${{ runner.os }}-composer-
-
-            - run: cargo udeps --help || cargo +nightly install cargo-udeps
-            - run: cargo audit --version || cargo install cargo-audit
-            - run: cargo llvm-cov --version || cargo install cargo-llvm-cov
-            - run: rm -rf ~/.cargo/registry 
+                name: automation-platform
 
             - working-directory: tools/dependabot-config-checker/
-              run: composer install
+              run: nix-shell --command "composer install"
 
             - working-directory: tools/dependabot-config-checker/
-              run: php bin/check.php
+              run: nix-shell --command "php bin/check.php"
 
             - working-directory: tools/build/
-              run: composer install
+              run: nix-shell --command "composer install"
 
             - working-directory: tools/machine-info
-              run: cargo build --release
+              run: nix-shell --command "cargo build --release"
 
-            - run: php tools/build/bin/build.php --environment=github-actions build
+            - run: nix-shell --command "php tools/build/bin/build.php --environment=github-actions build"
