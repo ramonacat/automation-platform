@@ -6,7 +6,7 @@ in
     shellHook = ''
       rustup toolchain install nightly; 
       rustup default stable; 
-      cargo +nightly install cargo-udeps; 
+      NIX_ENFORCE_PURITY=0 cargo +nightly install cargo-udeps; 
       cargo install cargo-audit; 
       cargo install cargo-llvm-cov;
       mkdir .php-tools/;
