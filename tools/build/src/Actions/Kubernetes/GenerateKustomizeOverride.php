@@ -12,7 +12,6 @@ use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
-use RuntimeException;
 use function Safe\file_put_contents;
 use Symfony\Component\Yaml\Yaml;
 
@@ -38,7 +37,7 @@ final class GenerateKustomizeOverride implements BuildAction
         $outputFile = new JsonObject();
 
         if (!is_array($inputFile)) {
-            throw new RuntimeException('Invalid input file - not an array');
+            throw new InvalidInputFile($this->file);
         }
 
         $outputFile->set('$.apiVersion', $inputFile['apiVersion']);

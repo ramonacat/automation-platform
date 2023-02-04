@@ -112,10 +112,10 @@ impl Provider {
     /// # Errors
     /// - `MountError::UnableToMakeRelative` if the pathdiff fails
     /// - `MountError::PathNotInMount` if the path is not within the mount
-    pub fn path_inside_from_filesystem_path_with_mount<'a>(
+    pub fn path_inside_from_filesystem_path_with_mount(
         &self,
         path: &Path,
-        mount: &'a Mount,
+        mount: &Mount,
     ) -> Result<PathInside, MountError> {
         pathdiff::diff_paths(path, &mount.path).map_or(
             Err(MountError::UnableToMakeRelative),

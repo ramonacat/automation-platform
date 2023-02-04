@@ -1,5 +1,6 @@
 <?php
 
+use Ramona\AutomationPlatformLibBuild\Actions\Docker\BuildNixifiedDockerImage;
 use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\GenerateKustomizeOverride;
 use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\KustomizeApply;
 use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\KustomizeOverride;
@@ -15,17 +16,11 @@ return static function (BuildDefinitionBuilder $builder) {
 
     $builder->addTarget('put-runtime-config', new PutRuntimeConfiguration('runtime.configuration.json'));
 
-    $dockerTargetGenerator = new DockerTargetGenerator(
-        __DIR__,
-        'image-service',
-        'automation-platform-svc-music',
-        [
-            new TargetId(__DIR__, 'put-runtime-config')
-        ],
-        '../../',
-        'docker/Dockerfile'
+    $builder->addTarget(
+        'image-service-docker-build',
+        new BuildNixifiedDockerImage('image-service', 'svc-music'),
+        [new TargetId(__DIR__, 'put-runtime-config')]
     );
-    $builder->addTargetGenerator($dockerTargetGenerator);
 
     $dockerMigrationsTargetGenerator = new DockerTargetGenerator(
         __DIR__,
@@ -60,16 +55,20 @@ return static function (BuildDefinitionBuilder $builder) {
                     fn(Context $c) => [
                         'name' => 'app',
                         'image' => $c->artifactCollector()->getByKey(__DIR__, 'image-service')->name(),
-                        'volumeMounts' => [
-                            ...array_map(
-                                static fn(array $mount) => [
-                                    'name' => $mount['name'],
-                                    'mountPath' => '/mnt/' . $mount['name'],
-                                ],
-                                $c->configuration()->getSingleBuildValueOrDefault('$.kubernetes.mounts', [])
-                            )
-                        ]
-                    ]
+                    ] + 
+                    (count($c->configuration()->getSingleBuildValueOrDefault('$.kubernetes.mounts', [])) > 0 
+                    ? [
+                            'volumeMounts' => [
+                                ...array_map(
+                                    static fn(array $mount) => [
+                                        'name' => $mount['name'],
+                                        'mountPath' => '/mnt/' . $mount['name'],
+                                    ],
+                                    $c->configuration()->getSingleBuildValueOrDefault('$.kubernetes.mounts', [])
+                                )
+                            ]
+                    ] 
+                    : [])
                 ),
                 new KustomizeOverride(
                     '$.spec.template.spec.volumes',
@@ -93,7 +92,7 @@ return static function (BuildDefinitionBuilder $builder) {
                 )
             ]
         ),
-        $dockerTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
+        [new TargetId(__DIR__, 'image-service-docker-build')],
     );
 
     $builder->addTarget(

@@ -7,8 +7,8 @@ namespace Ramona\AutomationPlatformLibBuild\CodeCoverage;
 use Bramus\Ansi\Ansi;
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
+use Ramona\AutomationPlatformLibBuild\Artifacts\UnexpectedArtifactType;
 use Ramona\AutomationPlatformLibBuild\Git;
-use RuntimeException;
 
 final class PublisherTest extends TestCase
 {
@@ -16,7 +16,7 @@ final class PublisherTest extends TestCase
     {
         $publisher = new Publisher(new Git(new Ansi()));
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(UnexpectedArtifactType::class);
         $publisher->publish(new class() implements Artifact {
             public function key(): string
             {

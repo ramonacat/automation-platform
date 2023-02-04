@@ -15,6 +15,7 @@ use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\CollectedTargetOutput;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
+use Ramona\AutomationPlatformLibBuild\Targets\TargetExecutionSpy;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
 final class FiberTargetExecutor
@@ -38,6 +39,7 @@ final class FiberTargetExecutor
         private int $maxDegreeOfParallelism,
         private Context $context,
         private LoggerInterface $logger,
+        private TargetExecutionSpy $spy
     ) {
     }
 
@@ -69,12 +71,15 @@ final class FiberTargetExecutor
 
         $fiber = new Fiber(function () use ($target, $output, $context) {
             try {
+                $this->spy->targetStarted($target->id(), $target->dependencies());
                 $result = $target->execute($output, $context, $target->id()->path());
             } catch (Exception $e) {
                 // NOTE: The details here are hidden on purpose, because the result will appear in the output from the build which is public
                 $result = BuildResult::fail('Action failed. Uncaught exception of type: ' . get_class($e));
 
                 $this->logger->error('Action failed. Uncaught exception.', ['exception' => $e]);
+            } finally {
+                $this->spy->targetFinished($target->id(), $result ?? BuildResult::fail('Action failed'));
             }
             Fiber::suspend($result);
         });

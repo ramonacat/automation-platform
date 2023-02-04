@@ -264,8 +264,7 @@ impl RawRpcClient {
                     None => {
                         let contents = contents.ok_or_else(|| {
                             RpcError::Custom(format!(
-                                "No response for envelope {:?}",
-                                response_envelope
+                                "No response for envelope {response_envelope:?}"
                             ))
                         })?;
 

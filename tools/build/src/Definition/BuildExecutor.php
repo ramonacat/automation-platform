@@ -13,6 +13,7 @@ use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\BuildOutput;
 use Ramona\AutomationPlatformLibBuild\Queue\Builder;
 use Ramona\AutomationPlatformLibBuild\State\State;
+use Ramona\AutomationPlatformLibBuild\Targets\LoggingTargetExecutionSpy;
 use Ramona\AutomationPlatformLibBuild\Targets\Parallel\FiberTargetExecutor;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 
@@ -25,7 +26,7 @@ final class BuildExecutor
         private BuildFacts             $buildFacts,
         private State                  $state,
         private ChangeTracker          $changeTracker,
-        private Builder $queueBuilder
+        private Builder                $queueBuilder
     ) {
     }
 
@@ -48,7 +49,8 @@ final class BuildExecutor
         $targetFiberStack = new FiberTargetExecutor(
             $this->buildFacts->logicalCores(),
             $context,
-            $this->logger
+            $this->logger,
+            new LoggingTargetExecutionSpy($targetId->path() . '/build-times.log'),
         );
 
         $cacheBusters = [];

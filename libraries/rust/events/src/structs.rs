@@ -7,14 +7,14 @@ pub struct Metadata {
     pub source: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FileOnMountPath {
-    pub path: String,
-    pub mount_id: String,
-}
-#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SubscribeRequest {
     pub id: ::uuid::Uuid,
     pub from: Option<std::time::SystemTime>,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FileOnMountPath {
+    pub mount_id: String,
+    pub path: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Event {
@@ -25,13 +25,13 @@ pub struct Event {
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum EventKind {
-    FileCreated {
+    FileChanged {
         path: FileOnMountPath,
     },
     FileDeleted {
         path: FileOnMountPath,
     },
-    FileChanged {
+    FileCreated {
         path: FileOnMountPath,
     },
     FileMoved {
