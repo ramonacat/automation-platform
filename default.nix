@@ -44,6 +44,5 @@ in
           openssl 
           alsa-lib 
           (callPackage crate2nix { })
-          glibc
         ];
   }
