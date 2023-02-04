@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Targets;
 
-use function debug_backtrace;
 use const FILE_APPEND;
 use function file_put_contents;
 use function microtime;
 use function number_format;
 use const PHP_EOL;
-use function print_r;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 
 final class LoggingTargetExecutionSpy implements TargetExecutionSpy
@@ -22,7 +20,7 @@ final class LoggingTargetExecutionSpy implements TargetExecutionSpy
 
     public function __construct(private string $logFilePath)
     {
-        file_put_contents($this->logFilePath, print_r(debug_backtrace(), true) . PHP_EOL);
+        file_put_contents($this->logFilePath, '');
     }
 
     /**

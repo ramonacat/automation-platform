@@ -13,7 +13,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let typed_file = type_checker.check(&ast)?;
 
     let rust = message_compiler::compiler_rust::compile(typed_file);
-    std::fs::write("src/structs.rs", rust).unwrap();
+    let out_dir = std::env::var_os("OUT_DIR").unwrap();
+    let dest_path = std::path::Path::new(&out_dir).join("structs.rs");
+    std::fs::write(dest_path, rust).unwrap();
 
     Ok(())
 }

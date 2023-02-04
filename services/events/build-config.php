@@ -1,5 +1,6 @@
 <?php
 
+use Ramona\AutomationPlatformLibBuild\Actions\Docker\BuildNixifiedDockerImage;
 use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\GenerateKustomizeOverride;
 use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\KustomizeApply;
 use Ramona\AutomationPlatformLibBuild\Actions\Kubernetes\KustomizeOverride;
@@ -12,8 +13,11 @@ use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
 return static function (BuildDefinitionBuilder $builder) {
     $builder->addRustTargetGenerator();
 
-    $dockerTargetGenerator = new \Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator(__DIR__, 'image-service', 'automation-platform-svc-events', [], '../../', 'docker/Dockerfile');
-    $builder->addTargetGenerator($dockerTargetGenerator);
+    $builder->addTarget(
+        'image-service-docker-build',
+        new BuildNixifiedDockerImage('image-service', 'svc-events')
+    );
+
     $dockerMigrationsTargetGenerator = new \Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator(__DIR__, 'image-migrations', 'ap-svc-events-migrations', [], '.', 'docker/migrations.Dockerfile');
     $builder->addTargetGenerator($dockerMigrationsTargetGenerator);
 
@@ -41,7 +45,7 @@ return static function (BuildDefinitionBuilder $builder) {
             ]
         ),
         array_merge(
-            $dockerTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
+            [new TargetId(__DIR__, 'image-service-docker-build')],
             $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
         )
     );

@@ -22,3 +22,6 @@ configuration.*.local.json
 tests_coverage.json
 coverage.xml
 build-times.log
+.direnv
+.php-tools/
+.vscode/

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Actions\Docker;
 
-use function array_merge;
 use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
@@ -14,11 +13,11 @@ use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 use Webmozart\Assert\Assert;
 
-final class BuildDockerImage implements BuildAction
+final class BuildNixifiedDockerImage implements BuildAction
 {
     private const DEFAULT_TIMEOUT = 3600;
 
-    public function __construct(private string $key, private string $imageName, private string $contextPath = '.', private string $dockerFilePath = 'Dockerfile')
+    public function __construct(private string $key, private string $imageName, private string $contextPath = '.', private string $nixFilePath = './docker/docker.nix')
     {
     }
 
@@ -34,7 +33,9 @@ final class BuildDockerImage implements BuildAction
 
         $process = new InActionProcess(
             $workingDirectory,
-            $this->createDockerBuildCommand($dockerBuildCommand, $context),
+            // TODO: pass the image name as an argument
+            // TODO: The hardcoded k3d image import command is not ideal
+            ['sh', '-c', 'crate2nix generate && $(nix-build --no-out-link ' . $this->nixFilePath . ' --argstr tag \"' . $context->buildFacts()->buildId() . '\") | docker load'],
             self::DEFAULT_TIMEOUT
         );
 
@@ -57,17 +58,5 @@ final class BuildDockerImage implements BuildAction
                 $context->buildFacts()->buildId()
             )
         ];
-    }
-
-    /**
-     * @param list<string> $dockerBuildCommand
-     * @return list<string>
-     */
-    private function createDockerBuildCommand(array $dockerBuildCommand, Context $context): array
-    {
-        return array_merge(
-            $dockerBuildCommand,
-            ['-t', $this->imageName . ':' . $context->buildFacts()->buildId(), '-f', $this->dockerFilePath, $this->contextPath]
-        );
     }
 }

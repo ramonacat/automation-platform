@@ -24,7 +24,6 @@ spec:
       containers:
         - name: app
           image: automation-platform-svc-directory-watcher:latest # todo find out how to handle this for prod
-          imagePullPolicy: Never # todo this will of course break in prod
           volumeMounts:
             - name: directory-watcher-ap-directory-watcher-credentials
               mountPath: "/etc/svc-events/secrets/directory-watcher.ap-directory-watcher.credentials"

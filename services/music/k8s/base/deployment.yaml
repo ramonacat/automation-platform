@@ -24,7 +24,6 @@ spec:
       containers:
         - name: app
           image: automation-platform-svc-music:latest # todo find out how to handle this for prod
-          imagePullPolicy: Never # todo this will of course break in prod
           volumeMounts:
             - name: music-ap-music-credentials
               mountPath: "/etc/svc-events/secrets/music.ap-music.credentials"

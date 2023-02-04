@@ -17,7 +17,6 @@ spec:
       initContainers:
         - name: migrations
           image: automation-platform-svc-events-migrations:latest
-          imagePullPolicy: Never # todo this will of course break in prod
           volumeMounts:
             - name: events-ap-events-credentials
               mountPath: "/etc/svc-events/secrets/events.ap-events.credentials"
@@ -25,7 +24,6 @@ spec:
       containers:
         - name: app
           image: automation-platform-svc-events:latest # todo find out how to handle this for prod
-          imagePullPolicy: Never # todo this will of course break in prod
           volumeMounts:
             - name: events-ap-events-credentials
               mountPath: "/etc/svc-events/secrets/events.ap-events.credentials"
