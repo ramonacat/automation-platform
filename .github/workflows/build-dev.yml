@@ -17,16 +17,17 @@ jobs:
                 name: agares-automation-platform
                 authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-            - working-directory: tools/dependabot-config-checker/
-              run: nix-shell --command "composer install"
+            - name: Install dependabot-config-checker dependencies
+              run: nix-shell --command "cd tools/dependabot-config-checker/ && composer install"
 
-            - working-directory: tools/dependabot-config-checker/
-              run: nix-shell --command "php bin/check.php"
+            - name: Run dependabot-config-checker
+              run: nix-shell --command "cd tools/dependabot-config-checker/ && php bin/check.php"
 
-            - working-directory: tools/build/
-              run: nix-shell --command "composer install"
+            - name: Install build dependencies
+              run: nix-shell --command "cd tools/build/ && composer install"
 
-            - working-directory: tools/machine-info
-              run: nix-shell --command "cargo build --release"
+            - name: Build machine-info
+              run: nix-shell --command "cd tools/machine-info && cargo build --release"
 
-            - run: nix-shell --command "php tools/build/bin/build.php --environment=github-actions build"
+            - name: Build
+              run: nix-shell --command "php tools/build/bin/build.php --environment=github-actions build"
