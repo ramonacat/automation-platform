@@ -149,10 +149,13 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
             ->text('Code Coverage:' . PHP_EOL)
             ->nostyle();
 
+        $baseBranch = $ciState === null ? 'origin/main' : $ciState->baseRef();
+        $baseRef = $this->git->runGit(['git', 'rev-parse', $baseBranch]);
+        $this->git->runGit(['git', 'fetch', 'origin', $baseRef . ':' . $baseRef]);
+
         try {
-            $baseBranch = $ciState === null ? 'origin/main' : $ciState->baseRef();
             /** @var array<string, float>|false|null $originalCoverage */
-            $originalCoverage = json_decode($this->git->runGit(['git', 'show', $this->git->runGit(['git', 'rev-parse', $baseBranch]) . ':.build/coverage.json']), true);
+            $originalCoverage = json_decode($this->git->runGit(['git', 'show', $baseRef . ':.build/coverage.json']), true);
         } catch (Exception) {
             $ansi
                 ->color([SGR::COLOR_FG_RED])
