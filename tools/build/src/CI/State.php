@@ -32,7 +32,7 @@ final class State
             throw new RuntimeException('GITHUB_BASE_REF environment variable is not set');
         }
 
-        return new self($actor, $baseRef);
+        return new self($actor, 'origin/' . $baseRef);
     }
 
     public function actor(): string

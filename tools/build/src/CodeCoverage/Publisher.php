@@ -151,7 +151,6 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
 
         $baseBranch = $ciState === null ? 'origin/main' : $ciState->baseRef();
         $baseRef = $this->git->runGit(['git', 'rev-parse', $baseBranch]);
-        $this->git->runGit(['git', 'fetch', 'origin', $baseRef . ':' . $baseRef]);
 
         try {
             /** @var array<string, float>|false|null $originalCoverage */
