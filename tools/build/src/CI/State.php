@@ -12,6 +12,7 @@ final class State
     public function __construct(
         private string $actor,
         private string $baseRef,
+        private string $currentRef,
     ) {
     }
 
@@ -32,7 +33,13 @@ final class State
             throw new RuntimeException('GITHUB_BASE_REF environment variable is not set');
         }
 
-        return new self($actor, 'origin/' . $baseRef);
+        $currentRef = getenv('GITHUB_REF');
+
+        if ($currentRef === false) {
+            throw new RuntimeException('GITHUB_REF environment variable is not set');
+        }
+
+        return new self($actor, 'origin/' . $baseRef, $currentRef);
     }
 
     public function actor(): string
@@ -43,5 +50,10 @@ final class State
     public function baseRef(): string
     {
         return $this->baseRef;
+    }
+
+    public function currentRef(): string
+    {
+        return $this->currentRef;
     }
 }

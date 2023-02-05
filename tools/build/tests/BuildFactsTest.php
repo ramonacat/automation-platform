@@ -33,7 +33,7 @@ final class BuildFactsTest extends TestCase
 
     public function testHasCIState(): void
     {
-        $ciState = new State('a', 'origin/main');
+        $ciState = new State('a', 'origin/main', 'origin/pr');
         $facts = new BuildFacts('test', $ciState, 1, 2);
 
         self::assertSame($ciState, $facts->ciState());
