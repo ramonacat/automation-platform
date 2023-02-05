@@ -8,7 +8,6 @@ use Bramus\Ansi\Ansi;
 use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
 use function count;
 use Exception;
-use function file_get_contents;
 use function file_put_contents;
 use function is_array;
 use function is_object;
@@ -19,21 +18,19 @@ use function number_format;
 use const PHP_EOL;
 use Ramona\AutomationPlatformLibBuild\Artifacts\UnexpectedArtifactType;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Filesystem\Filesystem;
 use Ramona\AutomationPlatformLibBuild\Git;
 use RuntimeException;
-use function simplexml_load_file;
+use function simplexml_load_string;
 use SimpleXMLElement;
 use Webmozart\PathUtil\Path;
 
 final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Publisher
 {
-    /**
-     * @var array<string, float>
-     */
-    private array $coverages = [];
-
     public function __construct(
-        private readonly Git $git
+        private readonly Git $git,
+        private readonly Filesystem $filesystem,
+        private readonly State $state,
     ) {
     }
 
@@ -56,20 +53,15 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
 
     private function publishLlvmJson(string $path): void
     {
-        $contents = file_get_contents($path);
-
-        if ($contents === false) {
-            throw new RuntimeException('Could not read JSON file: ' . $path);
-        }
-
+        $contents = $this->filesystem->readFile($path);
         $data = json_decode($contents, true);
 
         if (!is_array($data)) {
-            throw new RuntimeException('Could not decode JSON file: ' . $path);
+            throw InvalidCoverageFile::cannotDecode($path);
         }
         
         if (!isset($data['data'][0]['totals']) || !is_array($data['data'][0]['totals'])) {
-            throw new RuntimeException('Could not find totals in JSON file: ' . $path);
+            throw InvalidCoverageFile::noKeyInFile($path, 'data[0].totals');
         }
 
         $totals = (array)$data['data'][0]['totals'];
@@ -84,12 +76,13 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
             $coverage = 0;
         }
 
-        $this->coverages[Path::makeRelative($path, $this->git->repositoryRoot())] = $coverage;
+        $this->state->addEntry(Path::makeRelative($path, $this->git->repositoryRoot()), $coverage);
     }
 
     private function publishClover(string $path): void
     {
-        $xml = simplexml_load_file($path);
+        // TODO stream the file instead
+        $xml = simplexml_load_string($this->filesystem->readFile($path));
         
         if ($xml === false) {
             throw new RuntimeException('Could not load XML file: ' . $path);
@@ -120,7 +113,7 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
             $coverage = $coveredStatements / $statements;
         }
 
-        $this->coverages[Path::makeRelative($path, $this->git->repositoryRoot())] = $coverage;
+        $this->state->addEntry(Path::makeRelative($path, $this->git->repositoryRoot()), $coverage);
     }
 
     public const COVERAGE_PATH = __DIR__ . '/../../../../.build/coverage.json';
@@ -130,6 +123,26 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
      */
     public function print(Ansi $ansi, Context $context): void
     {
+        $ciState = $context->buildFacts()->ciState();
+
+        if ($ciState !== null && $ciState->actor() === 'dependabot[bot]') {
+            $ansi
+                ->color([SGR::COLOR_FG_YELLOW])
+                ->bold()
+                ->text('! Skipping code coverage for dependabot.' . PHP_EOL)
+                ->nostyle();
+            return;
+        }
+
+        if ($ciState !== null && $ciState->baseRef() === 'origin/main') {
+            $ansi
+                ->color([SGR::COLOR_FG_YELLOW])
+                ->bold()
+                ->text('! Skipping code coverage for main branch.' . PHP_EOL)
+                ->nostyle();
+            return;
+        }
+
         $ansi
             ->color([SGR::COLOR_FG_YELLOW])
             ->bold()
@@ -137,11 +150,10 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
             ->nostyle();
 
         try {
-            $ciState = $context->buildFacts()->ciState();
             $baseBranch = $ciState === null ? 'origin/main' : $ciState->baseRef();
             /** @var array<string, float>|false|null $originalCoverage */
-            $originalCoverage = json_decode($this->git->runGit(['git', 'show', $baseBranch . ':.build/coverage.json']), true);
-        } catch (Exception $e) {
+            $originalCoverage = json_decode($this->git->runGit(['git', 'show', $this->git->runGit(['git', 'rev-parse', $baseBranch]) . ':.build/coverage.json']), true);
+        } catch (Exception) {
             $ansi
                 ->color([SGR::COLOR_FG_RED])
                 ->bold()
@@ -158,7 +170,7 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
         $negativeCoverageChanges = [];
         $positiveCoverageChanges = [];
 
-        foreach ($this->coverages as $path => $coverage) {
+        foreach ($this->state->coverages() as $path => $coverage) {
             if (!isset($originalCoverage[$path])) {
                 $coverageChange = $coverage;
             } else {
@@ -230,8 +242,8 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
             }
         }
 
-        if (count($this->coverages) > 0) {
-            $encodedCoverages = json_encode($this->coverages, JSON_PRETTY_PRINT);
+        if (count($this->state->coverages()) > 0) {
+            $encodedCoverages = json_encode($this->state->coverages(), JSON_PRETTY_PRINT);
 
             if ($encodedCoverages === false) {
                 throw new RuntimeException('Could not encode coverages');

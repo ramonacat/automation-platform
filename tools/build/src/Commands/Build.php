@@ -26,12 +26,14 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\Publisher;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\ChangeTracking\GitChangeTracker;
 use Ramona\AutomationPlatformLibBuild\CI\State;
+use Ramona\AutomationPlatformLibBuild\CodeCoverage\State as CodeCoverageState;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Configuration\Locator;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildExecutor;
 use Ramona\AutomationPlatformLibBuild\Definition\DefaultBuildDefinitionsLoader;
+use Ramona\AutomationPlatformLibBuild\Filesystem\Real;
 use Ramona\AutomationPlatformLibBuild\Git;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use Ramona\AutomationPlatformLibBuild\MachineInfo;
@@ -66,7 +68,7 @@ final class Build
         $this->git = new Git($this->ansi);
         $this->artifactPublishers = [
             new LogOnlyPublisher($this->ansi),
-            new \Ramona\AutomationPlatformLibBuild\CodeCoverage\Publisher($this->git),
+            new \Ramona\AutomationPlatformLibBuild\CodeCoverage\Publisher($this->git, new Real(), new CodeCoverageState()),
         ];
     }
 
@@ -227,6 +229,7 @@ final class Build
         } else {
             $this
                 ->ansi
+                ->text(PHP_EOL)
                 ->text('        Actor: ' . $ciState->actor() . PHP_EOL)
                 ->text('        Base reference: ' . $ciState->baseRef() . PHP_EOL);
         }

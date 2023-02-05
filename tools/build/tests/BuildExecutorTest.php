@@ -243,6 +243,40 @@ final class BuildExecutorTest extends TestCase
         $this->buildExecutor->executeTarget($targetIdA, ContextFactory::create());
     }
 
+    public function testWillRebuildIFADeeplyNestedDependencyHasNoStateId(): void
+    {
+        $this->initDefaultTargetOutput();
+
+        $actionC = $this->createMock(BuildAction::class);
+        $actionC->expects(self::once())->method('execute')->willReturn(BuildResult::ok([]));
+        $targetIdC = new TargetId(__DIR__ . '/fixtures/c', 'c');
+        $targetC = new Target($targetIdC, $actionC);
+
+        $targetIdB = new TargetId(__DIR__ . '/fixtures/b', 'b');
+        $targetB = new Target($targetIdB, new NoOp(), [$targetIdC]);
+
+        $actionA = $this->createMock(BuildAction::class);
+        $actionA->expects(self::once())->method('execute')->willReturn(BuildResult::ok([]));
+        $targetIdA = new TargetId(__DIR__ . '/fixtures/a', 'a');
+        $targetA = new Target($targetIdA, $actionA, [$targetIdB]);
+
+        $this
+            ->changeTracker
+            ->method('wasModifiedSince')
+            ->willReturnCallback(function (string $_, string $__) {
+                return false;
+            });
+
+        $this->changeTracker->method('getCurrentStateId')->willReturn('aaa');
+
+        $this->state->setTargetStateId($targetIdB, 'aaa', []);
+        $this->state->setTargetStateId($targetIdA, 'aaa', []);
+
+        $this->setupDefinitions([$targetB, $targetC, $targetA]);
+
+        $this->buildExecutor->executeTarget($targetIdA, ContextFactory::create());
+    }
+
     public function testWillNotRebuildIfNoDependenciesWereRebuilt(): void
     {
         $targetIdC = new TargetId(__DIR__ . '/fixtures/c', 'c');
