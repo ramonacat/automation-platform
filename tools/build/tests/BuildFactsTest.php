@@ -6,41 +6,36 @@ namespace Tests\Ramona\AutomationPlatformLibBuild;
 
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
+use Ramona\AutomationPlatformLibBuild\CI\State;
 
 final class BuildFactsTest extends TestCase
 {
     public function testHasBuildId(): void
     {
-        $facts = new BuildFacts('test', false, 1, 1, 'main');
+        $facts = new BuildFacts('test', null, 1, 1);
 
         self::assertSame('test', $facts->buildId());
     }
 
     public function testHasLogicalCores(): void
     {
-        $facts = new BuildFacts('test', false, 1, 2, 'main');
+        $facts = new BuildFacts('test', null, 1, 2);
 
         self::assertSame(1, $facts->logicalCores());
     }
 
     public function testHasPhysicalCores(): void
     {
-        $facts = new BuildFacts('test', false, 1, 2, 'main');
+        $facts = new BuildFacts('test', null, 1, 2);
 
         self::assertSame(2, $facts->physicalCores());
     }
 
-    public function testHasPipelineStatus(): void
+    public function testHasCIState(): void
     {
-        $facts = new BuildFacts('test', true, 1, 2, 'main');
+        $ciState = new State('a', 'origin/main');
+        $facts = new BuildFacts('test', $ciState, 1, 2);
 
-        self::assertTrue($facts->inPipeline());
-    }
-
-    public function testHasBaseReference(): void
-    {
-        $facts = new BuildFacts('test', false, 1, 2, 'main');
-
-        self::assertSame('main', $facts->baseReference());
+        self::assertSame($ciState, $facts->ciState());
     }
 }

@@ -137,8 +137,10 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
             ->nostyle();
 
         try {
+            $ciState = $context->buildFacts()->ciState();
+            $baseBranch = $ciState === null ? 'origin/main' : $ciState->baseRef();
             /** @var array<string, float>|false|null $originalCoverage */
-            $originalCoverage = json_decode($this->git->runGit(['git', 'show', $context->buildFacts()->baseReference() . ':.build/coverage.json']), true);
+            $originalCoverage = json_decode($this->git->runGit(['git', 'show', $baseBranch . ':.build/coverage.json']), true);
         } catch (Exception $e) {
             $ansi
                 ->color([SGR::COLOR_FG_RED])

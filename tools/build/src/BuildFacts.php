@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild;
 
+use Ramona\AutomationPlatformLibBuild\CI\State;
+
 final class BuildFacts
 {
     public function __construct(
         private string $buildId,
-        private bool $inPipeline,
+        private ?State $ciState,
         private int $logicalCores,
-        private int $physicalCores,
-        // TODO: Remove the git references from here and make it part of the git state or something
-        private string $baseReference
+        private int $physicalCores
     ) {
     }
 
@@ -21,9 +21,9 @@ final class BuildFacts
         return $this->buildId;
     }
 
-    public function inPipeline(): bool
+    public function ciState(): ?State
     {
-        return $this->inPipeline;
+        return $this->ciState;
     }
 
     public function logicalCores(): int
@@ -34,10 +34,5 @@ final class BuildFacts
     public function physicalCores(): int
     {
         return $this->physicalCores;
-    }
-
-    public function baseReference(): string
-    {
-        return $this->baseReference;
     }
 }

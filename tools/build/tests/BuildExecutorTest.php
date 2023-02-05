@@ -58,7 +58,7 @@ final class BuildExecutorTest extends TestCase
             $this->logger,
             $this->buildOutput,
             $this->buildDefinitionsLoader,
-            new BuildFacts('test', false, 1, 1, 'main'),
+            new BuildFacts('test', null, 1, 1),
             $this->state,
             $this->changeTracker,
             new Builder($this->buildDefinitionsLoader)
