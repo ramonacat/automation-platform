@@ -25,3 +25,4 @@ build-times.log
 .direnv
 .php-tools/
 .vscode/
+Cargo.nix
