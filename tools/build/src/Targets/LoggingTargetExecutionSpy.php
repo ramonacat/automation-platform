@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\Targets;
 
-use const FILE_APPEND;
-use function file_put_contents;
+use Bramus\Ansi\Ansi;
+use Bramus\Ansi\ControlSequences\EscapeSequences\Enums\SGR;
+
 use function microtime;
 use function number_format;
+
 use const PHP_EOL;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 
@@ -18,9 +20,13 @@ final class LoggingTargetExecutionSpy implements TargetExecutionSpy
      */
     private array $startTimes = [];
 
-    public function __construct(private string $logFilePath)
+    /**
+     * @var array<string, float>
+     */
+    private array $runningTimes = [];
+
+    public function __construct(private string $logFilePath, private Ansi $ansi)
     {
-        file_put_contents($this->logFilePath, '');
     }
 
     /**
@@ -30,17 +36,40 @@ final class LoggingTargetExecutionSpy implements TargetExecutionSpy
     public function targetStarted(TargetId $targetId, array $dependencies): void
     {
         $this->startTimes[$targetId->toString()] = microtime(true);
-        file_put_contents($this->logFilePath, 'Started:' . $targetId->toString() . PHP_EOL, FILE_APPEND);
     }
     
     /**
-     *
      * @param TargetId $targetId
      * @param BuildResult $result
      */
     public function targetFinished(TargetId $targetId, BuildResult $result): void
     {
-        $duration = microtime(true) - $this->startTimes[$targetId->toString()];
-        file_put_contents($this->logFilePath, 'Finished:' . $targetId->toString() . ' in ' . number_format($duration, 3) . 's' . PHP_EOL, FILE_APPEND);
+        $this->runningTimes[$targetId->toString()] = microtime(true) - $this->startTimes[$targetId->toString()];
+    }
+
+    public function buildFinished(): void
+    {
+        $this
+            ->ansi
+            ->color([SGR::COLOR_FG_YELLOW_BRIGHT])
+            ->bold()
+            ->text('Build timings: ' . PHP_EOL)
+            ->nostyle();
+
+        foreach ($this->runningTimes as $targetId => $runningTime) {
+            $this
+                ->ansi
+                ->text('    ' . $targetId)
+                ->nostyle()
+                ->text(': ')
+                ->color([SGR::COLOR_FG_GREEN_BRIGHT])
+                ->bold()
+                ->text(number_format($runningTime, 3))
+                ->text('s')
+                ->nostyle()
+                ->text(PHP_EOL);
+        }
+        
+        $this->ansi->text(PHP_EOL);
     }
 }

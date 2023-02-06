@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Ramona\AutomationPlatformLibBuild;
 
+use Bramus\Ansi\Ansi;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -54,6 +55,12 @@ final class BuildExecutorTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->changeTracker = $this->createMock(ChangeTracker::class);
         $this->state = new State();
+        $ansiMock = $this->createMock(Ansi::class);
+        $ansiMock->method('color')->willReturn($ansiMock);
+        $ansiMock->method('bold')->willReturn($ansiMock);
+        $ansiMock->method('nostyle')->willReturn($ansiMock);
+        $ansiMock->method('text')->willReturn($ansiMock);
+        
         $this->buildExecutor = new BuildExecutor(
             $this->logger,
             $this->buildOutput,
@@ -61,7 +68,8 @@ final class BuildExecutorTest extends TestCase
             new BuildFacts('test', null, 1, 1),
             $this->state,
             $this->changeTracker,
-            new Builder($this->buildDefinitionsLoader)
+            new Builder($this->buildDefinitionsLoader),
+            $ansiMock,
         );
     }
 

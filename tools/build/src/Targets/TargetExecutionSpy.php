@@ -12,6 +12,6 @@ interface TargetExecutionSpy
      * @param list<TargetId> $dependencies
      */
     public function targetStarted(TargetId $targetId, array $dependencies): void;
-        
     public function targetFinished(TargetId $targetId, BuildResult $result): void;
+    public function buildFinished(): void;
 }

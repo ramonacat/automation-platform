@@ -15,4 +15,8 @@ final class NullTargetExecutionSpy implements TargetExecutionSpy
     public function targetFinished(TargetId $targetId, BuildResult $result): void
     {
     }
+
+    public function buildFinished(): void
+    {
+    }
 }
