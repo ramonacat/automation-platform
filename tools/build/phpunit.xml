@@ -9,6 +9,9 @@
          convertDeprecationsToExceptions="true"
          failOnRisky="true"
          failOnWarning="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
          verbose="true">
     <testsuites>
         <testsuite name="default">

@@ -1,5 +1,9 @@
 name: commit-verifier
-on: [push]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 jobs:
     commit-verifier:
         runs-on: ubuntu-20.04

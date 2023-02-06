@@ -12,7 +12,6 @@ use function count;
 use function dirname;
 use Exception;
 use function get_class;
-use function getenv;
 use function implode;
 use function is_a;
 use function is_string;
@@ -26,12 +25,15 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\LogOnlyPublisher;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Publisher;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\ChangeTracking\GitChangeTracker;
+use Ramona\AutomationPlatformLibBuild\CI\State;
+use Ramona\AutomationPlatformLibBuild\CodeCoverage\State as CodeCoverageState;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Configuration\Locator;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildExecutor;
 use Ramona\AutomationPlatformLibBuild\Definition\DefaultBuildDefinitionsLoader;
+use Ramona\AutomationPlatformLibBuild\Filesystem\Real;
 use Ramona\AutomationPlatformLibBuild\Git;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use Ramona\AutomationPlatformLibBuild\MachineInfo;
@@ -66,18 +68,8 @@ final class Build
         $this->git = new Git($this->ansi);
         $this->artifactPublishers = [
             new LogOnlyPublisher($this->ansi),
-            new \Ramona\AutomationPlatformLibBuild\CodeCoverage\Publisher($this->git),
+            new \Ramona\AutomationPlatformLibBuild\CodeCoverage\Publisher($this->git, new Real(), new CodeCoverageState()),
         ];
-    }
-
-    public function getBaseReference(): string
-    {
-        $baseRef = getenv('GITHUB_BASE_REF');
-        if ($baseRef === false || $baseRef === '') {
-            $baseRef = 'origin/main';
-        }
-
-        return $this->git->runGit(['git', 'rev-parse', $baseRef]);
     }
 
     /**
@@ -86,9 +78,9 @@ final class Build
      */
     public function __invoke(string $executableName, array $options, array $arguments): int
     {
-        $inPipeline = getenv('CI') !== false;
+        $ciStatus = State::fromEnvironment();
 
-        $logger = $this->createFileLogger($inPipeline);
+        $logger = $this->createFileLogger($ciStatus !== null);
 
         $machineInfo = new MachineInfo();
         $changeTracker = new GitChangeTracker($logger, $this->ansi, $this->git);
@@ -109,10 +101,9 @@ final class Build
 
         $buildFacts = new BuildFacts(
             $stateId,
-            $inPipeline,
+            $ciStatus,
             $machineInfo->logicalCores(),
             $machineInfo->physicalCores(),
-            $this->getBaseReference(),
         );
 
         $environment = $options['environment'] ?? 'dev';
@@ -201,7 +192,7 @@ final class Build
 
     private function printException(BuildFacts $buildFacts, Exception $e): void
     {
-        if ($buildFacts->inPipeline()) {
+        if ($buildFacts->ciState() !== null) {
             $this
                 ->ansi
                 ->text(sprintf('Unhandled exception of type: %s' . PHP_EOL, get_class($e)))
@@ -229,8 +220,22 @@ final class Build
             ->text('Build facts:')
             ->text(PHP_EOL)
             ->nostyle()
-            ->text('    CI: ')
-            ->text($buildFacts->inPipeline() ? '✔' : '❌')
+            ->text('    CI: ');
+        $ciState = $buildFacts->ciState();
+        if ($ciState === null) {
+            $this
+                ->ansi
+                ->text('❌');
+        } else {
+            $this
+                ->ansi
+                ->text(PHP_EOL)
+                ->text('        Actor: ' . $ciState->actor() . PHP_EOL)
+                ->text('        Base reference: ' . $ciState->baseRef() . PHP_EOL)
+                ->text('        Current reference: ' . $ciState->currentRef() . PHP_EOL);
+        }
+        $this
+            ->ansi
             ->text(PHP_EOL)
             ->text('    Build ID: ')
             ->text($buildFacts->buildId())
