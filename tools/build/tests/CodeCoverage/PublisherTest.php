@@ -44,14 +44,27 @@ final class PublisherTest extends TestCase
         $publisher->publish(new CodeCoverageArtifact('x', 'y', Kind::LlvmJson));
     }
 
-    public function testFailsWhenTotalsAreNotSet(): void
+    /**
+     * @dataProvider invalidCoverageFileProvider
+     */
+    public function testInvalidCoverageFile(string $rawFile): void
     {
         $filesystem = $this->createMock(Filesystem::class);
-        $filesystem->method('readFile')->willReturn('{"data": []}');
+        $filesystem->method('readFile')->willReturn($rawFile);
 
         $publisher = new Publisher(new Git(new Ansi()), $filesystem, new State());
 
         $this->expectException(InvalidCoverageFile::class);
         $publisher->publish(new CodeCoverageArtifact('x', 'y', Kind::LlvmJson));
+    }
+
+    /**
+     * @return iterable<int, array{0:string}>
+     */
+    private function invalidCoverageFileProvider(): iterable
+    {
+        yield ['{"data": []}'];
+        yield ['{"data": [{"totals": false}]}'];
+        yield ['{"data": [{"totals": {}}]}'];
     }
 }

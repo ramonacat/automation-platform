@@ -67,7 +67,7 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
         $totals = (array)$data['data'][0]['totals'];
 
         if (!isset($totals['lines']) || !is_array($totals['lines'])) {
-            throw new RuntimeException('Could not find lines in JSON file: ' . $path);
+            throw InvalidCoverageFile::noKeyInFile($path, 'data[0].totals.lines');
         }
 
         if (isset($totals['lines']['percent'])) {
