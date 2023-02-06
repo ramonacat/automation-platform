@@ -67,4 +67,17 @@ final class PublisherTest extends TestCase
         yield ['{"data": [{"totals": false}]}'];
         yield ['{"data": [{"totals": {}}]}'];
     }
+
+    public function testCanPublishLlvmJson(): void
+    {
+        $state = new State();
+
+        $filesystem = $this->createMock(Filesystem::class);
+        $filesystem->method('readFile')->willReturn('{"data": [{"totals": {"lines": {"percent": 0.5}}}]}');
+
+        $publisher = new Publisher(new Git(new Ansi()), $filesystem, $state);
+        $publisher->publish(new CodeCoverageArtifact('x', 'y', Kind::LlvmJson));
+
+        self::assertEqualsWithDelta($state->coverages(), ['y' => 0.005], 0.01);
+    }
 }
