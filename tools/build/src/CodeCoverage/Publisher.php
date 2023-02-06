@@ -134,7 +134,7 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
             return;
         }
 
-        if ($ciState !== null && $ciState->baseRef() === 'origin/main') {
+        if ($ciState !== null && $ciState->currentRef() === 'origin/main') {
             $ansi
                 ->color([SGR::COLOR_FG_YELLOW])
                 ->bold()

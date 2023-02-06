@@ -231,7 +231,8 @@ final class Build
                 ->ansi
                 ->text(PHP_EOL)
                 ->text('        Actor: ' . $ciState->actor() . PHP_EOL)
-                ->text('        Base reference: ' . $ciState->baseRef() . PHP_EOL);
+                ->text('        Base reference: ' . $ciState->baseRef() . PHP_EOL)
+                ->text('        Current reference: ' . $ciState->currentRef() . PHP_EOL);
         }
         $this
             ->ansi
