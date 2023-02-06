@@ -1,6 +1,28 @@
 {}:
 let
     pkgs = import <nixpkgs> { };
+    fetchCrate = name: version: fetchTarball "https://crates.io/api/v1/crates/${name}/${version}/download#${name}-${version}.tar.gz";
+    llvmCovSrc = fetchCrate "cargo-llvm-cov" "0.5.9";
+    llvmCov = pkgs.rustPlatform.buildRustPackage {
+      name = "cargo-llvm-cov";
+      src = llvmCovSrc;
+      cargoHash = "sha256-ZUeqW8Hr4leu1TlBEoiBy8eKXs8NunU3hX/sW8v2cts=";
+
+      # skip tests which require llvm-tools-preview
+      checkFlags = [
+        "--skip bin_crate"
+        "--skip cargo_config"
+        "--skip clean_ws"
+        "--skip instantiations"
+        "--skip merge"
+        "--skip merge_failure_mode_all"
+        "--skip no_test"
+        "--skip open_report"
+        "--skip real1"
+        "--skip show_env"
+        "--skip virtual1"
+      ];
+    };
 in
   pkgs.mkShell {
     shellHook = ''
@@ -9,9 +31,7 @@ in
       rustup toolchain install nightly; 
       rustup default stable; 
 
-      cargo +nightly install cargo-udeps; 
       cargo install cargo-audit; 
-      cargo install cargo-llvm-cov;
 
       mkdir .php-tools/;
       pushd .php-tools;
@@ -44,5 +64,8 @@ in
           openssl 
           alsa-lib 
           (callPackage crate2nix { })
+          llvmCov
+          cargo-udeps
+          cargo-audit
         ];
   }
