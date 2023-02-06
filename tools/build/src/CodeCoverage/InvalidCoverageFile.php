@@ -18,4 +18,9 @@ final class InvalidCoverageFile extends RuntimeException
     {
         return new self(sprintf('Could not find key "%s" in file "%s"', $key, $path));
     }
+
+    public static function notAnArray(string $path, string $key): self
+    {
+        return new self(sprintf('Key "%s" in file "%s" is not an array', $key, $path));
+    }
 }

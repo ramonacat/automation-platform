@@ -38,9 +38,10 @@ final class InActionProcess
 
         Fiber::suspend();
 
-        /** @psalm-var IteratorAggregate<string, string> $process  */
+        $iter = $process->getIterator(Process::ITER_NON_BLOCKING);
+        /** @psalm-var IteratorAggregate<string, string> $iter  */
 
-        foreach ($process as $type => $data) {
+        foreach ($iter as $type => $data) {
             if ($type === Process::OUT) {
                 $output->pushOutput($data);
             } else {
@@ -50,7 +51,6 @@ final class InActionProcess
             Fiber::suspend();
         }
 
-        /** @psalm-var Process $process */
         $exitCode = $process->getExitCode();
         return $exitCode === 0;
     }

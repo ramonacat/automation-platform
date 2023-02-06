@@ -23,14 +23,23 @@ final class InActionProcessTest extends TestCase
             1
         );
 
+        $result = null;
         $output = $this->createMock(TargetOutput::class);
         $output
-            ->expects(self::once())
+            ->expects(self::atLeastOnce())
             ->method('pushOutput')
-            ->with('abc');
+            ->willReturnCallback(
+                function (string $data) use (&$result) {
+                    if ($data !== '') {
+                        $result = $data;
+                    }
+                }
+            );
 
         DumbFiberRunner::run(
             fn () => $process->run($output, 'abc')
         );
+
+        self::assertSame('abc', $result);
     }
 }
