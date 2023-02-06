@@ -3,3 +3,5 @@
 *.rs eol=lf
 *.yaml eol=lf
 *.yml eol=lf
+
+.build/coverage.json merge=ort theirs
