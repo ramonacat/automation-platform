@@ -19,7 +19,7 @@ native-tls="0.2.11"
 thiserror = "1.0.38"
 time = { version = "0.3.17", features=["local-offset", "parsing", "serde", "formatting"] }
 rpc-support = { path="../../libraries/rust/rpc-support"}
-async-trait = "0.1.58"
+async-trait = "0.1.64"
 futures-lite = "1.12.0"
 async-stream = "0.3.3"
 dashmap = "5.4.0"
