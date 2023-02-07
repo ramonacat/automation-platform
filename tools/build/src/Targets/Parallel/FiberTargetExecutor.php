@@ -146,6 +146,8 @@ final class FiberTargetExecutor
             $this->waitForAny();
         }
 
+        $this->spy->buildFinished();
+
         return $this->results;
     }
 }

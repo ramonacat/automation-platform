@@ -132,7 +132,8 @@ final class Build
             $buildFacts,
             $state,
             $changeTracker,
-            new Builder($buildDefinitionsLoader)
+            new Builder($buildDefinitionsLoader),
+            $this->ansi
         );
 
         $this->printBuildFacts($buildFacts);

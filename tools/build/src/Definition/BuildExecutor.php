@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild\Definition;
 
 use function array_map;
+
+use Bramus\Ansi\Ansi;
 use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
@@ -26,7 +28,8 @@ final class BuildExecutor
         private BuildFacts             $buildFacts,
         private State                  $state,
         private ChangeTracker          $changeTracker,
-        private Builder                $queueBuilder
+        private Builder                $queueBuilder,
+        private Ansi                   $ansi,
     ) {
     }
 
@@ -50,7 +53,7 @@ final class BuildExecutor
             $this->buildFacts->logicalCores(),
             $context,
             $this->logger,
-            new LoggingTargetExecutionSpy($targetId->path() . '/build-times.log'),
+            new LoggingTargetExecutionSpy($targetId->path() . '/build-times.log', $this->ansi),
         );
 
         $cacheBusters = [];

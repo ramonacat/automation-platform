@@ -560,9 +560,9 @@ rec {
       };
       "async-trait" = rec {
         crateName = "async-trait";
-        version = "0.1.63";
+        version = "0.1.64";
         edition = "2018";
-        sha256 = "1hby55fxyi15yk6x8v3fsjz5yvwqbky273ijm7rqqhkl95v8vwgg";
+        sha256 = "18j7v85y2df62c1ylrzvgrs0afmzvnrdhwnf50hh8g4cpblzrmqw";
         procMacro = true;
         authors = [
           "David Tolnay <dtolnay@gmail.com>"
@@ -1587,9 +1587,9 @@ rec {
       };
       "futures" = rec {
         crateName = "futures";
-        version = "0.3.25";
+        version = "0.3.26";
         edition = "2018";
-        sha256 = "1c0v0lv6fgr95k1nw26n2v9vb40j7k32jg558m8pmhrxfq202f9q";
+        sha256 = "115z5bqihd2jq75s8n7jxy4k83kpv67vhic4snch6d7h1wmpkqhk";
         dependencies = [
           {
             name = "futures-channel";
@@ -1648,9 +1648,9 @@ rec {
       };
       "futures-channel" = rec {
         crateName = "futures-channel";
-        version = "0.3.25";
+        version = "0.3.26";
         edition = "2018";
-        sha256 = "1vcyyxwdgh92nl277053zvqd3qpzf6jhb5kibgs0aq95j9d2dfjj";
+        sha256 = "1xadcvj4hi6278hq6i0vnrsa231fyiylh2n03rx7d2ch79k1flrf";
         dependencies = [
           {
             name = "futures-core";
@@ -1675,20 +1675,21 @@ rec {
       };
       "futures-core" = rec {
         crateName = "futures-core";
-        version = "0.3.25";
+        version = "0.3.26";
         edition = "2018";
-        sha256 = "1b6k9fd6bkga9556jyx78di278bdp2p81cls99nawcs6grx9m404";
+        sha256 = "02467z5mv0219hkrgmpvsb3h7vb8pg31s1j901h7vxg11x6zz47c";
         features = {
           "default" = [ "std" ];
+          "portable-atomic" = [ "dep:portable-atomic" ];
           "std" = [ "alloc" ];
         };
         resolvedDefaultFeatures = [ "alloc" "default" "std" ];
       };
       "futures-executor" = rec {
         crateName = "futures-executor";
-        version = "0.3.25";
+        version = "0.3.26";
         edition = "2018";
-        sha256 = "1qkll0s12i4ry48yqh08ikl7n8gyz8in2f6zbsmpdh8lczgqbk3s";
+        sha256 = "03mm37yv235i2ifjfaacw5cl8cmiyirj8ap3d64fr5xblqshmpp8";
         dependencies = [
           {
             name = "futures-core";
@@ -1716,9 +1717,9 @@ rec {
       };
       "futures-io" = rec {
         crateName = "futures-io";
-        version = "0.3.25";
+        version = "0.3.26";
         edition = "2018";
-        sha256 = "1szl4w206x2inliipf5hvjbrd8w8i0gnglz8akmsvp3bl19gpx80";
+        sha256 = "0cc5s3qdgls25rlm3zpdf9fdk6gwmfp0fiiph39b5bmjdwdkgf5z";
         features = {
           "default" = [ "std" ];
         };
@@ -1782,9 +1783,9 @@ rec {
       };
       "futures-macro" = rec {
         crateName = "futures-macro";
-        version = "0.3.25";
+        version = "0.3.26";
         edition = "2018";
-        sha256 = "0pc3c5mydmwy50f0whcljcd41f0z1ci0r65dka8r2syqagh8ryxx";
+        sha256 = "0w3ahy69varlfw57rb2pag7jwngy771vvzmcag7mlfx3gpw3m9wm";
         procMacro = true;
         dependencies = [
           {
@@ -1805,9 +1806,9 @@ rec {
       };
       "futures-sink" = rec {
         crateName = "futures-sink";
-        version = "0.3.25";
+        version = "0.3.26";
         edition = "2018";
-        sha256 = "1ygwh57nzinpj2sk6akc6sgavl3njsrjyimvy50dyydalkqmrh9r";
+        sha256 = "0r43djzf0caz89c724ishpzxy59y6nw7ykfvh1nd9kz8nc5q447k";
         features = {
           "default" = [ "std" ];
           "std" = [ "alloc" ];
@@ -1816,9 +1817,9 @@ rec {
       };
       "futures-task" = rec {
         crateName = "futures-task";
-        version = "0.3.25";
+        version = "0.3.26";
         edition = "2018";
-        sha256 = "1sp6k18py8nv3dmy3j00w83bfmk6fzi7mwzxsflym9nrqlx3kyrg";
+        sha256 = "0rk3jg6lri1rrn03ns89cmw8lircbaf2i2d4mr10zc8hyqdrmxyw";
         features = {
           "default" = [ "std" ];
           "std" = [ "alloc" ];
@@ -1827,9 +1828,9 @@ rec {
       };
       "futures-util" = rec {
         crateName = "futures-util";
-        version = "0.3.25";
+        version = "0.3.26";
         edition = "2018";
-        sha256 = "1mk5vh8q5bkkvxji8r1nimh87hgi190nz4l4zynrqbxxgac7cxhr";
+        sha256 = "1lbvdf6hq62yczd87glm6ih8h5qkagsl7xdiwhmqvwzymkins7cw";
         dependencies = [
           {
             name = "futures-channel";
@@ -1900,6 +1901,7 @@ rec {
           "io" = [ "std" "futures-io" "memchr" ];
           "io-compat" = [ "io" "compat" "tokio-io" ];
           "memchr" = [ "dep:memchr" ];
+          "portable-atomic" = [ "futures-core/portable-atomic" ];
           "sink" = [ "futures-sink" ];
           "slab" = [ "dep:slab" ];
           "std" = [ "alloc" "futures-core/std" "futures-task/std" "slab" ];
@@ -2266,9 +2268,9 @@ rec {
       };
       "jsonpath-rust" = rec {
         crateName = "jsonpath-rust";
-        version = "0.2.0";
+        version = "0.2.1";
         edition = "2018";
-        sha256 = "0wl82ivl5yj7m21m7a5iwsqp05mvl97s5dbqp443yflm00vkq9ba";
+        sha256 = "01mf5is25732igza4ichwdic67c33lc8h980ip24xg5kwbnwkjxn";
         authors = [
           "BorisZhguchev <zhguchev@gmail.com>"
         ];
@@ -2780,9 +2782,9 @@ rec {
       };
       "notify" = rec {
         crateName = "notify";
-        version = "5.0.0";
+        version = "5.1.0";
         edition = "2021";
-        sha256 = "02j9pxil0nf766dyj4ha0ss428s07qjkbmh19h11rbmb13d6cb7d";
+        sha256 = "1a8vxbyh3aghyyvg76x4zzdwhr0d9p20x706vf7y81lalq58bsjq";
         authors = [
           "Félix Saparelli <me@passcod.name>"
           "Daniel Faust <hessijames@gmail.com>"
@@ -2852,10 +2854,10 @@ rec {
             packageId = "walkdir";
           }
           {
-            name = "winapi";
-            packageId = "winapi";
+            name = "windows-sys";
+            packageId = "windows-sys 0.42.0";
             target = { target, features }: (target."windows" or false);
-            features = [ "fileapi" "handleapi" "ioapiset" "minwinbase" "synchapi" "winbase" "winnt" ];
+            features = [ "Win32_System_Threading" "Win32_Foundation" "Win32_Storage_FileSystem" "Win32_Security" "Win32_System_WindowsProgramming" "Win32_System_IO" ];
           }
         ];
         features = {
@@ -4235,9 +4237,9 @@ rec {
       };
       "serde_json" = rec {
         crateName = "serde_json";
-        version = "1.0.91";
+        version = "1.0.92";
         edition = "2018";
-        sha256 = "10v8vb4959ayycw1zmqvxxi758djqkskchj6qal0fjbi6daj6z47";
+        sha256 = "0sl95s1y54xrxxkb2vrg4g98818w2cnc5d4qm9l95mfbq46syd3l";
         authors = [
           "Erick Tryzelaar <erick.tryzelaar@gmail.com>"
           "David Tolnay <dtolnay@gmail.com>"
@@ -4862,9 +4864,9 @@ rec {
       };
       "tokio" = rec {
         crateName = "tokio";
-        version = "1.24.2";
+        version = "1.25.0";
         edition = "2018";
-        sha256 = "1fxhf69ih3v28wh73l782pjgd6bkqfq8arr1ip1y7nc1k6ji4yjr";
+        sha256 = "1byk7wy3vdabh8na2qlmq3ayr0yimqf91jlaq0a4rgmbxf80kq68";
         authors = [
           "Tokio Contributors <team@tokio.rs>"
         ];
@@ -5496,9 +5498,9 @@ rec {
       };
       "uuid" = rec {
         crateName = "uuid";
-        version = "1.2.2";
+        version = "1.3.0";
         edition = "2018";
-        sha256 = "0k6fchay62ryjhkxsbbj38030lm3797c13vsp54bkd9ij3gf0bj2";
+        sha256 = "0ygxkj6bgfjkbhpdj1s0607zi9l8886pcw04lryd647f4r9q8x0n";
         authors = [
           "Ashley Mannix<ashleymannix@live.com.au>"
           "Christopher Armstrong"
@@ -6351,7 +6353,7 @@ rec {
         features = {
           "debug" = [ "impl-debug" ];
         };
-        resolvedDefaultFeatures = [ "consoleapi" "errhandlingapi" "fileapi" "handleapi" "ioapiset" "knownfolders" "lmcons" "minschannel" "minwinbase" "minwindef" "objbase" "processenv" "schannel" "securitybaseapi" "shlobj" "sspi" "std" "synchapi" "sysinfoapi" "timezoneapi" "winbase" "wincon" "wincrypt" "winerror" "winnt" "winsock2" "ws2ipdef" "ws2tcpip" ];
+        resolvedDefaultFeatures = [ "consoleapi" "errhandlingapi" "fileapi" "handleapi" "ioapiset" "knownfolders" "lmcons" "minschannel" "minwinbase" "minwindef" "objbase" "processenv" "schannel" "securitybaseapi" "shlobj" "sspi" "std" "sysinfoapi" "timezoneapi" "winbase" "wincon" "wincrypt" "winerror" "winnt" "winsock2" "ws2ipdef" "ws2tcpip" ];
       };
       "winapi-i686-pc-windows-gnu" = rec {
         crateName = "winapi-i686-pc-windows-gnu";
@@ -7517,7 +7519,7 @@ rec {
           "Win32_UI_Xaml" = [ "Win32_UI" ];
           "Win32_UI_Xaml_Diagnostics" = [ "Win32_UI_Xaml" ];
         };
-        resolvedDefaultFeatures = [ "Win32" "Win32_Foundation" "Win32_Security" "Win32_Security_Authorization" "Win32_Storage" "Win32_Storage_FileSystem" "Win32_System" "Win32_System_Console" "Win32_System_Pipes" "Win32_System_SystemServices" "Win32_System_Threading" "Win32_System_WindowsProgramming" "default" ];
+        resolvedDefaultFeatures = [ "Win32" "Win32_Foundation" "Win32_Security" "Win32_Security_Authorization" "Win32_Storage" "Win32_Storage_FileSystem" "Win32_System" "Win32_System_Console" "Win32_System_IO" "Win32_System_Pipes" "Win32_System_SystemServices" "Win32_System_Threading" "Win32_System_WindowsProgramming" "default" ];
       };
       "windows_aarch64_gnullvm" = rec {
         crateName = "windows_aarch64_gnullvm";
