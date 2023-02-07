@@ -1,7 +1,7 @@
 {
-    "tools\/commit-verifier\/tests_coverage.json": 0.007462686567164178,
     "tools\/build\/coverage.xml": 0.4205607476635514,
-    "tools\/dependabot-config-checker\/coverage.xml": 0.42592592592592593,
+    "tools\/commit-verifier\/tests_coverage.json": 0.007462686567164178,
+    "tools\/dependabot-config-checker\/coverage.xml": 0.46296296296296297,
     "tools\/machine-info\/tests_coverage.json": 0.05263157894736842,
     "tools\/message-compiler\/tests_coverage.json": 0.29635499207606975,
     "libraries\/rust\/events\/tests_coverage.json": 0.010416666666666664,

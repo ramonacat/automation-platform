@@ -17,19 +17,6 @@ final class CheckerTest extends TestCase
         self::assertSame(1, $checker->validate('version: 2'));
     }
 
-    public function testWillFailIfUpdatesSectionIsNotAnArray(): void
-    {
-        $checker = new Checker([], $this->createMock(CheckerOutput::class));
-
-        $result = $checker->validate(
-            <<<EOC
-            version: 2
-            updates: "invalid"
-            EOC
-        );
-        self::assertSame(1, $result);
-    }
-
     public function testWillFailIfUpdatesEntryIsNotAnArray(): void
     {
         $checker = new Checker([], $this->createMock(CheckerOutput::class));
@@ -101,6 +88,43 @@ final class CheckerTest extends TestCase
         );
 
         self::assertSame(1, $result);
+    }
+
+    /**
+     * @dataProvider invalidConfigProvider
+     */
+    public function testWillFailForInvalidConfig(string $config, string $errorMessage): void
+    {
+        $allOutputs = [];
+        $output = $this->createMock(CheckerOutput::class);
+        $output->method('invalid')->willReturnCallback(function (string $message) use (&$allOutputs) {
+            $allOutputs[] = $message;
+        });
+        $checker = new Checker(['/', '/a/b'], $output);
+
+        $result = $checker->validate($config);
+
+        self::assertSame(1, $result);
+        self::assertContains($errorMessage, $allOutputs);
+    }
+
+    public function invalidConfigProvider(): iterable
+    {
+        yield [
+            <<<'EOC'
+            version: 2
+            updates: {"a": []}
+            EOC,
+            'This "updates" entry has a non-int key, received: a',
+        ];
+
+        yield [
+            <<<EOC
+            version: 2
+            updates: "invalid"
+            EOC,
+            '"updates" key is not an array',
+        ];
     }
 
     public function testWillPassForAValidConfig(): void
