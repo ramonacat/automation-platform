@@ -5244,9 +5244,9 @@ rec {
       };
       "uuid" = rec {
         crateName = "uuid";
-        version = "1.2.2";
+        version = "1.3.0";
         edition = "2018";
-        sha256 = "0k6fchay62ryjhkxsbbj38030lm3797c13vsp54bkd9ij3gf0bj2";
+        sha256 = "0ygxkj6bgfjkbhpdj1s0607zi9l8886pcw04lryd647f4r9q8x0n";
         authors = [
           "Ashley Mannix<ashleymannix@live.com.au>"
           "Christopher Armstrong"
