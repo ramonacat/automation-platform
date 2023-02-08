@@ -8,6 +8,7 @@ use function array_filter;
 use function array_map;
 use function array_values;
 use Bramus\Ansi\Ansi;
+use function md5;
 use Ramona\AutomationPlatformLibBuild\Actions\RunProcess;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration as TargetConfiguration;
@@ -35,7 +36,15 @@ final class TargetGenerator implements TargetGeneratorInterface
                 new TargetId($this->projectDirectory, 'rust-tests-unit'),
                 new RunUnitTests(),
             ),
-            new Target(new TargetId($this->projectDirectory, 'rust-unused-dependencies'), new RunProcess(['cargo', '+nightly', 'udeps', '--all-targets'], timeoutSeconds: 600)),
+            new Target(
+                new TargetId($this->projectDirectory, 'rust-unused-dependencies'),
+                new RunProcess(
+                    ['cargo', '+nightly', 'udeps', '--all-targets'],
+                    timeoutSeconds: 600,
+                    // The target directory is set to a temporary directory to avoid rebuilds (because udeps runs on nightly, the rest on stable)
+                    additionalEnvironmentVariables: ['CARGO_TARGET_DIR' => '/tmp/' . md5($this->projectDirectory)]
+                )
+            ),
             new Target(new TargetId($this->projectDirectory, 'rust-cargo-audit'), new RunProcess(['cargo', 'audit'], timeoutSeconds: 600)),
         ];
     }
