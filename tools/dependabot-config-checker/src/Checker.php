@@ -47,7 +47,7 @@ final class Checker
             }
 
             if (!is_int($index)) {
-                $this->output->invalid('This "updates" entry has a non-int key, received: ' . (string)$index);
+                $this->output->invalid('This "updates" entry has a non-int key, received: ' . json_encode($index, JSON_PRETTY_PRINT));
                 return 1;
             }
 

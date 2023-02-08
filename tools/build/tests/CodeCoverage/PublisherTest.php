@@ -66,6 +66,7 @@ final class PublisherTest extends TestCase
         yield ['{"data": []}'];
         yield ['{"data": [{"totals": false}]}'];
         yield ['{"data": [{"totals": {}}]}'];
+        yield ['{"data": [{"totals": {"lines": false}}]}'];
     }
 
     public function testCanPublishLlvmJson(): void
@@ -79,5 +80,40 @@ final class PublisherTest extends TestCase
         $publisher->publish(new CodeCoverageArtifact('x', 'y', Kind::LlvmJson));
 
         self::assertEqualsWithDelta($state->coverages(), ['y' => 0.005], 0.01);
+    }
+
+    public function testSetsCoverageToZeroIfThereIsNoKeyForPercent(): void
+    {
+        $state = new State();
+
+        $filesystem = $this->createMock(Filesystem::class);
+        $filesystem->method('readFile')->willReturn('{"data": [{"totals": {"lines": {}}}]}');
+
+        $publisher = new Publisher(new Git(new Ansi()), $filesystem, $state);
+        $publisher->publish(new CodeCoverageArtifact('x', 'y', Kind::LlvmJson));
+
+        self::assertEqualsWithDelta($state->coverages(), ['y' => 0.0], 0.01);
+    }
+
+    /**
+     * @dataProvider invalidCloverXmlFileProvider
+     */
+    public function testFailsOnInvalidCloverXmlFile(string $contents): void
+    {
+        $filesystem = $this->createMock(Filesystem::class);
+        $filesystem->method('readFile')->willReturn($contents);
+
+        $publisher = new Publisher(new Git(new Ansi()), $filesystem, new State());
+
+        $this->expectException(InvalidCoverageFile::class);
+        $publisher->publish(new CodeCoverageArtifact('x', 'y', Kind::Clover));
+    }
+
+    /**
+     * @return iterable<int, array{0:string}>
+     */
+    private function invalidCloverXmlFileProvider(): iterable
+    {
+        yield ['not xml'];
     }
 }

@@ -8,6 +8,7 @@ use function count;
 use Exception;
 use Fiber;
 use function get_class;
+use function microtime;
 use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
@@ -17,6 +18,7 @@ use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetExecutionSpy;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
+use function usleep;
 
 final class FiberTargetExecutor
 {
@@ -97,6 +99,8 @@ final class FiberTargetExecutor
     private function waitForAny(): void
     {
         while (count($this->runningFibers) > 0) {
+            $loopStart = microtime(true);
+
             foreach ($this->runningFibers as $fiberTargetId => $fiber) {
                 if ($fiber->isStarted()) {
                     /** @var BuildResult|null $result */
@@ -125,6 +129,16 @@ final class FiberTargetExecutor
                     );
 
                     return;
+                }
+            }
+
+            $elapsed = microtime(true) - $loopStart;
+
+            // if nothing happens, we just sleep for a while to let the fibers do their thing, instead of spinning the CPU aimlessly
+            if ($elapsed < 0.1) {
+                $sleepTime = (int) (100000.0 * (0.1 - $elapsed));
+                if ($sleepTime > 0) {
+                    usleep($sleepTime);
                 }
             }
         }

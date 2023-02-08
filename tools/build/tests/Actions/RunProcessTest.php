@@ -33,8 +33,18 @@ final class RunProcessTest extends TestCase
     {
         $action = new RunProcess([PHP_BINARY, __DIR__ . '/test-scripts/prints-test-to-stdout.php']);
 
+        $result = null;
         $output = $this->createMock(TargetOutput::class);
-        $output->expects(self::once())->method('pushOutput')->with('test');
+        $output
+            ->expects(self::atLeastOnce())
+            ->method('pushOutput')
+            ->willReturnCallback(
+                function (string $data) use (&$result) {
+                    if ($data !== '') {
+                        $result = $data;
+                    }
+                }
+            );
 
         DumbFiberRunner::run(
             fn () =>
@@ -44,6 +54,8 @@ final class RunProcessTest extends TestCase
                     __DIR__
                 )
         );
+
+        self::assertSame('test', $result);
     }
 
     public function testWillReadStdErr(): void

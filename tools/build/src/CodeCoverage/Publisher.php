@@ -10,6 +10,7 @@ use function count;
 use Exception;
 use function file_put_contents;
 use function is_array;
+use function is_float;
 use function is_object;
 use function json_decode;
 use function json_encode;
@@ -64,14 +65,18 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
             throw InvalidCoverageFile::noKeyInFile($path, 'data[0].totals');
         }
 
-        $totals = (array)$data['data'][0]['totals'];
+        $totals = $data['data'][0]['totals'];
+
+        if (!is_array($totals)) {
+            throw InvalidCoverageFile::notAnArray($path, 'data[0].totals');
+        }
 
         if (!isset($totals['lines']) || !is_array($totals['lines'])) {
             throw InvalidCoverageFile::noKeyInFile($path, 'data[0].totals.lines');
         }
 
-        if (isset($totals['lines']['percent'])) {
-            $coverage = (float)$totals['lines']['percent'] / 100.0;
+        if (isset($totals['lines']['percent']) && is_float($totals['lines']['percent'])) {
+            $coverage = $totals['lines']['percent'] / 100.0;
         } else {
             $coverage = 0;
         }
@@ -82,10 +87,10 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
     private function publishClover(string $path): void
     {
         // TODO stream the file instead
-        $xml = simplexml_load_string($this->filesystem->readFile($path));
+        $xml = @simplexml_load_string($this->filesystem->readFile($path));
         
         if ($xml === false) {
-            throw new RuntimeException('Could not load XML file: ' . $path);
+            throw InvalidCoverageFile::cannotDecode('Could not load XML file: ' . $path);
         }
 
         if (!isset($xml->project) || !is_object($xml->project)) {
