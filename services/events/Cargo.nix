@@ -1931,6 +1931,7 @@ rec {
           "serde" = [ "dep:serde" ];
           "serde-1" = [ "serde" ];
         };
+        resolvedDefaultFeatures = [ "std" ];
       };
       "instant" = rec {
         crateName = "instant";
@@ -2901,9 +2902,9 @@ rec {
       };
       "petgraph" = rec {
         crateName = "petgraph";
-        version = "0.6.2";
+        version = "0.6.3";
         edition = "2018";
-        sha256 = "0hw1i1s49f82sg34ngfhgmg8qraa7d26gak2rrwiacx1ad103mg6";
+        sha256 = "1912xw827flj8mzqm62jcbg0cv54qfhzm48c13ilzr9px67d5msd";
         authors = [
           "bluss"
           "mitchmindtree"
@@ -2917,6 +2918,7 @@ rec {
           {
             name = "indexmap";
             packageId = "indexmap";
+            features = [ "std" ];
           }
         ];
         features = {

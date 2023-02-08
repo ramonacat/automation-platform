@@ -6,10 +6,6 @@
     "source": {
         "directories": [
             "src/"
-        ],
-        "excludes": [
-            "ProjectFinder.php",
-            "DockerfileFinder.php"
         ]
     },
     "mutators": {

@@ -11,7 +11,8 @@ use function Safe\file_get_contents;
 require_once __DIR__ . '/../vendor/autoload.php';
 
 $projects = ProjectFinder::find();
-$dockerFileDirectories = DockerfileFinder::find();
+$dockerFileFinder = new DockerfileFinder($projectRoot = realpath(dirname(__DIR__, 3)) . DIRECTORY_SEPARATOR);
+$dockerFileDirectories = $dockerFileFinder->find();
 
 $checker = new Checker(array_merge(['/'], $projects, $dockerFileDirectories), new DefaultCheckerOutput());
 

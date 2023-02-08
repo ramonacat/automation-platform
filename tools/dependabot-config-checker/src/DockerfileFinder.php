@@ -8,7 +8,6 @@ use function array_unique;
 use function array_values;
 use function assert;
 use const DIRECTORY_SEPARATOR;
-use function dirname;
 use function in_array;
 use RecursiveCallbackFilterIterator;
 use RecursiveDirectoryIterator;
@@ -21,13 +20,16 @@ use function str_starts_with;
 
 final class DockerfileFinder
 {
+    public function __construct(private string $projectRoot)
+    {
+    }
+
     /**
      * @return list<string>
      */
-    public static function find(): array
+    public function find(): array
     {
-        $projectRoot = realpath(dirname(__DIR__, 3)) . DIRECTORY_SEPARATOR;
-        $directoryIterator = new RecursiveDirectoryIterator($projectRoot);
+        $directoryIterator = new RecursiveDirectoryIterator($this->projectRoot);
         $filterIterator = new RecursiveCallbackFilterIterator(
             $directoryIterator,
             function (SplFileInfo|string $file): bool {
@@ -48,7 +50,7 @@ final class DockerfileFinder
                 || str_ends_with($item->getBasename(), '.Dockerfile')
 
             ) {
-                $results[] = str_replace([$projectRoot, DIRECTORY_SEPARATOR], ['', '/'], realpath($item->getPath())) . '/';
+                $results[] = str_replace([$this->projectRoot, DIRECTORY_SEPARATOR], ['', '/'], realpath($item->getPath())) . '/';
             }
         }
 
