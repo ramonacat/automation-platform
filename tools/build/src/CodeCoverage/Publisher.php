@@ -61,7 +61,7 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
             throw InvalidCoverageFile::cannotDecode($path);
         }
         
-        if (!isset($data['data'][0]['totals']) || !is_array($data['data'][0]['totals'])) {
+        if (!isset($data['data'][0]['totals'])) {
             throw InvalidCoverageFile::noKeyInFile($path, 'data[0].totals');
         }
 
@@ -94,7 +94,7 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
         }
 
         if (!isset($xml->project) || !is_object($xml->project)) {
-            throw new RuntimeException('Could not find project in XML file: ' . $path);
+            throw InvalidCoverageFile::noKeyInFile($path, 'project');
         }
 
         if (!isset($xml->project->metrics) || !($xml->project->metrics instanceof SimpleXMLElement)) {
