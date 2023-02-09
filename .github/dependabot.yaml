@@ -71,7 +71,7 @@ updates:
     schedule:
       interval: "daily"
 
-  - package-ecosystem: "docker"
+  - package-ecosystem: "docker" 
     directory: "services/music/docker/"
     schedule:
       interval: "daily"
