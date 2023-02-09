@@ -1,3 +1,4 @@
+use base64::Engine;
 use claxon::FlacReader;
 use futures_util::{AsyncReadExt, StreamExt, TryStreamExt};
 use music::structs::{Metadata, Rpc, TrackPath};
@@ -22,7 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await
         .unwrap()
-        .map(|x| base64::decode(x.unwrap().data))
+        .map(|x| base64::engine::general_purpose::STANDARD.decode(x.unwrap().data))
         .map_err(|x| std::io::Error::new(ErrorKind::AlreadyExists, x))
         .into_async_read()
         .read_to_end(&mut vec)
