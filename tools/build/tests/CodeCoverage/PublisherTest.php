@@ -115,5 +115,6 @@ final class PublisherTest extends TestCase
     private function invalidCloverXmlFileProvider(): iterable
     {
         yield ['not xml'];
+        yield ['<a />'];
     }
 }
