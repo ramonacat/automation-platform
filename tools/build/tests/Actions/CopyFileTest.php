@@ -12,6 +12,8 @@ use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
+use Ramona\AutomationPlatformLibBuild\Processes\DefaultProcessBuilder;
+
 use function Safe\touch;
 use function sys_get_temp_dir;
 use function uniqid;
@@ -34,7 +36,12 @@ final class CopyFileTest extends TestCase
         $action = new CopyFile($sourceFilename, $targetFilename);
         $action->execute(
             $this->createMock(TargetOutput::class),
-            new Context(Configuration::fromJsonString('{}'), new Collector(), new BuildFacts('test', null, 1, 1)),
+            new Context(
+                Configuration::fromJsonString('{}'),
+                new Collector(),
+                new BuildFacts('test', null, 1, 1),
+                new DefaultProcessBuilder()
+            ),
             $tempdir
         );
 

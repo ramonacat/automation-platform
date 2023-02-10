@@ -11,7 +11,6 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
-use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 use Webmozart\Assert\Assert;
 
 final class BuildDockerImage implements BuildAction
@@ -32,7 +31,7 @@ final class BuildDockerImage implements BuildAction
         Assert::isList($dockerBuildCommand);
         Assert::allString($dockerBuildCommand);
 
-        $process = new InActionProcess(
+        $process = $context->processBuilder()->build(
             $workingDirectory,
             $this->createDockerBuildCommand($dockerBuildCommand, $context),
             self::DEFAULT_TIMEOUT

@@ -38,6 +38,7 @@ use Ramona\AutomationPlatformLibBuild\Git;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use Ramona\AutomationPlatformLibBuild\MachineInfo;
 use Ramona\AutomationPlatformLibBuild\Output\StyledBuildOutput;
+use Ramona\AutomationPlatformLibBuild\Processes\DefaultProcessBuilder;
 use Ramona\AutomationPlatformLibBuild\Queue\Builder;
 use Ramona\AutomationPlatformLibBuild\State\DotBuildStateStorage;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetDoesNotExist;
@@ -138,7 +139,7 @@ final class Build
 
         $this->printBuildFacts($buildFacts);
 
-        $context = new Context($configuration, new Collector(), $buildFacts);
+        $context = new Context($configuration, new Collector(), $buildFacts, new DefaultProcessBuilder());
         try {
             $result = $buildExecutor->executeTarget(new TargetId(getcwd(), $arguments[0]), $context);
         } catch (TargetDoesNotExist $exception) {

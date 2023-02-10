@@ -9,7 +9,6 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
-use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 
 /**
  * @api
@@ -33,7 +32,7 @@ final class RunProcess implements BuildAction
 
     public function execute(TargetOutput $output, Context $context, string $workingDirectory): BuildResult
     {
-        $process = new InActionProcess(
+        $process = $context->processBuilder()->build(
             $workingDirectory,
             $this->command,
             $this->timeoutSeconds,

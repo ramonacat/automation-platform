@@ -11,7 +11,6 @@ use Ramona\AutomationPlatformLibBuild\CodeCoverage\Artifact;
 use Ramona\AutomationPlatformLibBuild\CodeCoverage\Kind;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
-use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 
 final class RunUnitTests implements BuildAction
 {
@@ -19,7 +18,7 @@ final class RunUnitTests implements BuildAction
     {
         $coveragePath = $workingDirectory . DIRECTORY_SEPARATOR . '/coverage.xml';
 
-        $process = new InActionProcess($workingDirectory, ['php', 'vendor/bin/phpunit', '--coverage-clover', $coveragePath], timeout: 600);
+        $process = $context->processBuilder()->build($workingDirectory, ['php', 'vendor/bin/phpunit', '--coverage-clover', $coveragePath], timeout: 600);
         if (!$process->run($output)) {
             return BuildResult::fail('Unit tests failed');
         }

@@ -10,15 +10,17 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\ContainerImage;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
-use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
-use Webmozart\Assert\Assert;
 
 final class BuildNixifiedDockerImage implements BuildAction
 {
     private const DEFAULT_TIMEOUT = 3600;
 
-    public function __construct(private string $key, private string $imageName, private string $contextPath = '.', private string $nixFilePath = './docker/docker.nix')
-    {
+    public function __construct(
+        private string $key,
+        private string $imageName,
+        private string $contextPath = '.',
+        private string $nixFilePath = './docker/docker.nix'
+    ) {
     }
 
     public function execute(
@@ -26,16 +28,14 @@ final class BuildNixifiedDockerImage implements BuildAction
         Context $context,
         string $workingDirectory
     ): BuildResult {
-        $dockerBuildCommand = $context->configuration()->getSingleBuildValue('$.docker.build-command');
-
-        Assert::isList($dockerBuildCommand);
-        Assert::allString($dockerBuildCommand);
-
-        $process = new InActionProcess(
+        $process = $context->processBuilder()->build(
             $workingDirectory,
             // TODO: pass the image name as an argument
-            // TODO: The hardcoded k3d image import command is not ideal
-            ['sh', '-c', 'crate2nix generate && $(nix-build --no-out-link ' . $this->nixFilePath . ' --argstr tag \"' . $context->buildFacts()->buildId() . '\") | docker load'],
+            [
+                'sh',
+                '-c',
+                'crate2nix generate && $(nix-build --no-out-link ' . $this->nixFilePath . ' --argstr tag \"' . $context->buildFacts()->buildId() . '\") | docker load'
+            ],
             self::DEFAULT_TIMEOUT
         );
 

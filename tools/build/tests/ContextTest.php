@@ -9,6 +9,7 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Processes\DefaultProcessBuilder;
 
 final class ContextTest extends TestCase
 {
@@ -17,7 +18,8 @@ final class ContextTest extends TestCase
         $context = new Context(
             $config = Configuration::fromJsonString('{}'),
             new Collector(),
-            $this->createBuildFacts()
+            $this->createBuildFacts(),
+            new DefaultProcessBuilder()
         );
 
         self::assertSame($config, $context->configuration());
@@ -28,7 +30,8 @@ final class ContextTest extends TestCase
         $context = new Context(
             Configuration::fromJsonString('{}'),
             $collector = new Collector(),
-            $this->createBuildFacts()
+            $this->createBuildFacts(),
+            new DefaultProcessBuilder()
         );
 
         self::assertSame($collector, $context->artifactCollector());
@@ -39,7 +42,8 @@ final class ContextTest extends TestCase
         $context = new Context(
             Configuration::fromJsonString('{}'),
             new Collector(),
-            $facts = $this->createBuildFacts()
+            $facts = $this->createBuildFacts(),
+            new DefaultProcessBuilder()
         );
 
         self::assertSame($facts, $context->buildFacts());
