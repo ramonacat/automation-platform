@@ -8,6 +8,7 @@ use Ramona\AutomationPlatformLibBuild\Artifacts\Collector;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\Processes\DefaultProcessBuilder;
 
 final class ContextFactory
 {
@@ -17,6 +18,6 @@ final class ContextFactory
         $artifactCollector = $artifactCollector ?? new Collector();
         $buildFacts = $buildFacts ?? new BuildFacts('test', null, 1, 1);
 
-        return new Context($configuration, $artifactCollector, $buildFacts);
+        return new Context($configuration, $artifactCollector, $buildFacts, new DefaultProcessBuilder());
     }
 }

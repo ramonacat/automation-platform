@@ -7,14 +7,14 @@ namespace Tests\Ramona\AutomationPlatformLibBuild\Processess;
 use const PHP_BINARY;
 use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
-use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
+use Ramona\AutomationPlatformLibBuild\Processes\DefaultInActionProcess;
 use Tests\Ramona\AutomationPlatformLibBuild\DumbFiberRunner;
 
-final class InActionProcessTest extends TestCase
+final class DefaultInActionProcessTest extends TestCase
 {
     public function testCanPassStandardInput(): void
     {
-        $process = new InActionProcess(
+        $process = new DefaultInActionProcess(
             __DIR__,
             [
                 PHP_BINARY,

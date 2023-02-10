@@ -90,7 +90,7 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
         $xml = @simplexml_load_string($this->filesystem->readFile($path));
         
         if ($xml === false) {
-            throw InvalidCoverageFile::cannotDecode('Could not load XML file: ' . $path);
+            throw InvalidCoverageFile::cannotDecode($path);
         }
 
         if (!isset($xml->project) || !is_object($xml->project)) {
@@ -98,19 +98,19 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
         }
 
         if (!isset($xml->project->metrics) || !($xml->project->metrics instanceof SimpleXMLElement)) {
-            throw new RuntimeException('Could not find metrics in XML file: ' . $path);
+            throw InvalidCoverageFile::noKeyInFile($path, 'project.metrics');
         }
 
         if (!isset($xml->project->metrics['statements'])) {
-            throw new RuntimeException('Could not find statements in XML file: ' . $path);
+            throw InvalidCoverageFile::noKeyInFile($path, 'project.metrics.statements');
         }
 
         if (!isset($xml->project->metrics['coveredstatements'])) {
-            throw new RuntimeException('Could not find coveredstatements in XML file: ' . $path);
+            throw InvalidCoverageFile::noKeyInFile($path, 'project.metrics.coveredstatements');
         }
 
-        $statements = (int)($xml->project->metrics['statements']);
-        $coveredStatements = (int)($xml->project->metrics['coveredstatements']);
+        $statements = (int)$xml->project->metrics['statements'];
+        $coveredStatements = (int)$xml->project->metrics['coveredstatements'];
 
         if ($statements === 0) {
             $coverage = 0;

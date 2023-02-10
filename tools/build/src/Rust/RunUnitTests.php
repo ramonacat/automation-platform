@@ -10,7 +10,6 @@ use Ramona\AutomationPlatformLibBuild\CodeCoverage\Artifact;
 use Ramona\AutomationPlatformLibBuild\CodeCoverage\Kind;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
-use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 
 final class RunUnitTests implements BuildAction
 {
@@ -18,7 +17,7 @@ final class RunUnitTests implements BuildAction
     {
         $coverageFile = $workingDirectory . '/tests_coverage.json';
 
-        $process = new InActionProcess(
+        $process = $context->processBuilder()->build(
             $workingDirectory,
             ['cargo', 'llvm-cov', '--json', '--output-path', $coverageFile],
             600

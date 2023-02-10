@@ -8,8 +8,8 @@
     "libraries\/rust\/platform\/tests_coverage.json": 0.3915094339622642,
     "libraries\/rust\/rpc-support\/tests_coverage.json": 0.0030211480362537764,
     "services\/directory-watcher\/tests_coverage.json": 0.462589928057554,
-    "tools\/build\/coverage.xml": 0.42725409836065575,
     "services\/events\/tests_coverage.json": 0.005555555555555556,
+    "services\/music\/tests_coverage.json": 0.003115264797507788,
     "agents\/music\/tests_coverage.json": 0.023809523809523808,
-    "services\/music\/tests_coverage.json": 0.003115264797507788
+    "tools\/build\/coverage.xml": 0.43086529884032115
 }

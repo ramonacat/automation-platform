@@ -101,13 +101,20 @@ final class BuildExecutorTest extends TestCase
             new Target($targetIdB, new NoOp(), [$targetIdA]),
         ]);
 
+        $targetsStarted = [];
+
         $this
             ->buildOutput
             ->expects(self::exactly(2))
             ->method('startTarget')
-            ->withConsecutive([$targetIdA], [$targetIdB]);
+            ->willReturnCallback(function (TargetId $targetId) use (&$targetsStarted) {
+                /** @psalm-suppress MixedArrayAssignment */
+                $targetsStarted[] = $targetId;
+            });
 
         $this->buildExecutor->executeTarget($targetIdB, ContextFactory::create());
+
+        self::assertSame([$targetIdA, $targetIdB], $targetsStarted);
     }
 
     public function testWillCollectAllArtifacts(): void

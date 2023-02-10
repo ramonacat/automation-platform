@@ -8,7 +8,6 @@ use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\BuildResult;
 use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Output\TargetOutput;
-use Ramona\AutomationPlatformLibBuild\Processes\InActionProcess;
 use Webmozart\Assert\Assert;
 
 final class KustomizeApply implements BuildAction
@@ -23,7 +22,7 @@ final class KustomizeApply implements BuildAction
 
         Assert::string($kubernetesContext);
 
-        $process = new InActionProcess(
+        $process = $context->processBuilder()->build(
             $workingDirectory,
             [
                 'kubectl',
