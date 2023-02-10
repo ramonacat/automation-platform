@@ -1,4 +1,3 @@
-#[rustfmt::skip]
 mod structs;
 
 use async_std::prelude::Stream;
