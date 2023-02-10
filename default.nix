@@ -21,7 +21,6 @@ let
         "--skip real1"
         "--skip show_env"
         "--skip virtual1"
-        "--skip check_pgp_keys"
       ];
     };
 in
