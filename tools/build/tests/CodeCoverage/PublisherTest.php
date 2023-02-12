@@ -9,14 +9,14 @@ use PHPUnit\Framework\TestCase;
 use Ramona\AutomationPlatformLibBuild\Artifacts\Artifact;
 use Ramona\AutomationPlatformLibBuild\Artifacts\UnexpectedArtifactType;
 use Ramona\AutomationPlatformLibBuild\CodeCoverage\Artifact as CodeCoverageArtifact;
+use Ramona\AutomationPlatformLibBuild\DefaultGit;
 use Ramona\AutomationPlatformLibBuild\Filesystem\Filesystem;
-use Ramona\AutomationPlatformLibBuild\Git;
 
 final class PublisherTest extends TestCase
 {
     public function testFailsOnWrongArtifactType(): void
     {
-        $publisher = new Publisher(new Git(new Ansi()), $this->createMock(Filesystem::class), new State());
+        $publisher = new Publisher(new DefaultGit(new Ansi()), $this->createMock(Filesystem::class), new State());
 
         $this->expectException(UnexpectedArtifactType::class);
         
@@ -37,7 +37,7 @@ final class PublisherTest extends TestCase
         $filesystem = $this->createMock(Filesystem::class);
         $filesystem->method('readFile')->willReturn('x');
 
-        $publisher = new Publisher(new Git(new Ansi()), $filesystem, new State());
+        $publisher = new Publisher(new DefaultGit(new Ansi()), $filesystem, new State());
 
         $this->expectException(InvalidCoverageFile::class);
         $this->expectExceptionMessage('Could not decode file "y"');
@@ -52,7 +52,7 @@ final class PublisherTest extends TestCase
         $filesystem = $this->createMock(Filesystem::class);
         $filesystem->method('readFile')->willReturn($rawFile);
 
-        $publisher = new Publisher(new Git(new Ansi()), $filesystem, new State());
+        $publisher = new Publisher(new DefaultGit(new Ansi()), $filesystem, new State());
 
         $this->expectException(InvalidCoverageFile::class);
         $this->expectExceptionMessage($exceptionMessage);
@@ -78,7 +78,7 @@ final class PublisherTest extends TestCase
         $filesystem = $this->createMock(Filesystem::class);
         $filesystem->method('readFile')->willReturn('{"data": [{"totals": {"lines": {"percent": 0.5}}}]}');
 
-        $publisher = new Publisher(new Git(new Ansi()), $filesystem, $state);
+        $publisher = new Publisher(new DefaultGit(new Ansi()), $filesystem, $state);
         $publisher->publish(new CodeCoverageArtifact('x', 'y', Kind::LlvmJson));
 
         self::assertEqualsWithDelta($state->coverages(), ['y' => 0.005], 0.01);
@@ -91,7 +91,7 @@ final class PublisherTest extends TestCase
         $filesystem = $this->createMock(Filesystem::class);
         $filesystem->method('readFile')->willReturn('{"data": [{"totals": {"lines": {}}}]}');
 
-        $publisher = new Publisher(new Git(new Ansi()), $filesystem, $state);
+        $publisher = new Publisher(new DefaultGit(new Ansi()), $filesystem, $state);
         $publisher->publish(new CodeCoverageArtifact('x', 'y', Kind::LlvmJson));
 
         self::assertEqualsWithDelta($state->coverages(), ['y' => 0.0], 0.01);
@@ -104,7 +104,7 @@ final class PublisherTest extends TestCase
         $filesystem = $this->createMock(Filesystem::class);
         $filesystem->method('readFile')->willReturn('<coverage><project><metrics statements="100" coveredstatements="50" /></project></coverage>');
 
-        $publisher = new Publisher(new Git(new Ansi()), $filesystem, $state);
+        $publisher = new Publisher(new DefaultGit(new Ansi()), $filesystem, $state);
         $publisher->publish(new CodeCoverageArtifact('x', 'y', Kind::Clover));
 
         self::assertEqualsWithDelta($state->coverages(), ['y' => 0.5], 0.01);
@@ -117,7 +117,7 @@ final class PublisherTest extends TestCase
         $filesystem = $this->createMock(Filesystem::class);
         $filesystem->method('readFile')->willReturn('<coverage><project><metrics statements="0" coveredstatements="0" /></project></coverage>');
 
-        $publisher = new Publisher(new Git(new Ansi()), $filesystem, $state);
+        $publisher = new Publisher(new DefaultGit(new Ansi()), $filesystem, $state);
         $publisher->publish(new CodeCoverageArtifact('x', 'y', Kind::Clover));
 
         self::assertEqualsWithDelta($state->coverages(), ['y' => 0.0], 0.01);
@@ -131,7 +131,7 @@ final class PublisherTest extends TestCase
         $filesystem = $this->createMock(Filesystem::class);
         $filesystem->method('readFile')->willReturn($contents);
 
-        $publisher = new Publisher(new Git(new Ansi()), $filesystem, new State());
+        $publisher = new Publisher(new DefaultGit(new Ansi()), $filesystem, new State());
 
         $this->expectException(InvalidCoverageFile::class);
         $this->expectExceptionMessage($exceptionMessage);

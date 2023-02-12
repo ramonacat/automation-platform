@@ -19,8 +19,8 @@ use function number_format;
 use const PHP_EOL;
 use Ramona\AutomationPlatformLibBuild\Artifacts\UnexpectedArtifactType;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\DefaultGit;
 use Ramona\AutomationPlatformLibBuild\Filesystem\Filesystem;
-use Ramona\AutomationPlatformLibBuild\Git;
 use RuntimeException;
 use function simplexml_load_string;
 use SimpleXMLElement;
@@ -29,7 +29,7 @@ use Webmozart\PathUtil\Path;
 final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Publisher
 {
     public function __construct(
-        private readonly Git $git,
+        private readonly DefaultGit $git,
         private readonly Filesystem $filesystem,
         private readonly State $state,
     ) {
@@ -155,11 +155,14 @@ final class Publisher implements \Ramona\AutomationPlatformLibBuild\Artifacts\Pu
             ->nostyle();
 
         $baseBranch = $ciState === null ? 'origin/main' : $ciState->baseRef();
-        $baseRef = $this->git->runGit(['git', 'rev-parse', $baseBranch]);
+        $baseRef = $this->git->parseRevision($baseBranch);
 
         try {
             /** @var array<string, float>|false|null $originalCoverage */
-            $originalCoverage = json_decode($this->git->runGit(['git', 'show', $baseRef . ':.build/coverage.json']), true);
+            $originalCoverage = json_decode(
+                $this->git->readFileAtRef($baseRef, '.build/coverage.json'),
+                true
+            );
         } catch (Exception) {
             $ansi
                 ->color([SGR::COLOR_FG_RED])

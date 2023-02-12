@@ -30,11 +30,12 @@ use Ramona\AutomationPlatformLibBuild\CodeCoverage\State as CodeCoverageState;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
 use Ramona\AutomationPlatformLibBuild\Configuration\Locator;
 use Ramona\AutomationPlatformLibBuild\Context;
+use Ramona\AutomationPlatformLibBuild\DefaultGit;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionsLoader;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildExecutor;
 use Ramona\AutomationPlatformLibBuild\Definition\DefaultBuildDefinitionsLoader;
+use Ramona\AutomationPlatformLibBuild\Filesystem\Filesystem;
 use Ramona\AutomationPlatformLibBuild\Filesystem\Real;
-use Ramona\AutomationPlatformLibBuild\Git;
 use Ramona\AutomationPlatformLibBuild\Log\LogFormatter;
 use Ramona\AutomationPlatformLibBuild\MachineInfo;
 use Ramona\AutomationPlatformLibBuild\Output\StyledBuildOutput;
@@ -60,17 +61,19 @@ final class Build
      */
     private array $artifactPublishers;
 
-    private readonly Git $git;
+    private readonly DefaultGit $git;
+    private readonly Filesystem $filesystem;
 
     public function __construct()
     {
         $this->workingDirectory = realpath(getcwd());
         $this->ansi = new Ansi(new StreamWriter('php://stdout'));
-        $this->git = new Git($this->ansi);
+        $this->git = new DefaultGit($this->ansi);
         $this->artifactPublishers = [
             new LogOnlyPublisher($this->ansi),
             new \Ramona\AutomationPlatformLibBuild\CodeCoverage\Publisher($this->git, new Real(), new CodeCoverageState()),
         ];
+        $this->filesystem = new Real();
     }
 
     /**
@@ -84,7 +87,7 @@ final class Build
         $logger = $this->createFileLogger($ciStatus !== null);
 
         $machineInfo = new MachineInfo();
-        $changeTracker = new GitChangeTracker($logger, $this->ansi, $this->git);
+        $changeTracker = new GitChangeTracker($logger, $this->git, $this->filesystem);
 
         try {
             $stateId = $changeTracker->getCurrentStateId();
