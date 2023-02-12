@@ -14,8 +14,9 @@ RIdentifier:IdentifierRaw<'input> =
     <id:r"[a-zA-Z0-9_][a-zA-Z0-9_-]*"> => IdentifierRaw::new(id);
 
 RType:TypeRaw<'input> = {
-    <id:RIdentifier> => TypeRaw::new(id, false),
-    <id:RIdentifier> "?" => TypeRaw::new(id, true),
+    <id:RIdentifier> => TypeRaw::Type(id),
+    <id:RIdentifier> "?" => TypeRaw::Optional(id),
+    <id:RIdentifier> "[" "]" => TypeRaw::Array(id),
 }
 
 RField:FieldRaw<'input> = <name:RIdentifier> ":" <type_name:RType> => FieldRaw::new(name, type_name);

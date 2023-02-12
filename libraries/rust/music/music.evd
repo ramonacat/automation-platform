@@ -1,14 +1,60 @@
 metadata {
 }
 
-struct TrackPath {
-    path: string,
-}
-
 struct TrackData {
     data: string,
 }
 
+struct Artist {
+    id: guid,
+    name: string,
+}
+
+struct AllArtists {
+    artists: Artist[],
+}
+
+struct ArtistRelation {
+    artist_id: guid,
+    role: string,
+}
+
+struct Album {
+    id: guid,
+    artists: ArtistRelation[],
+    title: string,
+}
+
+struct AllAlbums {
+    albums: Album[],
+}
+
+struct Track {
+    id: guid,
+    title: string,
+    artists: ArtistRelation[],
+    album_id: guid,
+}
+
+struct AllTracks {
+    tracks: Track[],
+}
+
+struct StreamTrackRequest {
+    track_id: guid,
+}
+
+struct AllAlbumsRequest {
+    artist_id: guid,
+}
+
+struct AllTracksRequest {
+    album_id: guid,
+}
+
 rpc {
-    stream_track(TrackPath) -> stream TrackData;
+    stream_track(StreamTrackRequest) -> stream TrackData;
+    all_artists(void) -> AllArtists;
+    all_albums(AllAlbumsRequest) -> AllAlbums;
+    all_tracks(AllTracksRequest) -> AllTracks;
 }

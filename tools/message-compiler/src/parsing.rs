@@ -9,16 +9,10 @@ impl<'input> IdentifierRaw<'input> {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct TypeRaw<'input> {
-    pub(crate) name: IdentifierRaw<'input>,
-    pub(crate) optional: bool,
-}
-
-impl<'input> TypeRaw<'input> {
-    #[must_use]
-    pub fn new(name: IdentifierRaw<'input>, optional: bool) -> Self {
-        Self { name, optional }
-    }
+pub enum TypeRaw<'input> {
+    Type(IdentifierRaw<'input>),
+    Optional(IdentifierRaw<'input>),
+    Array(IdentifierRaw<'input>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -210,11 +204,11 @@ mod test {
                         vec![
                             FieldRaw::new(
                                 IdentifierRaw::new("f1"),
-                                TypeRaw::new(IdentifierRaw::new("u32"), false)
+                                TypeRaw::Type(IdentifierRaw::new("u32"))
                             ),
                             FieldRaw::new(
                                 IdentifierRaw::new("f2"),
-                                TypeRaw::new(IdentifierRaw::new("u64"), false)
+                                TypeRaw::Type(IdentifierRaw::new("u64"))
                             ),
                         ]
                     ),
@@ -223,11 +217,11 @@ mod test {
                         vec![
                             FieldRaw::new(
                                 IdentifierRaw::new("fx-1"),
-                                TypeRaw::new(IdentifierRaw::new("A"), false)
+                                TypeRaw::Type(IdentifierRaw::new("A"))
                             ),
                             FieldRaw::new(
                                 IdentifierRaw::new("fx-2"),
-                                TypeRaw::new(IdentifierRaw::new("instant"), false)
+                                TypeRaw::Type(IdentifierRaw::new("instant"))
                             ),
                         ]
                     ),
@@ -236,11 +230,11 @@ mod test {
                         vec![
                             FieldRaw::new(
                                 IdentifierRaw::new("fx-1"),
-                                TypeRaw::new(IdentifierRaw::new("B"), false)
+                                TypeRaw::Type(IdentifierRaw::new("B"))
                             ),
                             FieldRaw::new(
                                 IdentifierRaw::new("fx-3"),
-                                TypeRaw::new(IdentifierRaw::new("u8"), false)
+                                TypeRaw::Type(IdentifierRaw::new("u8"))
                             ),
                         ]
                     ),
@@ -265,22 +259,22 @@ mod test {
                         IdentifierRaw::new("request"),
                         vec![FieldRaw::new(
                             IdentifierRaw::new("f1"),
-                            TypeRaw::new(IdentifierRaw::new("u32"), false)
+                            TypeRaw::Type(IdentifierRaw::new("u32"))
                         ),]
                     ),
                     StructDefinitionRaw(
                         IdentifierRaw::new("response"),
                         vec![FieldRaw::new(
                             IdentifierRaw::new("f2"),
-                            TypeRaw::new(IdentifierRaw::new("u64"), false)
+                            TypeRaw::Type(IdentifierRaw::new("u64"))
                         ),]
                     ),
                 ],
                 vec![],
                 Some(RpcRaw::new(vec![RpcDefinitionRaw::new(
                     IdentifierRaw::new("call"),
-                    TypeRaw::new(IdentifierRaw::new("request"), false),
-                    TypeRaw::new(IdentifierRaw::new("response"), false),
+                    TypeRaw::Type(IdentifierRaw::new("request")),
+                    TypeRaw::Type(IdentifierRaw::new("response")),
                     false
                 )]))
             )),
@@ -301,22 +295,22 @@ mod test {
                         IdentifierRaw::new("request"),
                         vec![FieldRaw::new(
                             IdentifierRaw::new("f1"),
-                            TypeRaw::new(IdentifierRaw::new("u32"), false)
+                            TypeRaw::Type(IdentifierRaw::new("u32"))
                         ),]
                     ),
                     StructDefinitionRaw(
                         IdentifierRaw::new("response"),
                         vec![FieldRaw::new(
                             IdentifierRaw::new("f2"),
-                            TypeRaw::new(IdentifierRaw::new("u64"), false)
+                            TypeRaw::Type(IdentifierRaw::new("u64"))
                         ),]
                     ),
                 ],
                 vec![],
                 Some(RpcRaw::new(vec![RpcDefinitionRaw::new(
                     IdentifierRaw::new("call"),
-                    TypeRaw::new(IdentifierRaw::new("request"), false),
-                    TypeRaw::new(IdentifierRaw::new("response"), false),
+                    TypeRaw::Type(IdentifierRaw::new("request")),
+                    TypeRaw::Type(IdentifierRaw::new("response")),
                     true
                 )]))
             )),

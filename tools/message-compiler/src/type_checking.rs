@@ -57,6 +57,7 @@ pub enum TypedFieldType {
     OtherStruct(String),
     Enum(String),
     Optional(Box<TypedFieldType>),
+    Array(Box<TypedFieldType>),
 }
 
 #[derive(Debug)]
@@ -147,6 +148,7 @@ enum TypeCheckableFieldType<'a> {
     Void,
     ToBeResolved(&'a str),
     Optional(Box<TypeCheckableFieldType<'a>>),
+    Array(Box<TypeCheckableFieldType<'a>>),
 }
 
 #[derive(Debug)]
@@ -272,8 +274,10 @@ impl<'input> TypeChecker<'input> {
         Ok(fields)
     }
 
-    fn resolve_raw_type(type_raw: &TypeRaw<'input>) -> TypeCheckableFieldType<'input> {
-        let field_type = match type_raw.name.0 {
+    fn raw_field_type_to_typecheckable_type(
+        type_name: &IdentifierRaw<'input>,
+    ) -> TypeCheckableFieldType<'input> {
+        match type_name.0 {
             "u8" => TypeCheckableFieldType::U8,
             "u16" => TypeCheckableFieldType::U16,
             "u32" => TypeCheckableFieldType::U32,
@@ -287,12 +291,18 @@ impl<'input> TypeChecker<'input> {
             "string" => TypeCheckableFieldType::String,
             "void" => TypeCheckableFieldType::Void,
             other => TypeCheckableFieldType::ToBeResolved(other),
-        };
+        }
+    }
 
-        if type_raw.optional {
-            TypeCheckableFieldType::Optional(Box::new(field_type))
-        } else {
-            field_type
+    fn resolve_raw_type(type_raw: &TypeRaw<'input>) -> TypeCheckableFieldType<'input> {
+        match type_raw {
+            TypeRaw::Type(id) => Self::raw_field_type_to_typecheckable_type(id),
+            TypeRaw::Optional(id) => TypeCheckableFieldType::Optional(Box::new(
+                Self::raw_field_type_to_typecheckable_type(id),
+            )),
+            TypeRaw::Array(id) => TypeCheckableFieldType::Array(Box::new(
+                Self::raw_field_type_to_typecheckable_type(id),
+            )),
         }
     }
 
@@ -340,6 +350,10 @@ impl<'input> TypeChecker<'input> {
             TypeCheckableFieldType::Optional(type_) => {
                 let type_id = self.resolve_type(type_)?;
                 TypedFieldType::Optional(Box::new(type_id))
+            }
+            TypeCheckableFieldType::Array(type_) => {
+                let type_id = self.resolve_type(type_)?;
+                TypedFieldType::Array(Box::new(type_id))
             }
         })
     }
@@ -494,5 +508,30 @@ impl<'input> TypeChecker<'input> {
                 ))
             })
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn type_check_error_display_tests() {
+        let error = TypeCheckError::RepeatedName("test".to_string());
+
+        assert_eq!(
+            error.to_string(),
+            "The type with name \"test\" already exists"
+        );
+
+        let error = TypeCheckError::RepeatedFieldName {
+            field_name: "test1".to_string(),
+            struct_name: "test2".to_string(),
+        };
+
+        assert_eq!(
+            error.to_string(),
+            "A field with name \"test1\" already exists in struct \"test2\""
+        );
     }
 }
