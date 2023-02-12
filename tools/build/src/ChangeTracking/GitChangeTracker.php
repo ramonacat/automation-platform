@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Ramona\AutomationPlatformLibBuild\ChangeTracking;
 
 use function array_map;
-use Bramus\Ansi\Ansi;
 use const DIRECTORY_SEPARATOR;
 use Exception;
 use function explode;
+use const PHP_EOL;
 use Psr\Log\LoggerInterface;
+use Ramona\AutomationPlatformLibBuild\Filesystem\Filesystem;
 use Ramona\AutomationPlatformLibBuild\Git;
 use function Safe\realpath;
 use function sha1;
@@ -24,15 +25,23 @@ final class GitChangeTracker implements ChangeTracker
 {
     public function __construct(
         private readonly LoggerInterface $logger,
-        private readonly Ansi     $ansi,
-        private readonly Git      $git,
+        private readonly Git $git,
+        private readonly Filesystem $filesystem,
     ) {
     }
 
     public function getCurrentStateId(): string
     {
-        $currentCommitHash = $this->currentCommitHash();
-        $rawDiff = $this->rawDiffTo($currentCommitHash);
+        $currentCommitHash = $this->git->currentCommitHash();
+        $rawDiff = $this->git->rawDiffTo($currentCommitHash);
+
+        $untrackedFiles = $this->git->listUntrackedFiles();
+
+        foreach ($untrackedFiles as $untrackedFile) {
+            $fileContents = $this->filesystem->readFile($untrackedFile);
+            
+            $rawDiff .= PHP_EOL . $fileContents;
+        }
 
         if ($rawDiff !== '') {
             return $currentCommitHash . '-' . sha1($rawDiff);
@@ -79,16 +88,5 @@ final class GitChangeTracker implements ChangeTracker
         }
 
         return false;
-    }
-
-    private function currentCommitHash(): string
-    {
-        $currentCommit = ['git', 'rev-parse', 'HEAD'];
-        return $this->git->runGit($currentCommit);
-    }
-
-    private function rawDiffTo(string $commitHash): string
-    {
-        return $this->git->runGit(['git', 'diff', $commitHash]);
     }
 }

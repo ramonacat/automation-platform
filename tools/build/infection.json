@@ -9,26 +9,7 @@
         ],
         "excludes": [
             "vendor/",
-            "bin/",
-            "Output/StyledBuildOutput.php",
-            "Output/StyledTargetOutput.php",
-            "Rust/TargetGenerator.php",
-            "Rust/LocalDependencyDetector.php",
-            "PHP/TargetGenerator.php",
-            "PHP/LocalDependencyDetector.php",
-            "PHP/InvalidComposerJson.php",
-            "Docker/TargetGenerator.php",
-            "Artifacts/LogOnlyPublisher.php",
-            "Actions/Docker/BuildDockerImage.php",
-            "Actions/Docker/LintDockerfile.php",
-            "Actions/Kubernetes/KustomizeApply.php",
-            "Actions/Kubernetes/GenerateKustomizeOverride.php",
-            "Actions/Kubernetes/KustomizeOverride.php",
-            "Commands/Build.php",
-            "MachineInfo.php",
-            "Targets/Parallel/FiberTargetExecutor.php",
-            "ChangeTracking/GitChangeTracker.php",
-            "State/DotBuildStateStorage.php"
+            "bin/"
         ]
     },
     "mutators": {
