@@ -894,6 +894,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -1343,6 +1344,7 @@ name = "rpc-support"
 version = "0.1.0"
 dependencies = [
  "async-stream",
+ "async-trait",
  "dashmap",
  "futures",
  "platform",

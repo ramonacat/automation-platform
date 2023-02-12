@@ -10,7 +10,7 @@ use thiserror::Error;
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::sync::mpsc::{Receiver, Sender};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 pub mod rpc_error;
 pub mod system_time_serializer;
@@ -36,13 +36,41 @@ struct StreamResponseEnvelope {
 
 type WaitingResponses = DashMap<u64, Sender<(ResponseEnvelope, Option<String>)>>;
 type ActiveStreams = DashMap<u64, Sender<(ResponseEnvelope, Option<String>)>>;
-type ResponseStream<TResponse> =
+pub type ResponseStream<TResponse> =
     Pin<Box<dyn Stream<Item = Result<TResponse, RpcError>> + Unpin + Send>>;
 
-pub struct RawRpcClient {
+pub struct DefaultRawRpcClient {
     waiting_responses: Arc<WaitingResponses>,
     active_streams: Arc<ActiveStreams>,
     request_tx: Sender<String>,
+}
+
+#[async_trait::async_trait]
+pub trait RawRpcClient {
+    // TODO rename to send_rpc_request
+    async fn send_rpc<TRequest, TMetadata, TResponse>(
+        &mut self,
+        id: u64,
+        method_name: &str,
+        request: &TRequest,
+        metadata: &TMetadata,
+    ) -> Result<TResponse, RpcError>
+    where
+        TRequest: Serialize + Sync + Send,
+        TMetadata: Serialize + Sync + Send,
+        TResponse: DeserializeOwned;
+
+    async fn send_rpc_stream_request<TRequest, TMetadata, TResponse>(
+        &mut self,
+        request_id: u64,
+        method_name: &str,
+        request: &TRequest,
+        metadata: &TMetadata,
+    ) -> Result<ResponseStream<TResponse>, RpcError>
+    where
+        TRequest: Serialize + Sync + Send,
+        TMetadata: Serialize + Sync + Send,
+        TResponse: DeserializeOwned;
 }
 
 #[derive(Debug, Error)]
@@ -119,34 +147,11 @@ async fn client_request_task(
     Ok(())
 }
 
-impl RawRpcClient {
-    pub fn new(stream: tokio::net::TcpStream) -> Self {
-        let (read, write) = stream.into_split();
-        let waiting_responses = Arc::new(DashMap::new());
-        let active_streams = Arc::new(DashMap::new());
-
-        tokio::task::spawn(run_with_error_handling(client_response_task(
-            read,
-            waiting_responses.clone(),
-            active_streams.clone(),
-        )));
-
-        let (request_tx, request_rx) = tokio::sync::mpsc::channel(64);
-
-        tokio::task::spawn(run_with_error_handling(client_request_task(
-            write, request_rx,
-        )));
-
-        RawRpcClient {
-            waiting_responses,
-            active_streams,
-            request_tx,
-        }
-    }
-
+#[async_trait::async_trait]
+impl RawRpcClient for DefaultRawRpcClient {
     /// # Errors
     /// Can fail if sending the request fails or if the call returns an error
-    pub async fn send_rpc<TRequest, TMetadata, TResponse>(
+    async fn send_rpc<TRequest, TMetadata, TResponse>(
         &mut self,
         id: u64,
         method_name: &str,
@@ -154,8 +159,8 @@ impl RawRpcClient {
         metadata: &TMetadata,
     ) -> Result<TResponse, RpcError>
     where
-        TMetadata: Serialize,
-        TRequest: Serialize,
+        TRequest: Serialize + Sync + Send,
+        TMetadata: Serialize + Sync + Send,
         TResponse: DeserializeOwned,
     {
         let (tx, mut rx) = tokio::sync::mpsc::channel(1);
@@ -192,34 +197,11 @@ impl RawRpcClient {
         Ok(response)
     }
 
-    async fn send_raw_request<TMetadata, TRequest>(
-        &mut self,
-        envelope: &RequestEnvelope,
-        metadata: &TMetadata,
-        request: &TRequest,
-    ) -> Result<(), RpcError>
-    where
-        TMetadata: Serialize,
-        TRequest: Serialize,
-    {
-        let mut buffer = String::new();
-        buffer.push_str(&serde_json::to_string(envelope)?);
-        buffer.push('\n');
-        buffer.push_str(&serde_json::to_string(&metadata)?);
-        buffer.push('\n');
-        buffer.push_str(&serde_json::to_string(&request)?);
-        buffer.push('\n');
-
-        self.request_tx.send(buffer).await?;
-
-        Ok(())
-    }
-
     /// # Panics
     /// FIXME make it never panic
     /// # Errors
     /// Can fail if sending the request fails
-    pub async fn send_rpc_stream_request<TRequest, TMetadata, TResponse>(
+    async fn send_rpc_stream_request<TRequest, TMetadata, TResponse>(
         &mut self,
         id: u64,
         method_name: &str,
@@ -227,8 +209,8 @@ impl RawRpcClient {
         metadata: &TMetadata,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<TResponse, RpcError>> + Unpin + Send>>, RpcError>
     where
-        TRequest: Serialize,
-        TMetadata: Serialize,
+        TRequest: Serialize + Sync + Send,
+        TMetadata: Serialize + Sync + Send,
         TResponse: DeserializeOwned,
     {
         let (tx, mut rx) = tokio::sync::mpsc::channel(64);
@@ -277,6 +259,54 @@ impl RawRpcClient {
     }
 }
 
+impl DefaultRawRpcClient {
+    pub fn new(stream: tokio::net::TcpStream) -> Self {
+        let (read, write) = stream.into_split();
+        let waiting_responses = Arc::new(DashMap::new());
+        let active_streams = Arc::new(DashMap::new());
+
+        tokio::task::spawn(run_with_error_handling(client_response_task(
+            read,
+            waiting_responses.clone(),
+            active_streams.clone(),
+        )));
+
+        let (request_tx, request_rx) = tokio::sync::mpsc::channel(64);
+
+        tokio::task::spawn(run_with_error_handling(client_request_task(
+            write, request_rx,
+        )));
+
+        DefaultRawRpcClient {
+            waiting_responses,
+            active_streams,
+            request_tx,
+        }
+    }
+    async fn send_raw_request<TMetadata, TRequest>(
+        &mut self,
+        envelope: &RequestEnvelope,
+        metadata: &TMetadata,
+        request: &TRequest,
+    ) -> Result<(), RpcError>
+    where
+        TMetadata: Serialize,
+        TRequest: Serialize,
+    {
+        let mut buffer = String::new();
+        buffer.push_str(&serde_json::to_string(envelope)?);
+        buffer.push('\n');
+        buffer.push_str(&serde_json::to_string(&metadata)?);
+        buffer.push('\n');
+        buffer.push_str(&serde_json::to_string(&request)?);
+        buffer.push('\n');
+
+        self.request_tx.send(buffer).await?;
+
+        Ok(())
+    }
+}
+
 /**
  * # Errors
  * Can fail if the request cannot be read from the stream
@@ -297,9 +327,9 @@ where
     reader.read_line(&mut metadata_line).await?;
     reader.read_line(&mut payload_line).await?;
 
-    info!("Envelope: {}", envelope_line);
-    info!("Metadata: {}", metadata_line);
-    info!("Payload: {}", payload_line);
+    debug!("Envelope: {}", envelope_line);
+    debug!("Metadata: {}", metadata_line);
+    debug!("Payload: {}", payload_line);
 
     let envelope: RequestEnvelope = serde_json::from_str(&envelope_line)?;
     let metadata: TMetadata = serde_json::from_str(&metadata_line)?;
@@ -367,4 +397,31 @@ where
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use tokio::io::BufReader;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_read_request() {
+        let mut reader = BufReader::new(
+            concat!(
+                "{\"method_name\": \"test\",\"request_id\": 1}\n",
+                "\"\"\n",
+                ""
+            )
+            .as_bytes(),
+        );
+
+        let (payload, method_name, request_id, metadata): (String, String, u64, String) =
+            read_request(&mut reader).await.unwrap();
+
+        assert_eq!(payload, "");
+        assert_eq!(method_name, "test");
+        assert_eq!(request_id, 1);
+        assert_eq!(metadata, "");
+    }
 }

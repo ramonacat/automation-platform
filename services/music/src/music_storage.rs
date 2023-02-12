@@ -8,6 +8,9 @@ use uuid::Uuid;
 pub enum Error {
     #[error("Database error: {0}")]
     DatabaseError(#[from] tokio_postgres::Error),
+
+    #[error("Deserialization error: {0}")]
+    DeserializationError(#[from] serde_json::Error),
 }
 
 pub struct UpsertAlbum<'a> {
@@ -30,17 +33,180 @@ pub struct UpsertTrack<'a> {
     pub path: serde_json::Value,
 }
 
-pub struct MusicStorage {
+pub struct Artist {
+    pub id: Uuid,
+    pub name: String,
+    pub discogs_id: Option<String>,
+}
+
+pub struct Album {
+    pub id: Uuid,
+    pub title: String,
+    pub disc_count: Option<i32>,
+    pub track_count: Option<i32>,
+    pub year: Option<i32>,
+    pub discogs_id: Option<String>,
+}
+
+pub struct Track {
+    pub id: Uuid,
+    pub title: String,
+    pub disc_number: Option<i32>,
+    pub track_number: Option<i32>,
+    pub path: events::FileOnMountPath,
+}
+
+pub struct Postgres {
     pg_client: Arc<Mutex<tokio_postgres::Client>>,
 }
 
-// TODO should this all be INSERT ... ON CONFLICT UPDATE?
-impl MusicStorage {
+#[async_trait::async_trait]
+pub(crate) trait MusicStorage {
+    async fn all_artists(&self) -> Result<Vec<Artist>, Error>;
+    async fn all_albums(&self, artist_id: Uuid) -> Result<Vec<Album>, Error>;
+    async fn all_tracks(&self, album_id: Uuid) -> Result<Vec<Track>, Error>;
+    async fn track_by_id(&self, id: Uuid) -> Result<Track, Error>;
+
+    async fn upsert_relation_type(&self, name: &str) -> Result<Uuid, Error>;
+    async fn upsert_artist(&self, artist: &str, discogs_id: Option<&str>) -> Result<Uuid, Error>;
+    async fn upsert_album(&self, command: &UpsertAlbum<'_>) -> Result<Uuid, Error>;
+    async fn upsert_track(&self, command: &UpsertTrack<'_>) -> Result<Uuid, Error>;
+}
+
+impl Postgres {
     pub fn new(pg_client: Arc<Mutex<tokio_postgres::Client>>) -> Self {
         Self { pg_client }
     }
+}
 
-    pub async fn upsert_relation_type(&self, name: &str) -> Result<Uuid, Error> {
+// TODO should this all be INSERT ... ON CONFLICT UPDATE?
+#[async_trait::async_trait]
+impl MusicStorage for Postgres {
+    async fn all_artists(&self) -> Result<Vec<Artist>, Error> {
+        let mut client = self.pg_client.lock().await;
+        let transaction = client.transaction().await?;
+
+        let rows = transaction
+            .query("SELECT id, name, discogs_id FROM artists", &[])
+            .await?;
+
+        let mut artists = Vec::new();
+        for row in rows {
+            let id: Uuid = row.get(0);
+            let name: String = row.get(1);
+            let discogs_id: Option<String> = row.get(2);
+
+            artists.push(Artist {
+                id,
+                name,
+                discogs_id,
+            });
+        }
+
+        transaction.commit().await?;
+
+        Ok(artists)
+    }
+
+    async fn all_albums(&self, artist_id: Uuid) -> Result<Vec<Album>, Error> {
+        let mut client = self.pg_client.lock().await;
+        let transaction = client.transaction().await?;
+
+        let rows = transaction
+            .query(
+                "SELECT id, title, disc_count, track_count, year, discogs_id FROM albums WHERE id IN (SELECT album_id FROM albums_artists WHERE artist_id = $1)",
+                &[&artist_id],
+            )
+            .await?;
+
+        let mut albums = Vec::new();
+        for row in rows {
+            let id: Uuid = row.get(0);
+            let title: String = row.get(1);
+            let disc_count: Option<i32> = row.get(2);
+            let track_count: Option<i32> = row.get(3);
+            let year: Option<i32> = row.get(4);
+            let discogs_id: Option<String> = row.get(5);
+
+            albums.push(Album {
+                id,
+                title,
+                disc_count,
+                track_count,
+                year,
+                discogs_id,
+            });
+        }
+
+        transaction.commit().await?;
+
+        Ok(albums)
+    }
+
+    async fn all_tracks(&self, album_id: Uuid) -> Result<Vec<Track>, Error> {
+        let mut client = self.pg_client.lock().await;
+        let transaction = client.transaction().await?;
+
+        let rows = transaction
+            .query(
+                "SELECT id, title, disc_number, track_number, path FROM tracks WHERE album_id = $1",
+                &[&album_id],
+            )
+            .await?;
+
+        let mut tracks = Vec::new();
+        for row in rows {
+            let id: Uuid = row.get(0);
+            let title: String = row.get(1);
+            let disc_number: Option<i32> = row.get(2);
+            let track_number: Option<i32> = row.get(3);
+            let path: events::FileOnMountPath = serde_json::from_value(row.get(4))?;
+
+            tracks.push(Track {
+                id,
+                title,
+                disc_number,
+                track_number,
+                path,
+            });
+        }
+
+        transaction.commit().await?;
+
+        Ok(tracks)
+    }
+
+    async fn track_by_id(&self, id: Uuid) -> Result<Track, Error> {
+        let mut client = self.pg_client.lock().await;
+        let transaction = client.transaction().await?;
+
+        let row = transaction
+            .query_one(
+                "SELECT id, title, disc_number, track_number, path FROM tracks WHERE id = $1",
+                &[&id],
+            )
+            .await?;
+
+        let id: Uuid = row.get(0);
+        let title: String = row.get(1);
+        let disc_number: Option<i32> = row.get(2);
+        let track_number: Option<i32> = row.get(3);
+        let path: events::FileOnMountPath = serde_json::from_value(row.get(4))?;
+
+        let track = Track {
+            id,
+            title,
+            disc_number,
+            track_number,
+            path,
+        };
+
+        transaction.commit().await?;
+
+        Ok(track)
+    }
+
+    async fn upsert_relation_type(&self, name: &str) -> Result<Uuid, Error> {
         let mut client = self.pg_client.lock().await;
         let transaction = client.transaction().await?;
 
@@ -67,11 +233,7 @@ impl MusicStorage {
         }
     }
 
-    pub async fn upsert_artist(
-        &self,
-        artist: &str,
-        discogs_id: Option<&str>,
-    ) -> Result<Uuid, Error> {
+    async fn upsert_artist(&self, artist: &str, discogs_id: Option<&str>) -> Result<Uuid, Error> {
         let mut client = self.pg_client.lock().await;
         let transaction = client.transaction().await?;
 
@@ -98,7 +260,7 @@ impl MusicStorage {
     }
 
     // TODO how do we handle the case where title/artist matches, but other data does not?
-    pub async fn upsert_album(&self, command: &UpsertAlbum<'_>) -> Result<Uuid, Error> {
+    async fn upsert_album(&self, command: &UpsertAlbum<'_>) -> Result<Uuid, Error> {
         let mut client = self.pg_client.lock().await;
         let transaction = client.transaction().await?;
 
@@ -138,7 +300,7 @@ impl MusicStorage {
 
     // TODO update all the data that does not match
     #[allow(clippy::too_many_arguments)]
-    pub async fn upsert_track(&self, command: &UpsertTrack<'_>) -> Result<Uuid, Error> {
+    async fn upsert_track(&self, command: &UpsertTrack<'_>) -> Result<Uuid, Error> {
         let mut client = self.pg_client.lock().await;
         let transaction = client.transaction().await?;
 

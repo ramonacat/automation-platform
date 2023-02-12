@@ -2,7 +2,9 @@ mod structs;
 
 use async_std::prelude::Stream;
 use rpc_support::rpc_error::RpcError;
-use rpc_support::{read_request, send_response, send_stream_response, RawRpcClient};
+use rpc_support::{
+    read_request, send_response, send_stream_response, DefaultRawRpcClient, RawRpcClient,
+};
 use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -19,7 +21,7 @@ extern crate async_trait;
 
 pub struct Client {
     id: AtomicU64,
-    raw: RawRpcClient,
+    raw: DefaultRawRpcClient,
 }
 
 pub struct Server<T>
@@ -37,7 +39,7 @@ impl Client {
         let tcp = TcpStream::connect(addr).await?;
 
         Ok(Client {
-            raw: RawRpcClient::new(tcp),
+            raw: DefaultRawRpcClient::new(tcp),
             id: AtomicU64::new(0),
         })
     }

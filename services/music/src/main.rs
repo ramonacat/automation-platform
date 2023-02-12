@@ -5,9 +5,12 @@ use async_std::stream::StreamExt;
 use base64::Engine;
 use event_storage::EventStorage;
 use events::{EventKind, Rpc as EventsRpc};
-use music::structs::{Metadata, Rpc, TrackData, TrackPath};
-use music::Server;
-use music_storage::{Error, MusicStorage};
+use music::server::Server;
+use music::structs::{
+    Album, AllAlbums, AllAlbumsRequest, AllArtists, AllTracks, AllTracksRequest, Artist, Metadata,
+    Rpc, StreamTrackRequest, Track, TrackData,
+};
+use music_storage::{Error, MusicStorage, Postgres};
 use platform::async_infra;
 use platform::postgres::connect;
 use platform::secrets::SecretProvider;
@@ -22,13 +25,15 @@ use uuid::Uuid;
 
 use crate::music_storage::{UpsertAlbum, UpsertTrack};
 
-struct RpcServer {}
+struct RpcServer<TMusicStorage: MusicStorage> {
+    music_storage: Arc<Mutex<TMusicStorage>>,
+}
 
 #[async_trait::async_trait]
-impl Rpc for RpcServer {
+impl<TMusicStorage: MusicStorage + Send + Sync> Rpc for RpcServer<TMusicStorage> {
     async fn stream_track(
         &mut self,
-        request: TrackPath,
+        request: StreamTrackRequest,
         _metadata: Metadata,
     ) -> Result<
         Pin<
@@ -38,8 +43,15 @@ impl Rpc for RpcServer {
         >,
         RpcError,
     > {
+        let track = self
+            .music_storage
+            .lock()
+            .await
+            .track_by_id(request.track_id)
+            .await?;
+        // TODO get the mount path from track.path as well!
         let mut path = std::path::PathBuf::from("/mnt/the-nas/");
-        path.push(request.path);
+        path.push(track.path.path);
 
         let file = tokio::fs::File::open(path).await?;
         let reader = ReaderStream::new(file);
@@ -50,6 +62,73 @@ impl Rpc for RpcServer {
                 data: base64::engine::general_purpose::STANDARD.encode(&buf?),
             })
         })))
+    }
+
+    async fn all_artists(
+        &mut self,
+        _request: (),
+        _metadata: Metadata,
+    ) -> Result<AllArtists, RpcError> {
+        let artists = self.music_storage.lock().await.all_artists().await?;
+
+        Ok(AllArtists {
+            artists: artists
+                .into_iter()
+                .map(|artist| Artist {
+                    id: artist.id,
+                    name: artist.name,
+                })
+                .collect(),
+        })
+    }
+
+    async fn all_albums(
+        &mut self,
+        request: AllAlbumsRequest,
+        _metadata: Metadata,
+    ) -> Result<AllAlbums, RpcError> {
+        let albums = self
+            .music_storage
+            .lock()
+            .await
+            .all_albums(request.artist_id)
+            .await?;
+
+        Ok(AllAlbums {
+            albums: albums
+                .into_iter()
+                .map(|album| Album {
+                    id: album.id,
+                    title: album.title,
+                    artists: vec![], // TODO fill this
+                })
+                .collect(),
+        })
+    }
+
+    async fn all_tracks(
+        &mut self,
+        request: AllTracksRequest,
+        _metadata: Metadata,
+    ) -> Result<AllTracks, RpcError> {
+        let tracks = self
+            .music_storage
+            .lock()
+            .await
+            .all_tracks(request.album_id)
+            .await?;
+
+        Ok(AllTracks {
+            tracks: tracks
+                .into_iter()
+                .map(|track| Track {
+                    id: track.id,
+                    title: track.title,
+                    artists: vec![], // TODO fill this
+                    album_id: request.album_id,
+                })
+                .collect(),
+        })
     }
 }
 
@@ -83,10 +162,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pg_client = Arc::new(Mutex::new(
         connect(&secret_provider, "ap-music", "music.ap-music.credentials").await?,
     ));
+    let music_storage = Arc::new(Mutex::new(Postgres::new(pg_client.clone())));
 
     tokio::spawn(async_infra::run_with_error_handling::<RpcError>(
         async move {
-            let storage = MusicStorage::new(pg_client.clone());
+            let storage = Postgres::new(pg_client.clone());
             let mut event_storage = EventStorage::new(pg_client);
 
             let mut client = events::Client::new("svc-events:7654")
@@ -242,8 +322,83 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ));
 
     // todo make the bind addr/port configurable
-    let server = Server::new("0.0.0.0:7655", Arc::new(Mutex::new(RpcServer {}))).await?;
+    let server = Server::new(
+        "0.0.0.0:7655",
+        Arc::new(Mutex::new(RpcServer {
+            music_storage: music_storage.clone(),
+        })),
+    )
+    .await?;
     server.run().await?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::music_storage::MusicStorage;
+
+    struct MockMusicStorage;
+
+    #[async_trait::async_trait]
+    impl MusicStorage for MockMusicStorage {
+        async fn all_artists(&self) -> Result<Vec<music_storage::Artist>, Error> {
+            unimplemented!();
+        }
+
+        async fn all_albums(&self, _artist_id: Uuid) -> Result<Vec<music_storage::Album>, Error> {
+            Ok(vec![music_storage::Album {
+                id: Uuid::new_v4(),
+                title: "Test Album".to_string(),
+                year: Some(2020),
+                disc_count: Some(1),
+                track_count: Some(2),
+                discogs_id: None,
+            }])
+        }
+
+        async fn all_tracks(&self, _albumid: Uuid) -> Result<Vec<music_storage::Track>, Error> {
+            unimplemented!();
+        }
+
+        async fn track_by_id(&self, _id: Uuid) -> Result<music_storage::Track, Error> {
+            unimplemented!();
+        }
+
+        async fn upsert_relation_type(&self, _name: &str) -> Result<Uuid, Error> {
+            unimplemented!();
+        }
+
+        async fn upsert_artist(
+            &self,
+            _artist: &str,
+            _discogs_id: Option<&str>,
+        ) -> Result<Uuid, Error> {
+            unimplemented!();
+        }
+
+        async fn upsert_album(&self, _command: &UpsertAlbum<'_>) -> Result<Uuid, Error> {
+            unimplemented!();
+        }
+
+        async fn upsert_track(&self, _command: &UpsertTrack<'_>) -> Result<Uuid, Error> {
+            unimplemented!();
+        }
+    }
+
+    #[tokio::test]
+    async fn rpc_server_all_albums() {
+        let mut server = RpcServer {
+            music_storage: Arc::new(Mutex::new(MockMusicStorage)),
+        };
+
+        let request = AllAlbumsRequest {
+            artist_id: "00000000-0000-0000-0000-000000000000".parse().unwrap(),
+        };
+
+        let response = server.all_albums(request, Metadata {}).await.unwrap();
+
+        assert_eq!(response.albums[0].title, "Test Album");
+    }
 }

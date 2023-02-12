@@ -112,5 +112,6 @@ fn to_rust_type(type_: &TypedFieldType) -> String {
         TypedFieldType::Void => "()".to_string(),
         TypedFieldType::OtherStruct(name) | TypedFieldType::Enum(name) => name.clone(),
         TypedFieldType::Optional(type_) => format!("Option<{}>", to_rust_type(type_)),
+        TypedFieldType::Array(type_) => format!("Vec<{}>", to_rust_type(type_)),
     }
 }

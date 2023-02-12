@@ -1,9 +1,11 @@
 use base64::Engine;
 use claxon::FlacReader;
 use futures_util::{AsyncReadExt, StreamExt, TryStreamExt};
-use music::structs::{Metadata, Rpc, TrackPath};
-use music::Client;
+use music::client::Client;
+use music::structs::{Metadata, Rpc, StreamTrackRequest};
+use rpc_support::DefaultRawRpcClient;
 use std::io::{Cursor, ErrorKind};
+use tokio::net::TcpStream;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -11,13 +13,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::subscriber::set_global_default(subscriber)?;
 
     let mut vec = vec![];
-    let mut client = Client::new("172.19.207.105:30655").await.unwrap();
+    let mut client = Client::new(DefaultRawRpcClient::new(
+        TcpStream::connect("192.168.49.2:30655").await?,
+    ))
+    .unwrap();
+
     // todo this is inefficient, as it loads the whole file in memory
     client
         .stream_track(
-            TrackPath {
-                path: "Music/HOLYCHILD/The Shape of Brat Pop to Come/01. Barbie Nation.flac"
-                    .to_string(),
+            StreamTrackRequest {
+                track_id: uuid::Uuid::parse_str("7fcc568b-9d29-426e-a4cd-d85e8fdef3d7").unwrap(),
             },
             Metadata {},
         )
@@ -33,9 +38,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (name, value) in fr.tags() {
         println!("{name}: {value}");
     }
-    println!("=====");
-
-    println!("{:?}\n{:?}", fr.vendor(), fr.streaminfo());
 
     let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
     let sink = rodio::Sink::try_new(&handle).unwrap();

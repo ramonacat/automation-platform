@@ -15,5 +15,6 @@ dashmap = "5.3.4"
 thiserror = "1.0.38"
 futures = "0.3.26"
 platform={path="../platform"}
+async-trait = "0.1.64"
 
 [build-dependencies]
