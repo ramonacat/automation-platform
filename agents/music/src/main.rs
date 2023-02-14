@@ -1,10 +1,8 @@
-use base64::Engine;
-use claxon::FlacReader;
 use futures_util::{AsyncReadExt, StreamExt, TryStreamExt};
 use music::client::Client;
 use music::structs::{Metadata, Rpc, StreamTrackRequest};
 use rpc_support::DefaultRawRpcClient;
-use std::io::{Cursor, ErrorKind};
+use std::io::Cursor;
 use tokio::net::TcpStream;
 
 #[tokio::main]
@@ -28,16 +26,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await
         .unwrap()
-        .map(|x| base64::engine::general_purpose::STANDARD.decode(x.unwrap().data))
-        .map_err(|x| std::io::Error::new(ErrorKind::AlreadyExists, x))
+        .map(|x| {
+            x.map(|y| y.data)
+                .map_err(|y| std::io::Error::new(std::io::ErrorKind::Other, y))
+        })
         .into_async_read()
         .read_to_end(&mut vec)
         .await?;
-
-    let fr = FlacReader::new(&*vec)?;
-    for (name, value) in fr.tags() {
-        println!("{name}: {value}");
-    }
 
     let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
     let sink = rodio::Sink::try_new(&handle).unwrap();

@@ -451,4 +451,30 @@ mod tests {
             events[0].get("data").unwrap()
         );
     }
+
+    #[tokio::test]
+    async fn can_handle_file_rename_with_from_mode() {
+        let temp = TempDir::new().unwrap();
+        let events = setup(
+            &temp,
+            DebouncedEvent::new(EventKind::Modify(ModifyKind::Name(RenameMode::From)))
+                .add_path(temp.path().join("b/0"))
+                .add_path(temp.path().join("b/1")),
+            FileStatusSyncResult::Modified,
+        )
+        .await;
+        assert_eq!(1, events.len());
+
+        assert_eq!(
+            &json!({
+                "FileDeleted": {
+                    "path": {
+                        "mount_id": "mount_a",
+                        "path": "b/0",
+                    }
+                },
+            }),
+            events[0].get("data").unwrap()
+        );
+    }
 }

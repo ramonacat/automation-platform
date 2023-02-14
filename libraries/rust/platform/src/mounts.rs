@@ -206,4 +206,11 @@ mod tests {
 
         assert_eq!(result.unwrap_err(), MountError::PathNotInMount);
     }
+
+    #[test]
+    pub fn mount_has_an_id() {
+        let mount = Mount::new("some_id".into(), Path::new("/tmp/a/").to_path_buf());
+
+        assert_eq!(mount.id(), "some_id");
+    }
 }

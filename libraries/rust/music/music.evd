@@ -2,7 +2,7 @@ metadata {
 }
 
 struct TrackData {
-    data: string,
+    data: binary,
 }
 
 struct Artist {

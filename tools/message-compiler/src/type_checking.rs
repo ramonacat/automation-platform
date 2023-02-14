@@ -54,6 +54,7 @@ pub enum TypedFieldType {
     Guid,
     String,
     Void,
+    Binary,
     OtherStruct(String),
     Enum(String),
     Optional(Box<TypedFieldType>),
@@ -146,6 +147,7 @@ enum TypeCheckableFieldType<'a> {
     Guid,
     String,
     Void,
+    Binary,
     ToBeResolved(&'a str),
     Optional(Box<TypeCheckableFieldType<'a>>),
     Array(Box<TypeCheckableFieldType<'a>>),
@@ -186,33 +188,17 @@ impl TypedMetadata {
     }
 }
 
-pub struct TypedRpcCall {
-    name: String,
-    request: TypedFieldType,
-    response: TypedFieldType,
-    is_stream: bool,
-}
-
-impl TypedRpcCall {
-    #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    #[must_use]
-    pub fn request(&self) -> &TypedFieldType {
-        &self.request
-    }
-
-    #[must_use]
-    pub fn response(&self) -> &TypedFieldType {
-        &self.response
-    }
-
-    #[must_use]
-    pub fn is_stream(&self) -> bool {
-        self.is_stream
-    }
+pub enum TypedRpcCall {
+    Stream {
+        name: String,
+        request: TypedFieldType,
+        response: TypedFieldType,
+    },
+    Unary {
+        name: String,
+        request: TypedFieldType,
+        response: TypedFieldType,
+    },
 }
 
 pub struct TypedRpc {
@@ -290,6 +276,7 @@ impl<'input> TypeChecker<'input> {
             "guid" => TypeCheckableFieldType::Guid,
             "string" => TypeCheckableFieldType::String,
             "void" => TypeCheckableFieldType::Void,
+            "binary" => TypeCheckableFieldType::Binary,
             other => TypeCheckableFieldType::ToBeResolved(other),
         }
     }
@@ -339,6 +326,7 @@ impl<'input> TypeChecker<'input> {
             TypeCheckableFieldType::Guid => TypedFieldType::Guid,
             TypeCheckableFieldType::String => TypedFieldType::String,
             TypeCheckableFieldType::Void => TypedFieldType::Void,
+            TypeCheckableFieldType::Binary => TypedFieldType::Binary,
             TypeCheckableFieldType::ToBeResolved(type_name) => {
                 if self.structs.contains_key(*type_name) {
                     return Ok(TypedFieldType::OtherStruct((*type_name).to_string()));
@@ -463,19 +451,38 @@ impl<'input> TypeChecker<'input> {
         let rpc = file.rpc().map(|rpc| {
             let mut rpc_typed = HashMap::new();
             for rpc_definition in &rpc.definitions {
-                let typed_rpc = TypedRpcCall {
-                    name: rpc_definition.name.0.to_string(),
-                    // todo no unwraps here!
-                    request: self
-                        .resolve_type(&Self::resolve_raw_type(&rpc_definition.request))
-                        .unwrap(),
-                    response: self
-                        .resolve_type(&Self::resolve_raw_type(&rpc_definition.response))
-                        .unwrap(),
-                    is_stream: rpc_definition.is_stream,
+                match rpc_definition {
+                    crate::parsing::RpcDefinitionRaw::Stream {
+                        name,
+                        request,
+                        response,
+                    } => {
+                        let typed_rpc = TypedRpcCall::Stream {
+                            name: name.0.to_string(),
+                            request: self.resolve_type(&Self::resolve_raw_type(request)).unwrap(),
+                            response: self
+                                .resolve_type(&Self::resolve_raw_type(response))
+                                .unwrap(),
+                        };
+                        rpc_typed.insert(name.0.to_string(), typed_rpc);
+                    }
+                    crate::parsing::RpcDefinitionRaw::Unary {
+                        name,
+                        request,
+                        response,
+                    } => {
+                        let typed_rpc = TypedRpcCall::Unary {
+                            name: name.0.to_string(),
+                            request: self.resolve_type(&Self::resolve_raw_type(request)).unwrap(),
+                            response: self
+                                .resolve_type(&Self::resolve_raw_type(response))
+                                .unwrap(),
+                        };
+                        rpc_typed.insert(name.0.to_string(), typed_rpc);
+                    }
                 };
-                rpc_typed.insert(rpc_definition.name.0.to_string(), typed_rpc);
             }
+
             rpc_typed
         });
 
