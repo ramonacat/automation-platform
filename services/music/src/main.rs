@@ -2,7 +2,6 @@ mod event_storage;
 mod music_storage;
 
 use async_std::stream::StreamExt;
-use base64::Engine;
 use event_storage::EventStorage;
 use events::{EventKind, Rpc as EventsRpc};
 use music::server::Server;
@@ -58,8 +57,7 @@ impl<TMusicStorage: MusicStorage + Send + Sync> Rpc for RpcServer<TMusicStorage>
 
         Ok(Box::pin(reader.map(|buf| {
             Ok(TrackData {
-                // TODO this is very inefficient, we should just transport raw bytes, but the RPC system does not support that yet
-                data: base64::engine::general_purpose::STANDARD.encode(&buf?),
+                data: buf?.to_vec(),
             })
         })))
     }

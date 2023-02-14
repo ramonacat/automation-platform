@@ -77,28 +77,17 @@ impl<'input> EnumDefinitionRaw<'input> {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct RpcDefinitionRaw<'input> {
-    pub(crate) name: IdentifierRaw<'input>,
-    pub(crate) request: TypeRaw<'input>,
-    pub(crate) response: TypeRaw<'input>,
-    pub(crate) is_stream: bool,
-}
-
-impl<'input> RpcDefinitionRaw<'input> {
-    #[must_use]
-    pub fn new(
+pub enum RpcDefinitionRaw<'input> {
+    Stream {
         name: IdentifierRaw<'input>,
         request: TypeRaw<'input>,
         response: TypeRaw<'input>,
-        is_stream: bool,
-    ) -> Self {
-        Self {
-            name,
-            request,
-            response,
-            is_stream,
-        }
-    }
+    },
+    Unary {
+        name: IdentifierRaw<'input>,
+        request: TypeRaw<'input>,
+        response: TypeRaw<'input>,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -271,12 +260,11 @@ mod test {
                     ),
                 ],
                 vec![],
-                Some(RpcRaw::new(vec![RpcDefinitionRaw::new(
-                    IdentifierRaw::new("call"),
-                    TypeRaw::Type(IdentifierRaw::new("request")),
-                    TypeRaw::Type(IdentifierRaw::new("response")),
-                    false
-                )]))
+                Some(RpcRaw::new(vec![RpcDefinitionRaw::Unary {
+                    name: IdentifierRaw::new("call"),
+                    request: TypeRaw::Type(IdentifierRaw::new("request")),
+                    response: TypeRaw::Type(IdentifierRaw::new("response"))
+                }]))
             )),
             r
         );
@@ -307,12 +295,11 @@ mod test {
                     ),
                 ],
                 vec![],
-                Some(RpcRaw::new(vec![RpcDefinitionRaw::new(
-                    IdentifierRaw::new("call"),
-                    TypeRaw::Type(IdentifierRaw::new("request")),
-                    TypeRaw::Type(IdentifierRaw::new("response")),
-                    true
-                )]))
+                Some(RpcRaw::new(vec![RpcDefinitionRaw::Stream {
+                    name: IdentifierRaw::new("call"),
+                    request: TypeRaw::Type(IdentifierRaw::new("request")),
+                    response: TypeRaw::Type(IdentifierRaw::new("response")),
+                }]))
             )),
             r
         );

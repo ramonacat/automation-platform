@@ -16,6 +16,9 @@ pub enum FileStatusSyncResult {
 pub enum Error {
     #[error("Problems communicating with the database")]
     Database(#[from] tokio_postgres::Error),
+
+    #[error("File moved between different mounts")]
+    FileMovedBetweenDifferentMounts,
 }
 
 #[async_trait]
@@ -53,11 +56,9 @@ impl FileStatusStore for Postgres {
     }
 
     async fn rename(&mut self, from: &PathInside, to: &PathInside) -> Result<(), Error> {
-        assert_eq!(
-            from.mount_id(),
-            to.mount_id(),
-            "File moved between different mounts"
-        );
+        if from.mount_id() != to.mount_id() {
+            return Err(Error::FileMovedBetweenDifferentMounts);
+        }
 
         self.pg_client
             .lock()
