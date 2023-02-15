@@ -11,5 +11,6 @@ interface TargetOutput
     public function pushError(string $data): void;
     public function pushOutput(string $data): void;
 
+    public function dependenciesCompleted(): void;
     public function finalize(BuildResult $result): CollectedTargetOutput;
 }

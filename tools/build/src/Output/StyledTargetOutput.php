@@ -33,6 +33,13 @@ final class StyledTargetOutput implements TargetOutput
         $this->standardOutput .= $data;
     }
 
+    public function dependenciesCompleted(): void
+    {
+        $this
+            ->ansi
+            ->text('> Dependencies completed for ' . $this->id->target() . ' from ' . $this->id->path() . PHP_EOL);
+    }
+
     public function finalize(BuildResult $result): CollectedTargetOutput
     {
         $startLine = '> Target ' . $this->id->target() . ' from ' . $this->id->path() . ' finished' . PHP_EOL;

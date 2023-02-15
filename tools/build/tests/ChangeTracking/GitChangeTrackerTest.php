@@ -102,4 +102,24 @@ final class GitChangeTrackerTest extends TestCase
 
         self::assertFalse($changeTracker->wasModifiedSince('123', ''));
     }
+
+    public function testWasModifiedSinceOnADirtyRepoWillCheckLatestCommit(): void
+    {
+        $git = $this->createMock(Git::class);
+        $git
+            ->method('currentCommitHash')
+            ->willReturn('123');
+
+        $git
+            ->method('rawDiffTo')
+            ->willReturn('');
+
+        $git
+            ->method('listUntrackedFiles')
+            ->willReturn([]);
+
+        $changeTracker = new GitChangeTracker(new NullLogger(), $git, $this->createMock(Filesystem::class));
+
+        self::assertFalse($changeTracker->wasModifiedSince('123-da39a3ee5e6b4b0d3255bfef95601890afd80709', ''));
+    }
 }

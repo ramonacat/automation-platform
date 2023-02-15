@@ -7,4 +7,5 @@ namespace Ramona\AutomationPlatformLibBuild\Filesystem;
 interface Filesystem
 {
     public function readFile(string $path): string;
+    public function realpath(string $path): string;
 }
