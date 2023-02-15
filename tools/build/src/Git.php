@@ -15,4 +15,8 @@ interface Git
     public function listUntrackedFiles(): array;
     public function parseRevision(string $revision): string;
     public function readFileAtRef(string $ref, string $path): string;
+    /**
+     * @return list<string>
+     */
+    public function listModfiedFiles(string $since): array;
 }

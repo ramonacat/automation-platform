@@ -71,6 +71,8 @@ final class FiberTargetExecutor
             }
         }
 
+        $output->dependenciesCompleted();
+
         $fiber = new Fiber(function () use ($target, $output, $context) {
             try {
                 $this->spy->targetStarted($target->id(), $target->dependencies());

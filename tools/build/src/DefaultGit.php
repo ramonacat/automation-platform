@@ -76,4 +76,22 @@ final class DefaultGit implements Git
 
         return trim($output);
     }
+
+    /**
+     * @return list<string>
+     */
+    public function listModfiedFiles(string $since): array
+    {
+        $output = $this->runGit(['git', 'diff', '--name-only', $since]);
+
+        return array_values(
+            array_filter(
+                explode(
+                    "\n",
+                    trim($output)
+                ),
+                fn (string $path) => $path !== ''
+            )
+        );
+    }
 }

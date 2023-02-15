@@ -4,22 +4,16 @@ declare(strict_types=1);
 
 namespace Ramona\AutomationPlatformLibBuild\ChangeTracking;
 
-use function array_map;
 use const DIRECTORY_SEPARATOR;
-use Exception;
-use function explode;
 use const PHP_EOL;
 use Psr\Log\LoggerInterface;
 use Ramona\AutomationPlatformLibBuild\Filesystem\Filesystem;
 use Ramona\AutomationPlatformLibBuild\Git;
-use function Safe\realpath;
 use function sha1;
 use function str_replace;
 use function str_starts_with;
 use function strpos;
 use function substr;
-use Symfony\Component\Process\Process;
-use function trim;
 
 final class GitChangeTracker implements ChangeTracker
 {
@@ -63,23 +57,13 @@ final class GitChangeTracker implements ChangeTracker
             $previousCommitHash = $previousStateId;
         }
 
-        $directory = str_replace(realpath($this->git->repositoryRoot()), '', realpath($directory));
+        $directory = str_replace($this->filesystem->realpath($this->git->repositoryRoot()), '', $this->filesystem->realpath($directory));
         // skip the leading slash
         $directory = substr($directory, 1);
         // git uses `/` in its output, regardless of the OS
         $directory = str_replace(DIRECTORY_SEPARATOR, '/', $directory);
 
-        $modifiedFiles = ['git', 'diff', '--name-only', $previousCommitHash];
-        $process = new Process($modifiedFiles);
-        try {
-            $process->mustRun();
-        } catch (Exception $e) {
-            $this->logger->error('Failed to get list of modified files', ['previous-commit-hash' => $previousCommitHash, 'exception' => $e]);
-            return true;
-        }
-
-        $output = explode("\n", trim($process->getOutput()));
-        $changedFiles = array_map(static fn (string $line) => substr($line, 0), $output);
+        $changedFiles = $this->git->listModfiedFiles($previousCommitHash);
 
         foreach ($changedFiles as $changedFile) {
             if (str_starts_with($changedFile, $directory)) {
