@@ -1,5 +1,6 @@
 metadata {
-    source: string
+    source: string,
+    correlation_id: guid,
 }
 
 struct FileOnMountPath {

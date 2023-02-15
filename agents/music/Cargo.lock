@@ -6,6 +6,8 @@ version = 3
 name = "agent-music"
 version = "0.1.0"
 dependencies = [
+ "async-stream",
+ "async-trait",
  "claxon",
  "cpal",
  "futures",
@@ -14,6 +16,8 @@ dependencies = [
  "platform",
  "rodio",
  "rpc-support",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",

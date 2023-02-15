@@ -25,6 +25,7 @@ extern crate async_trait;
 fn create_event_metadata() -> Metadata {
     Metadata {
         source: "directory-watcher".to_string(),
+        correlation_id: uuid::Uuid::new_v4(),
     }
 }
 

@@ -182,6 +182,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     },
                     events::Metadata {
                         source: "music".to_string(),
+                        correlation_id: Uuid::new_v4(),
                     },
                 )
                 .await?;
@@ -395,7 +396,15 @@ mod tests {
             artist_id: "00000000-0000-0000-0000-000000000000".parse().unwrap(),
         };
 
-        let response = server.all_albums(request, Metadata {}).await.unwrap();
+        let response = server
+            .all_albums(
+                request,
+                Metadata {
+                    correlation_id: Uuid::new_v4(),
+                },
+            )
+            .await
+            .unwrap();
 
         assert_eq!(response.albums[0].title, "Test Album");
     }
