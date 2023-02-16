@@ -148,10 +148,11 @@ mod tests {
         let raw_client = MockRawRpcClient {
             requests: requests_tx,
         };
+        let correlation_id = Uuid::new_v4();
         let mut client = Client::new(raw_client).unwrap();
         let album_id = Uuid::new_v4();
         let request = AllTracksRequest { album_id };
-        let metadata = Metadata {};
+        let metadata = Metadata { correlation_id };
         client.all_tracks(request, metadata).await.unwrap();
 
         let request_sent = requests_rx.recv().await.unwrap();
@@ -162,6 +163,9 @@ mod tests {
             request_sent.2,
             serde_json::to_value(&AllTracksRequest { album_id }).unwrap()
         );
-        assert_eq!(request_sent.3, serde_json::to_value(&Metadata {}).unwrap());
+        assert_eq!(
+            request_sent.3,
+            serde_json::to_value(&Metadata { correlation_id }).unwrap()
+        );
     }
 }
