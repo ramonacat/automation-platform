@@ -22,15 +22,15 @@ return static function (BuildDefinitionBuilder $builder) {
         [new TargetId(__DIR__, 'put-runtime-config')]
     );
 
-    $dockerMigrationsTargetGenerator = new DockerTargetGenerator(
-        __DIR__,
-        'image-migrations',
-        'automation-platform-svc-migrations',
-        [],
-        '.',
-        'docker/migrations.Dockerfile'
+    $builder->addTarget(
+        'image-migrations-docker-build',
+        new BuildNixifiedDockerImage(
+            'image-migrations', 
+            'svc-directory-watcher-migrations',
+            nixFilePath: './docker/migrations.nix'
+        ),
+        [new TargetId(__DIR__, 'put-runtime-config')]
     );
-    $builder->addTargetGenerator($dockerMigrationsTargetGenerator);
 
     $builder->addTarget(
         'generate-kustomize-override',
@@ -92,16 +92,18 @@ return static function (BuildDefinitionBuilder $builder) {
                 )
             ]
         ),
-        array_merge(
-            [new TargetId(__DIR__, 'image-service-docker-build')],
-            $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
-        )
+        [
+            new TargetId(__DIR__, 'image-service-docker-build'), 
+            new TargetId(__DIR__, 'image-migrations-docker-build')
+        ],
     );
 
     $builder->addTarget(
             'deploy',
             new KustomizeApply('k8s/overlays/dev'),
-            array_merge([new TargetId(__DIR__.'/../events/', 'deploy')], $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build))
+            [
+                new TargetId(__DIR__.'/../events/', 'deploy'), 
+            ]
     );
 
     $builder->addDefaultTarget(

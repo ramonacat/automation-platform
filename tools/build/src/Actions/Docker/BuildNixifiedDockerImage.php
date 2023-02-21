@@ -31,6 +31,7 @@ final class BuildNixifiedDockerImage implements BuildAction
         $process = $context->processBuilder()->build(
             $workingDirectory,
             // TODO: pass the image name as an argument
+            // TODO: move crate2nix to a separate target! this is only required for rust stuff
             [
                 'sh',
                 '-c',

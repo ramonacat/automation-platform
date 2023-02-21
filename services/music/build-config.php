@@ -21,16 +21,12 @@ return static function (BuildDefinitionBuilder $builder) {
         new BuildNixifiedDockerImage('image-service', 'svc-music'),
         [new TargetId(__DIR__, 'put-runtime-config')]
     );
-
-    $dockerMigrationsTargetGenerator = new DockerTargetGenerator(
-        __DIR__,
-        'image-migrations',
-        'automation-platform-svc-migrations-music',
-        [],
-        '.',
-        'docker/migrations.Dockerfile'
+    
+    $builder->addTarget(
+        'image-migrations-docker-build',
+        new BuildNixifiedDockerImage('image-migrations', 'svc-music-migrations'),
+        [new TargetId(__DIR__, 'put-runtime-config')]
     );
-    $builder->addTargetGenerator($dockerMigrationsTargetGenerator);
 
     // todo this is copy-pasted from directory-watcher, there should be something more generalised for this
     $builder->addTarget(
@@ -92,7 +88,10 @@ return static function (BuildDefinitionBuilder $builder) {
                 )
             ]
         ),
-        [new TargetId(__DIR__, 'image-service-docker-build')],
+        [
+            new TargetId(__DIR__, 'image-service-docker-build'),
+            new TargetId(__DIR__, 'image-migrations-docker-build'),
+        ],
     );
 
     $builder->addTarget(
