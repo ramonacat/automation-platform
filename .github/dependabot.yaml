@@ -60,24 +60,3 @@ updates:
     directory: "libraries/php/coding-standard/"
     schedule:
       interval: "daily"
-
-  - package-ecosystem: "docker"
-    directory: "services/directory-watcher/docker/"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "docker"
-    directory: "services/events/docker/"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "docker"
-    directory: "services/music/docker/"
-    schedule:
-      interval: "daily"
-
-  # this docker file does not matter, but we need this for the checker to be happy
-  - package-ecosystem: "docker"
-    directory: "tools/dependabot-config-checker/tests/fixtures/a/"
-    schedule:
-      interval: "daily"

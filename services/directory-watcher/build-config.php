@@ -9,7 +9,6 @@ use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
 use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
-use Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator as DockerTargetGenerator;
 
 return static function (BuildDefinitionBuilder $builder) {
     $builder->addRustTargetGenerator();

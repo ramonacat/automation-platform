@@ -1,9 +1,5 @@
 {
-    "build": {
-        "docker": {
-            "build-command": ["docker", "buildx", "build"]
-        }
-    },
+    "build": {},
     "runtime": {
         "mounts": "/tmp/a:tmpa"
     }
