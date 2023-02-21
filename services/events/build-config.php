@@ -18,8 +18,10 @@ return static function (BuildDefinitionBuilder $builder) {
         new BuildNixifiedDockerImage('image-service', 'svc-events')
     );
 
-    $dockerMigrationsTargetGenerator = new \Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator(__DIR__, 'image-migrations', 'ap-svc-events-migrations', [], '.', 'docker/migrations.Dockerfile');
-    $builder->addTargetGenerator($dockerMigrationsTargetGenerator);
+    $builder->addTarget(
+        'image-migrations-docker-build',
+        new BuildNixifiedDockerImage('image-migrations', 'svc-events-migrations', nixFilePath: 'docker/migrations.nix')
+    );
 
     $builder->addTarget(
         'generate-kustomize-override',
@@ -44,10 +46,10 @@ return static function (BuildDefinitionBuilder $builder) {
                 ),
             ]
         ),
-        array_merge(
-            [new TargetId(__DIR__, 'image-service-docker-build')],
-            $dockerMigrationsTargetGenerator->defaultTargetIds(DefaultTargetKind::Build),
-        )
+        [
+            new TargetId(__DIR__, 'image-service-docker-build'),
+            new TargetId(__DIR__, 'image-migrations-docker-build'),
+        ],
     );
 
     $builder->addTarget(

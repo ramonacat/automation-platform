@@ -6,7 +6,6 @@ namespace Ramona\AutomationPlatformToolDependabotConfigChecker;
 
 use function array_merge;
 use const DIRECTORY_SEPARATOR;
-use function dirname;
 use function glob;
 use const GLOB_ONLYDIR;
 use function ltrim;
@@ -18,11 +17,9 @@ final class ProjectFinder
     /**
      * @return list<string>
      */
-    public static function find(): array
+    public static function find(string $root): array
     {
         $result = [];
-
-        $root = realpath(dirname(__DIR__, 3));
 
         $result = array_merge($result, self::findIn($root, 'tools'));
         $result = array_merge($result, self::findIn($root, 'services'));
