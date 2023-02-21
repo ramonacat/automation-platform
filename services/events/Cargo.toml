@@ -21,7 +21,7 @@ time = { version = "0.3.19", features=["local-offset", "parsing", "serde", "form
 rpc-support = { path="../../libraries/rust/rpc-support"}
 async-trait = "0.1.64"
 futures-lite = "1.12.0"
-async-stream = "0.3.3"
+async-stream = "0.3.4"
 dashmap = "5.4.0"
 
 platform = { path = "../../libraries/rust/platform" }
