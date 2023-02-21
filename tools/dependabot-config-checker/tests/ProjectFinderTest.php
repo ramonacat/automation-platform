@@ -15,9 +15,9 @@ final class ProjectFinderTest extends TestCase
 
         self::assertSame([
             'services/service-a/',
-'agents/agent-a/',
-'libraries/csharp/library-a/',
-'libraries/rust/library-b/',
+            'agents/agent-a/',
+            'libraries/csharp/library-a/',
+            'libraries/rust/library-b/',
         ], $projects);
     }
 }

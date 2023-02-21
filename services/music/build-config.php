@@ -9,7 +9,6 @@ use Ramona\AutomationPlatformLibBuild\Context;
 use Ramona\AutomationPlatformLibBuild\Definition\BuildDefinitionBuilder;
 use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetId;
-use Ramona\AutomationPlatformLibBuild\Docker\TargetGenerator as DockerTargetGenerator;
 
 return static function (BuildDefinitionBuilder $builder) {
     $builder->addRustTargetGenerator();
@@ -24,7 +23,7 @@ return static function (BuildDefinitionBuilder $builder) {
     
     $builder->addTarget(
         'image-migrations-docker-build',
-        new BuildNixifiedDockerImage('image-migrations', 'svc-music-migrations'),
+        new BuildNixifiedDockerImage('image-migrations', 'svc-music-migrations', nixFilePath: 'docker/migrations.nix'),
         [new TargetId(__DIR__, 'put-runtime-config')]
     );
 
