@@ -23,6 +23,12 @@ let
         "--skip virtual1"
       ];
     };
+    instaSrc = fetchCrate "cargo-insta" "1.28.0";
+    insta = pkgs.rustPlatform.buildRustPackage {
+      name = "cargo-insta";
+      src = instaSrc;
+      cargoHash = "sha256-el60bwblYSGz9hqPzGseNhXmKAF5/hedKWcZWZjj7tg=";
+    };
 in
   pkgs.mkShell {
     shellHook = ''
@@ -36,8 +42,8 @@ in
       mkdir .php-tools/;
       pushd .php-tools;
         rm composer.json composer.lock;
-        composer require icanhazstring/composer-unused;
-        composer require maglnet/composer-require-checker;
+        composer require --dev icanhazstring/composer-unused;
+        composer require --dev maglnet/composer-require-checker;
       popd;
 
       export PATH=$(pwd)/.php-tools/vendor/bin:$PATH;
@@ -67,5 +73,6 @@ in
           llvmCov
           cargo-udeps
           cargo-audit
+          insta
         ];
   }

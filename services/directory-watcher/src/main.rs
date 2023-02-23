@@ -6,7 +6,9 @@ use crate::scan::Scanner;
 use events::Metadata;
 use notify::{PollWatcher, RecursiveMode, Watcher};
 use platform::secrets::SecretProvider;
+use rpc_support::DefaultRawRpcClient;
 use std::sync::Arc;
+use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 
 mod file_status_store;
@@ -35,8 +37,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _guard = tracing::subscriber::set_default(subscriber);
 
     let secret_provider = SecretProvider::new("/etc/svc-events/secrets/");
-    let es_watcher = events::Client::new("svc-events:7654").await?;
-    let es_scanner = events::Client::new("svc-events:7654").await?;
+    let es_watcher = events::Client::new(DefaultRawRpcClient::new(
+        TcpStream::connect("svc-events:7654").await?,
+    ));
+    let es_scanner = events::Client::new(DefaultRawRpcClient::new(
+        TcpStream::connect("svc-events:7654").await?,
+    ));
     let configuration = platform::configuration::Configuration::new()?;
     let pg_client = Arc::new(Mutex::new(
         platform::postgres::connect(

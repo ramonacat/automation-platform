@@ -1,6 +1,5 @@
 use futures_util::{AsyncReadExt, StreamExt, TryStreamExt};
-use music::client::Client;
-use music::structs::{Metadata, Rpc, StreamTrackRequest};
+use music::{Client, Metadata, Rpc, StreamTrackRequest};
 use rpc_support::{DefaultRawRpcClient, RawRpcClient};
 use std::io::Cursor;
 use tokio::net::TcpStream;
@@ -39,8 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut client = Client::new(DefaultRawRpcClient::new(
         TcpStream::connect("192.168.49.2:30655").await?,
-    ))
-    .unwrap();
+    ));
 
     let vec = read_track(
         uuid::Uuid::parse_str("7fcc568b-9d29-426e-a4cd-d85e8fdef3d7").unwrap(),
@@ -116,8 +114,7 @@ mod tests {
                     .boxed(),
                 )
             }),
-        })
-        .unwrap();
+        });
 
         let result = read_track(Uuid::new_v4(), &mut client).await.unwrap();
 

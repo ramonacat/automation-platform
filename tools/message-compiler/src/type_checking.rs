@@ -63,8 +63,8 @@ pub enum TypedFieldType {
 
 #[derive(Debug)]
 pub struct TypedField {
-    name: String,
-    type_id: TypedFieldType,
+    pub name: String,
+    pub type_id: TypedFieldType,
 }
 
 impl TypedField {
@@ -81,8 +81,8 @@ impl TypedField {
 
 #[derive(Debug)]
 pub struct TypedStruct {
-    name: String,
-    fields: Vec<TypedField>,
+    pub name: String,
+    pub fields: Vec<TypedField>,
 }
 
 impl TypedStruct {
@@ -178,7 +178,7 @@ enum TypeCheckableDataDefinition<'input> {
 }
 
 pub struct TypedMetadata {
-    fields: Vec<TypedField>,
+    pub fields: Vec<TypedField>,
 }
 
 impl TypedMetadata {
