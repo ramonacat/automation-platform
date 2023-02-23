@@ -1,3 +1,3 @@
-pub mod client;
-pub mod server;
-pub mod structs;
+mod structs;
+
+pub use structs::*;

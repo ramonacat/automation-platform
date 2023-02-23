@@ -1,0 +1,9 @@
+---
+source: src/compiler_rust.rs
+expression: "prettyplease::unparse(&syn::parse_file(&generate_header().to_string()).unwrap())"
+---
+#[allow(unused)]
+use async_std::stream::Stream;
+use rpc_support::rpc_error::RpcError;
+use serde::{Deserialize, Serialize};
+

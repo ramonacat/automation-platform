@@ -4,19 +4,20 @@ mod music_storage;
 use async_std::stream::StreamExt;
 use event_storage::EventStorage;
 use events::{EventKind, Rpc as EventsRpc};
-use music::server::Server;
-use music::structs::{
+use music::{
     Album, AllAlbums, AllAlbumsRequest, AllArtists, AllTracks, AllTracksRequest, Artist, Metadata,
-    Rpc, StreamTrackRequest, Track, TrackData,
+    Rpc, Server, StreamTrackRequest, Track, TrackData,
 };
 use music_storage::{Error, MusicStorage, Postgres};
 use platform::async_infra;
 use platform::postgres::connect;
 use platform::secrets::SecretProvider;
 use rpc_support::rpc_error::RpcError;
+use rpc_support::DefaultRawRpcClient;
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
+use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio_util::io::ReaderStream;
 use tracing::info;
@@ -167,9 +168,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let storage = Postgres::new(pg_client.clone());
             let mut event_storage = EventStorage::new(pg_client);
 
-            let mut client = events::Client::new("svc-events:7654")
-                .await
-                .map_err(RpcError::from)?;
+            let mut client = events::Client::new(DefaultRawRpcClient::new(
+                TcpStream::connect("svc-events:7654").await?,
+            ));
 
             let mut stream = client
                 .subscribe(
