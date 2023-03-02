@@ -5,6 +5,7 @@
     in
         pkgs.dockerTools.streamLayeredImage {
             name = "svc-directory-watcher";
+            fromImage = null;
             tag = tag;
             config.Cmd = [ 
                 "${crate.workspaceMembers.directory-watcher.build}/bin/directory-watcher" 

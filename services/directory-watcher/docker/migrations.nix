@@ -21,6 +21,7 @@
     in 
       pkgs.dockerTools.streamLayeredImage {
           name = "svc-directory-watcher-migrations";
+          fromImage = null;
           tag = tag;
           contents = [
             migrateScript

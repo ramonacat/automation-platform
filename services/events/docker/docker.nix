@@ -4,6 +4,7 @@
         crate = pkgs.callPackage ../Cargo.nix { };
     in
         pkgs.dockerTools.streamLayeredImage {
+          fromImage = null;
             name = "svc-events";
             tag = tag;
             config.Cmd = [ 
