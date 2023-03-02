@@ -5,6 +5,7 @@
     in
         pkgs.dockerTools.streamLayeredImage {
             name = "svc-music";
+            fromImage = null;
             tag = tag;
             config.Cmd = [ 
                 "${crate.workspaceMembers.svc-music.build}/bin/svc-music" 

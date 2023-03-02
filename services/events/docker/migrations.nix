@@ -20,6 +20,7 @@
     };
     in 
       pkgs.dockerTools.streamLayeredImage {
+          fromImage = null;
           name = "svc-events-migrations";
           tag = tag;
           contents = [
