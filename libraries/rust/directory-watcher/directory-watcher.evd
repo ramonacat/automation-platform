@@ -1,0 +1,19 @@
+metadata {}
+
+struct FilesystemEvent {
+    kind: FilesystemEventKind,
+    mount_id: string,
+    timestamp: u64,
+    path: string,
+}
+
+enum FilesystemEventKind {
+    Created,
+    Modified,
+    Deleted,
+    Moved(to: string)
+}
+
+rpc {
+    file_changed(FilesystemEvent) -> void;
+}

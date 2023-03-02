@@ -1,0 +1,7 @@
+---
+source: src/rpc_server.rs
+expression: rpc_server.file_status_store.events
+---
+[
+    "delete PathInside { mount_id: \"test\", path: \"/test\" }",
+]

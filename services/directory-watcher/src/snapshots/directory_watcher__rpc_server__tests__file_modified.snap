@@ -1,0 +1,7 @@
+---
+source: src/rpc_server.rs
+expression: rpc_server.file_status_store.events
+---
+[
+    "sync PathInside { mount_id: \"test\", path: \"/test\" } at 1970-01-01 0:17:04.0 +00:00:00",
+]

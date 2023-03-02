@@ -1,0 +1,7 @@
+---
+source: src/rpc_server.rs
+expression: rpc_server.file_status_store.events
+---
+[
+    "rename PathInside { mount_id: \"test\", path: \"/test\" } to PathInside { mount_id: \"test\", path: \"/test2\" }",
+]
