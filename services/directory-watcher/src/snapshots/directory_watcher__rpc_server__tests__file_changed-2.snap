@@ -1,0 +1,7 @@
+---
+source: src/rpc_server.rs
+expression: rpcs.clone()
+---
+[
+    "send_rpc 0 send_event Ok(Object {\"created_time\": Object {\"nanos_since_epoch\": Number(0), \"secs_since_epoch\": Number(1024)}, \"data\": Object {\"FileCreated\": Object {\"path\": Object {\"mount_id\": String(\"test\"), \"path\": String(\"/test\")}}}, \"id\": String(\"00000000-0000-0000-0000-000000000000\")}) Ok(Object {\"correlation_id\": String(\"00000000-0000-0000-0000-000000000000\"), \"source\": String(\"directory-watcher\")})",
+]

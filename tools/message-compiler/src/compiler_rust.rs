@@ -145,9 +145,9 @@ fn generate_rpc_trait(rpc: &TypedRpc) -> TokenStream {
 
 fn generate_rpc_client(rpc: &TypedRpc) -> TokenStream {
     let mut result = quote! {
-        use rpc_support::RawRpcClient;
-        use std::sync::atomic::{AtomicU64, Ordering};
-        use std::pin::Pin;
+        #[allow(unused)] use rpc_support::RawRpcClient;
+        #[allow(unused)] use std::sync::atomic::{AtomicU64, Ordering};
+        #[allow(unused)] use std::pin::Pin;
 
         pub struct Client<TRpcClient> where TRpcClient: RawRpcClient + Send + Sync {
             id: AtomicU64,
@@ -294,7 +294,7 @@ fn generate_rpc_server(rpc: &TypedRpc) -> TokenStream {
         use tokio::net::TcpStream;
         use tokio::io::BufReader;
         use rpc_support::send_response;
-        use rpc_support::send_stream_response;
+        #[allow(unused)] use rpc_support::send_stream_response;
         use rpc_support::read_request;
 
         pub struct Server<TRpc>
@@ -338,7 +338,7 @@ fn generate_rpc_server(rpc: &TypedRpc) -> TokenStream {
                 let mut reader = BufReader::new(read);
 
                 loop {
-                    let (payload_line, method_name, request_id, metadata) =
+                    let (payload_line, method_name, request_id, metadata): (String, String, u64, Metadata) =
                         read_request(&mut reader).await?;
 
                     #method_match

@@ -56,6 +56,14 @@ updates:
     directory: "tools/message-compiler/"
     schedule:
       interval: "daily"
+  - package-ecosystem: "cargo"
+    directory: "agents/filesystem/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "cargo"
+    directory: "libraries/rust/directory-watcher/"
+    schedule:
+      interval: "daily"
   - package-ecosystem: "composer"
     directory: "libraries/php/coding-standard/"
     schedule:

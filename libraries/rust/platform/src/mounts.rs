@@ -44,19 +44,19 @@ impl Mount {
 #[derive(Debug, Clone)]
 pub struct PathInside {
     // FIXME should the mount be a reference?
-    mount: Mount,
+    mount_id: String,
     path: String,
 }
 
 impl PathInside {
     #[must_use]
-    pub const fn new(mount: Mount, path: String) -> Self {
-        Self { mount, path }
+    pub const fn new(mount_id: String, path: String) -> Self {
+        Self { mount_id, path }
     }
 
     #[must_use]
     pub fn mount_id(&self) -> &str {
-        &self.mount.id
+        &self.mount_id
     }
 
     #[must_use]
@@ -124,7 +124,7 @@ impl Provider {
                     Err(MountError::PathNotInMount)
                 } else {
                     Ok(PathInside {
-                        mount: mount.clone(),
+                        mount_id: mount.id.clone(),
                         path: relative_path.as_path().to_string_lossy().replace('\\', "/"),
                     })
                 }
@@ -140,8 +140,8 @@ impl Provider {
     ) -> Result<PathBuf, MountError> {
         let mount = self
             .mounts
-            .get(&path_inside.mount.id)
-            .ok_or_else(|| MountError::NoSuchMount(path_inside.mount.id.clone()))?;
+            .get(&path_inside.mount_id)
+            .ok_or_else(|| MountError::NoSuchMount(path_inside.mount_id.clone()))?;
         let mut path = mount.path.clone();
         path.push(path_inside.path);
 
