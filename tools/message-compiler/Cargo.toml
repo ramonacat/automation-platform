@@ -9,7 +9,7 @@ edition = "2021"
 lalrpop-util = { version = "0.19.8", features=["lexer"] }
 regex = "1"
 petgraph = "0.6.3"
-prettyplease= "0.1.0"
+prettyplease= "0.1.24"
 quote = "1.0.9"
 syn = "1.0.109"
 proc-macro2 = "1.0.28"
