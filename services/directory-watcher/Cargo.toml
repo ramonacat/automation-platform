@@ -9,7 +9,7 @@ edition = "2021"
 pathdiff="0.2.1"
 postgres-native-tls = "0.5.0"
 native-tls = "0.2.11"
-serde = { version = "1.0.152", features=["derive"] }
+serde = { version = "1.0.153", features=["derive"] }
 serde_json = "1.0.92"
 uuid = { version = "1.3.0", features=["v4", "serde"] }
 tokio = { version = "1.26.0", features=["full"] }
