@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "76800d004b8f1790d4c920dc96f3013d",
+    "content-hash": "132ed584f929deffea98dbfff36784b1",
     "packages": [
         {
             "name": "bramus/ansi-php",
@@ -52,16 +52,16 @@
         },
         {
             "name": "galbar/jsonpath",
-            "version": "2.1",
+            "version": "3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Galbar/JsonPath-PHP.git",
-                "reference": "346de727387b46148562209a0df2b9ae6cb551cd"
+                "reference": "61bfdd51729ac95413aaf64112b93b6fb3dbd786"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Galbar/JsonPath-PHP/zipball/346de727387b46148562209a0df2b9ae6cb551cd",
-                "reference": "346de727387b46148562209a0df2b9ae6cb551cd",
+                "url": "https://api.github.com/repos/Galbar/JsonPath-PHP/zipball/61bfdd51729ac95413aaf64112b93b6fb3dbd786",
+                "reference": "61bfdd51729ac95413aaf64112b93b6fb3dbd786",
                 "shasum": ""
             },
             "require": {
@@ -97,9 +97,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Galbar/JsonPath-PHP/issues",
-                "source": "https://github.com/Galbar/JsonPath-PHP/tree/2.1"
+                "source": "https://github.com/Galbar/JsonPath-PHP/tree/3.0"
             },
-            "time": "2022-08-18T13:55:30+00:00"
+            "time": "2023-03-05T19:47:06+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -3152,7 +3152,7 @@
         },
         {
             "name": "ramona/automation-platform-lib-coding-standard",
-            "version": "dev-update_all_the_things",
+            "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "../../libraries/php/coding-standard",
