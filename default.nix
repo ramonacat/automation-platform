@@ -63,7 +63,7 @@ in
       in
         with pkgs; 
         [ 
-          php 
+          php
           php81Packages.composer 
           rustup 
           pkgconfig 

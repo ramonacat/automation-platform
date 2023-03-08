@@ -6,12 +6,15 @@ use notify::{
     event::{CreateKind, ModifyKind, RemoveKind, RenameMode},
     Watcher,
 };
-use rpc_support::{DefaultRawRpcClient, rpc_error::RpcError, RawRpcClient};
+use rpc_support::{rpc_error::RpcError, DefaultRawRpcClient, RawRpcClient};
 use std::{error::Error, path::PathBuf, time::SystemTime};
 use tokio::net::TcpStream;
 
-async fn send_event<TRawRpcClient: RawRpcClient + Send + Sync>(client: &mut Client<TRawRpcClient>, event: FilesystemEvent) -> Result<(), RpcError> {
-    client.file_changed(event, Metadata{}).await
+async fn send_event<TRawRpcClient: RawRpcClient + Send + Sync>(
+    client: &mut Client<TRawRpcClient>,
+    event: FilesystemEvent,
+) -> Result<(), RpcError> {
+    client.file_changed(event, Metadata {}).await
 }
 
 fn make_path_relative(base: &PathBuf, path: &PathBuf) -> PathBuf {
@@ -25,7 +28,7 @@ fn make_path_relative(base: &PathBuf, path: &PathBuf) -> PathBuf {
 /// May fail
 #[allow(clippy::too_many_lines)]
 pub async fn main_inner() -> Result<(), Box<dyn Error>> {
-    let matches = command!() 
+    let matches = command!()
         .arg(
             arg!(-p --path <PATH> "Path to the directory to be watched")
                 .value_parser(value_parser!(PathBuf)),
@@ -67,23 +70,25 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
 
         send_event(
             &mut client,
-                FilesystemEvent {
-                    kind: lib_directory_watcher::FilesystemEventKind::Created {},
-                    mount_id: mount_id.clone(),
-                    path: make_path_relative(&path, &entry.path()).to_string_lossy().to_string(),
-                    timestamp: entry
-                        .metadata()
-                        .await
-                        .unwrap()
-                        .modified()
-                        .unwrap()
-                        .duration_since(SystemTime::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs(),
-                },
-            )
-            .await
-            .unwrap();
+            FilesystemEvent {
+                kind: lib_directory_watcher::FilesystemEventKind::Created {},
+                mount_id: mount_id.clone(),
+                path: make_path_relative(&path, &entry.path())
+                    .to_string_lossy()
+                    .to_string(),
+                timestamp: entry
+                    .metadata()
+                    .await
+                    .unwrap()
+                    .modified()
+                    .unwrap()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+            },
+        )
+        .await
+        .unwrap();
     }
 
     while let Ok(event) = rx.recv() {
@@ -92,53 +97,15 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
             notify::EventKind::Create(CreateKind::File)
             | notify::EventKind::Modify(ModifyKind::Name(RenameMode::To)) => {
                 for current_path in event.paths {
-                    send_event(&mut client,
-                            FilesystemEvent {
-                                kind: lib_directory_watcher::FilesystemEventKind::Created {},
-                                mount_id: mount_id.clone(),
-                                path: make_path_relative(&path, &current_path).to_string_lossy().to_string(),
-                                timestamp: std::fs::metadata(current_path)
-                                    .unwrap()
-                                    .modified()
-                                    .unwrap()
-                                    .duration_since(SystemTime::UNIX_EPOCH)
-                                    .unwrap()
-                                    .as_secs(),
-                            },
-                        )
-                        .await
-                        .unwrap();
-                }
-            }
-            notify::EventKind::Remove(RemoveKind::File)
-            | notify::EventKind::Modify(ModifyKind::Name(RenameMode::From)) => {
-                let timestamp = std::fs::metadata(&path)
-                    .map_or_else(|_| std::time::SystemTime::now(), |x| x.modified().unwrap())
-                    .duration_since(SystemTime::UNIX_EPOCH)?
-                    .as_secs();
-
-                for current_path in event.paths {
-                    send_event(&mut client,
-                            FilesystemEvent {
-                                kind: lib_directory_watcher::FilesystemEventKind::Deleted {},
-                                mount_id: mount_id.clone(),
-                                path: make_path_relative(&path, &current_path).to_string_lossy().to_string(),
-                                timestamp,
-                            },
-                        )
-                        .await
-                        .unwrap();
-                }
-            }
-            notify::EventKind::Modify(ModifyKind::Name(RenameMode::Both)) => {
-                send_event(&mut client,
+                    send_event(
+                        &mut client,
                         FilesystemEvent {
-                            kind: lib_directory_watcher::FilesystemEventKind::Moved {
-                                to: make_path_relative(&path, &event.paths[1]).to_string_lossy().to_string(),
-                            },
+                            kind: lib_directory_watcher::FilesystemEventKind::Created {},
                             mount_id: mount_id.clone(),
-                            path: make_path_relative(&path, &event.paths[0]).to_string_lossy().to_string(),
-                            timestamp: std::fs::metadata(&event.paths[1])
+                            path: make_path_relative(&path, &current_path)
+                                .to_string_lossy()
+                                .to_string(),
+                            timestamp: std::fs::metadata(current_path)
                                 .unwrap()
                                 .modified()
                                 .unwrap()
@@ -149,6 +116,55 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
                     )
                     .await
                     .unwrap();
+                }
+            }
+            notify::EventKind::Remove(RemoveKind::File)
+            | notify::EventKind::Modify(ModifyKind::Name(RenameMode::From)) => {
+                let timestamp = std::fs::metadata(&path)
+                    .map_or_else(|_| std::time::SystemTime::now(), |x| x.modified().unwrap())
+                    .duration_since(SystemTime::UNIX_EPOCH)?
+                    .as_secs();
+
+                for current_path in event.paths {
+                    send_event(
+                        &mut client,
+                        FilesystemEvent {
+                            kind: lib_directory_watcher::FilesystemEventKind::Deleted {},
+                            mount_id: mount_id.clone(),
+                            path: make_path_relative(&path, &current_path)
+                                .to_string_lossy()
+                                .to_string(),
+                            timestamp,
+                        },
+                    )
+                    .await
+                    .unwrap();
+                }
+            }
+            notify::EventKind::Modify(ModifyKind::Name(RenameMode::Both)) => {
+                send_event(
+                    &mut client,
+                    FilesystemEvent {
+                        kind: lib_directory_watcher::FilesystemEventKind::Moved {
+                            to: make_path_relative(&path, &event.paths[1])
+                                .to_string_lossy()
+                                .to_string(),
+                        },
+                        mount_id: mount_id.clone(),
+                        path: make_path_relative(&path, &event.paths[0])
+                            .to_string_lossy()
+                            .to_string(),
+                        timestamp: std::fs::metadata(&event.paths[1])
+                            .unwrap()
+                            .modified()
+                            .unwrap()
+                            .duration_since(SystemTime::UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs(),
+                    },
+                )
+                .await
+                .unwrap();
             }
             notify::EventKind::Modify(_) => {
                 for current_path in event.paths {
@@ -157,7 +173,9 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
                             FilesystemEvent {
                                 kind: lib_directory_watcher::FilesystemEventKind::Modified {},
                                 mount_id: mount_id.clone(),
-                                path: make_path_relative(&path, &current_path).to_string_lossy().to_string(),
+                                path: make_path_relative(&path, &current_path)
+                                    .to_string_lossy()
+                                    .to_string(),
                                 timestamp: std::fs::metadata(current_path)
                                     .unwrap()
                                     .modified()

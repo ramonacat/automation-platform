@@ -122,4 +122,58 @@ final class GitChangeTrackerTest extends TestCase
 
         self::assertFalse($changeTracker->wasModifiedSince('123-da39a3ee5e6b4b0d3255bfef95601890afd80709', ''));
     }
+
+    public function testWasModifiedSinceWillReturnTrueIfCurrentCommitIsAfter(): void
+    {
+        $git = $this->createMock(Git::class);
+        $git
+            ->method('currentCommitHash')
+            ->willReturn('456');
+
+        $git
+            ->method('rawDiffTo')
+            ->willReturn('');
+
+        $git
+            ->method('listUntrackedFiles')
+            ->willReturn([]);
+
+        $git
+            ->method('listModfiedFiles')
+            ->with('123')
+            ->willReturn(['a']);
+
+        $filesystem = $this->createMock(Filesystem::class);
+
+        $changeTracker = new GitChangeTracker(new NullLogger(), $git, $filesystem);
+
+        self::assertTrue($changeTracker->wasModifiedSince('123', 'a'));
+    }
+
+    public function testWasModifiedSinceWillReturnTrueIfCurrentCommitIsAfterOnDirtyRepo(): void
+    {
+        $git = $this->createMock(Git::class);
+        $git
+            ->method('currentCommitHash')
+            ->willReturn('456');
+
+        $git
+            ->method('rawDiffTo')
+            ->willReturn('');
+
+        $git
+            ->method('listUntrackedFiles')
+            ->willReturn([]);
+
+        $git
+            ->method('listModfiedFiles')
+            ->with('123')
+            ->willReturn(['a']);
+
+        $filesystem = $this->createMock(Filesystem::class);
+
+        $changeTracker = new GitChangeTracker(new NullLogger(), $git, $filesystem);
+
+        self::assertTrue($changeTracker->wasModifiedSince('123-3333', 'a'));
+    }
 }
