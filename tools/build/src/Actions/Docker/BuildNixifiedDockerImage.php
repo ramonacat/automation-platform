@@ -35,13 +35,19 @@ final class BuildNixifiedDockerImage implements BuildAction
             [
                 'sh',
                 '-c',
-                'crate2nix generate && $(nix-build --no-out-link ' . $this->nixFilePath . ' --argstr tag \"' . $context->buildFacts()->buildId() . '\") | docker load'
+                'crate2nix generate && $(nix-build --no-out-link ' . $this->nixFilePath . ' --argstr tag \"' . $context->buildFacts()->buildId() . '\" --argstr name ' . $this->imageName . ') | docker load'
             ],
             self::DEFAULT_TIMEOUT
         );
 
         if (!$process->run($output)) {
             return BuildResult::fail("Failed to build the container image");
+        }
+
+        $processGrype = $context->processBuilder()->build($workingDirectory, ['grype', $this->imageName . ':' . $context->buildFacts()->buildId(), '--fail-on', 'medium'], self::DEFAULT_TIMEOUT);
+
+        if (!$processGrype->run($output)) {
+            return BuildResult::fail("Container image failed the security check");
         }
 
         return BuildResult::ok($this->createArtifacts($context));

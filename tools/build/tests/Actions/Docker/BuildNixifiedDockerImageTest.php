@@ -27,18 +27,29 @@ final class BuildNixifiedDockerImageTest extends TestCase
             ->willReturn(true);
 
         $processBuilder
-            ->expects(self::once())
+            ->expects(self::exactly(2))
             ->method('build')
-            ->with(
-                '.',
-                [
+            ->willReturnCallback(function (string $workingDirectory, array $command, int $timeout) use ($process) {
+                if ($workingDirectory !== '.') {
+                    self::fail('Bad working directory');
+                }
+
+                if ($timeout !== 3600) {
+                    self::fail('Bad timeout');
+                }
+
+                if ($command === [
                     'sh',
                     '-c',
-                    'crate2nix generate && $(nix-build --no-out-link ./docker/docker.nix --argstr tag \"test\") | docker load'
-                ],
-                3600
-            )
-            ->willReturn($process);
+                    'crate2nix generate && $(nix-build --no-out-link ./docker/docker.nix --argstr tag \"test\" --argstr name testimg) | docker load'
+                ] || $command === [
+                    'grype', 'testimg:test', '--fail-on', 'medium'
+                ]) {
+                    return $process;
+                } else {
+                    self::fail('Invalid command');
+                }
+            });
 
         $context = new Context(
             Configuration::fromJsonString('{}'),
@@ -48,7 +59,7 @@ final class BuildNixifiedDockerImageTest extends TestCase
         );
         $action = new BuildNixifiedDockerImage(
             'a',
-            'test',
+            'testimg',
             't',
         );
 
@@ -56,7 +67,7 @@ final class BuildNixifiedDockerImageTest extends TestCase
 
         self::assertTrue($result->hasSucceeded());
         self::assertEquals([
-            new ContainerImage('a', 'test', 'test')
+            new ContainerImage('a', 'testimg', 'test')
         ], $result->artifacts());
     }
 }
