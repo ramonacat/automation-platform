@@ -3,20 +3,20 @@ mod music_storage;
 
 use async_std::stream::StreamExt;
 use event_storage::EventStorage;
-use events::{EventKind, Rpc as EventsRpc};
+use events::{EventKind, RpcClient as EventsRpc};
 use music::{
     Album, AllAlbums, AllAlbumsRequest, AllArtists, AllTracks, AllTracksRequest, Artist, Metadata,
-    Rpc, Server, StreamTrackRequest, Track, TrackData,
+    RpcServer as MusicRpc, Server, StreamTrackRequest, Track, TrackData,
 };
 use music_storage::{Error, MusicStorage, Postgres};
 use platform::async_infra;
 use platform::postgres::connect;
 use platform::secrets::SecretProvider;
 use rpc_support::rpc_error::RpcError;
-use rpc_support::DefaultRawRpcClient;
-use std::collections::HashMap;
+use rpc_support::{Client as RpcClient, DefaultRawRpcClient};
 use std::pin::Pin;
 use std::sync::Arc;
+use std::{collections::HashMap, sync::Weak};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio_util::io::ReaderStream;
@@ -30,11 +30,12 @@ struct RpcServer<TMusicStorage: MusicStorage> {
 }
 
 #[async_trait::async_trait]
-impl<TMusicStorage: MusicStorage + Send + Sync> Rpc for RpcServer<TMusicStorage> {
+impl<TMusicStorage: MusicStorage + Send + Sync> MusicRpc for RpcServer<TMusicStorage> {
     async fn stream_track(
         &mut self,
         request: StreamTrackRequest,
         _metadata: Metadata,
+        _client: Weak<Mutex<dyn RpcClient>>,
     ) -> Result<
         Pin<
             Box<
@@ -67,6 +68,7 @@ impl<TMusicStorage: MusicStorage + Send + Sync> Rpc for RpcServer<TMusicStorage>
         &mut self,
         _request: (),
         _metadata: Metadata,
+        _client: Weak<Mutex<dyn RpcClient>>,
     ) -> Result<AllArtists, RpcError> {
         let artists = self.music_storage.lock().await.all_artists().await?;
 
@@ -85,6 +87,7 @@ impl<TMusicStorage: MusicStorage + Send + Sync> Rpc for RpcServer<TMusicStorage>
         &mut self,
         request: AllAlbumsRequest,
         _metadata: Metadata,
+        _client: Weak<Mutex<dyn RpcClient>>,
     ) -> Result<AllAlbums, RpcError> {
         let albums = self
             .music_storage
@@ -109,6 +112,7 @@ impl<TMusicStorage: MusicStorage + Send + Sync> Rpc for RpcServer<TMusicStorage>
         &mut self,
         request: AllTracksRequest,
         _metadata: Metadata,
+        _client: Weak<Mutex<dyn RpcClient>>,
     ) -> Result<AllTracks, RpcError> {
         let tracks = self
             .music_storage
@@ -387,6 +391,19 @@ mod tests {
         }
     }
 
+    struct MockClient;
+
+    #[async_trait::async_trait]
+    impl rpc_support::Client for MockClient {
+        async fn write_all(&mut self, data: &[u8]) -> std::io::Result<()> {
+            todo!();
+        }
+
+        async fn read_line(&mut self) -> std::io::Result<String> {
+            todo!();
+        }
+    }
+
     #[tokio::test]
     async fn rpc_server_all_albums() {
         let mut server = RpcServer {
@@ -403,6 +420,7 @@ mod tests {
                 Metadata {
                     correlation_id: Uuid::new_v4(),
                 },
+                Weak::<Mutex<MockClient>>::new(),
             )
             .await
             .unwrap();

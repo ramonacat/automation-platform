@@ -1,0 +1,10 @@
+---
+source: src/compiler_rust/traits.rs
+expression: "prettyplease::unparse(&syn::parse_file(&enums.to_string()).unwrap())"
+---
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Something {
+    A { field_a: String },
+    B { a: s16, b: String },
+}
+
