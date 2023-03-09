@@ -1,0 +1,15 @@
+---
+source: src/compiler_rust/traits.rs
+expression: "prettyplease::unparse(&syn::parse_file(&structs.to_string()).unwrap())"
+---
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Foo {
+    pub foo: u8,
+    pub bar: u64,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Bar {
+    pub foo: u8,
+    pub bar: u64,
+}
+

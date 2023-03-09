@@ -1,0 +1,10 @@
+---
+source: src/compiler_rust/traits.rs
+expression: "prettyplease::unparse(&syn::parse_file(&meta.to_string()).unwrap())"
+---
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Metadata {
+    pub foo: u8,
+    pub bar: u64,
+}
+

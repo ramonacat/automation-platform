@@ -1,5 +1,5 @@
 use futures_util::{AsyncReadExt, StreamExt, TryStreamExt};
-use music::{Client, Metadata, Rpc, StreamTrackRequest};
+use music::{Client, Metadata, RpcClient, StreamTrackRequest};
 use rpc_support::{DefaultRawRpcClient, RawRpcClient};
 use std::io::Cursor;
 use tokio::net::TcpStream;

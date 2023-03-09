@@ -99,8 +99,8 @@ impl TypedStruct {
 
 #[derive(Debug)]
 pub struct TypedEnumVariant {
-    name: String,
-    fields: Vec<TypedField>,
+    pub name: String,
+    pub fields: Vec<TypedField>,
 }
 
 impl TypedEnumVariant {
@@ -117,8 +117,8 @@ impl TypedEnumVariant {
 
 #[derive(Debug)]
 pub struct TypedEnum {
-    name: String,
-    variants: Vec<TypedEnumVariant>,
+    pub name: String,
+    pub variants: Vec<TypedEnumVariant>,
 }
 
 impl TypedEnum {

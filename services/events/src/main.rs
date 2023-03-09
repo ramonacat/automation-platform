@@ -7,13 +7,13 @@ use tracing::{debug, info};
 
 use tokio_postgres::Client;
 
-use events::{Event, EventKind, Metadata, Rpc, Server, SubscribeRequest};
+use events::{Event, EventKind, Metadata, RpcServer as Rpc, Server, SubscribeRequest};
 use futures_lite::stream::StreamExt;
 use futures_lite::Stream;
 use platform::async_infra::run_with_error_handling;
 use postgres_native_tls::MakeTlsConnector;
-use rpc_support::rpc_error::RpcError;
-use std::sync::Arc;
+use rpc_support::{rpc_error::RpcError, Client as RpcClient};
+use std::sync::{Arc, Weak};
 use std::time::SystemTime;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
@@ -173,6 +173,7 @@ impl Rpc for RpcServer {
         &mut self,
         request: SubscribeRequest,
         _metadata: Metadata,
+        _client: Weak<Mutex<dyn RpcClient>>,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<Event, RpcError>> + Unpin + Send>>, RpcError> {
         let (tx, rx) = tokio::sync::mpsc::channel(100);
 
@@ -190,7 +191,12 @@ impl Rpc for RpcServer {
         Ok(Box::pin(stream))
     }
 
-    async fn send_event(&mut self, request: Event, _metadata: Metadata) -> Result<(), RpcError> {
+    async fn send_event(
+        &mut self,
+        request: Event,
+        _metadata: Metadata,
+        _client: Weak<Mutex<dyn RpcClient>>,
+    ) -> Result<(), RpcError> {
         let created_time = request.created_time;
         self.save_event(
             match request.data {

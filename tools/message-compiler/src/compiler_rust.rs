@@ -1,147 +1,13 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, TokenStreamExt};
 
-use crate::type_checking::{
-    TypedEnum, TypedFieldType, TypedFile, TypedMetadata, TypedRpc, TypedStruct,
+use crate::type_checking::{TypedFieldType, TypedFile, TypedRpc};
+
+mod traits;
+
+use traits::{
+    generate_enums, generate_header, generate_metadata, generate_rpc_trait, generate_structs,
 };
-
-fn generate_header() -> TokenStream {
-    quote! {
-        #[allow(unused)]
-        use async_std::stream::Stream;
-        use rpc_support::rpc_error::RpcError;
-        use serde::{Deserialize, Serialize};
-    }
-}
-
-fn generate_metadata(meta: &TypedMetadata) -> TokenStream {
-    let mut result = quote!(
-        #[derive(Serialize, Deserialize, Debug, Clone)]
-    );
-
-    let mut meta_fields = quote! {};
-    for f in meta.fields() {
-        let name = format_ident!("{}", f.name());
-        let ty: syn::Type = syn::parse_str(&to_rust_type(f.type_name())).unwrap();
-        meta_fields.append_all(quote!(pub #name: #ty,));
-    }
-    result.append_all(quote!(
-        pub struct Metadata {
-            #meta_fields
-        }
-    ));
-
-    result
-}
-
-fn generate_structs(structs: &Vec<TypedStruct>) -> TokenStream {
-    let mut result = quote! {};
-
-    for s in structs {
-        let struct_name = format_ident!("{}", s.name());
-        let mut render_fields = quote! {};
-        for f in s.fields() {
-            let name = format_ident!("{}", f.name());
-            let ty: syn::Type = syn::parse_str(&to_rust_type(f.type_name())).unwrap();
-            render_fields.append_all(quote!(pub #name: #ty,));
-        }
-        result.append_all(quote!(
-            #[derive(Serialize, Deserialize, Debug, Clone)]
-            pub struct #struct_name {
-                #render_fields
-            }
-        ));
-    }
-
-    result
-}
-
-/// # Panics
-/// TODO make this not panic
-#[must_use]
-pub fn generate_enums(enums: &Vec<TypedEnum>) -> TokenStream {
-    let mut result = quote! {};
-
-    for e in enums {
-        let enum_name = format_ident!("{}", e.name());
-        let mut render_variants = quote! {};
-        for v in e.variants() {
-            let variant_name = format_ident!("{}", v.name());
-            let mut render_fields = quote! {};
-            for f in v.fields() {
-                let name = format_ident!("{}", f.name());
-                let ty: syn::Type = syn::parse_str(&to_rust_type(f.type_name())).unwrap();
-                render_fields.append_all(quote!(#name: #ty,));
-            }
-            render_variants.append_all(quote!(
-                #variant_name {
-                    #render_fields
-                },
-            ));
-        }
-        result.append_all(quote!(
-            #[derive(Serialize, Deserialize, Debug, Clone)]
-            pub enum #enum_name {
-                #render_variants
-            }
-        ));
-    }
-
-    result
-}
-
-fn generate_rpc_trait(rpc: &TypedRpc) -> TokenStream {
-    let mut rpc_methods = quote! {};
-
-    for r in rpc.calls() {
-        match r {
-            crate::type_checking::TypedRpcCall::Stream {
-                name,
-                request,
-                response,
-            } => {
-                let name = format_ident!("{}", name);
-                let request: syn::Type = syn::parse_str(&to_rust_type(request)).unwrap();
-                let response: syn::Type = syn::parse_str(&to_rust_type(response)).unwrap();
-
-                rpc_methods.append_all(quote!(
-                    async fn #name(
-                        &mut self,
-                        request: #request,
-                        metadata: Metadata,
-                    ) -> Result<
-                        std::pin::Pin<Box<dyn Stream<Item = Result<#response, RpcError>> + Unpin + Send>>,
-                        RpcError,
-                    >;
-                ));
-            }
-            crate::type_checking::TypedRpcCall::Unary {
-                name,
-                request,
-                response,
-            } => {
-                let name = format_ident!("{}", name);
-                let request: syn::Type = syn::parse_str(&to_rust_type(request)).unwrap();
-                let response: syn::Type = syn::parse_str(&to_rust_type(response)).unwrap();
-
-                rpc_methods.append_all(quote!(
-                    async fn #name(
-                        &mut self,
-                        request: #request,
-                        metadata: Metadata,
-                    ) -> Result<#response, RpcError>;
-                ));
-            }
-        }
-    }
-
-    quote!(
-        #[async_trait::async_trait]
-        pub trait Rpc {
-             #rpc_methods
-        }
-    )
-}
 
 fn generate_rpc_client(rpc: &TypedRpc) -> TokenStream {
     let mut result = quote! {
@@ -225,7 +91,7 @@ fn generate_rpc_client(rpc: &TypedRpc) -> TokenStream {
 
     result.append_all(quote! {
         #[async_trait::async_trait]
-        impl<TRpcClient> Rpc for Client<TRpcClient> where TRpcClient: RawRpcClient + Send + Sync {
+        impl<TRpcClient> RpcClient for Client<TRpcClient> where TRpcClient: RawRpcClient + Send + Sync {
             #rpc_methods
         }
     });
@@ -247,9 +113,9 @@ fn generate_rpc_server_method_match(rpc: &TypedRpc) -> TokenStream {
 
                 quote! {
                     #name => {
-                        let result = rpc.lock().await.#name_ident(serde_json::from_str(&payload_line)?, metadata).await;
+                        let result = rpc.lock().await.#name_ident(serde_json::from_str(&payload_line)?, metadata, Arc::downgrade(&client)).await;
 
-                        send_stream_response(&mut write, result, request_id).await?;
+                        send_stream_response(client.clone(), result, request_id).await?;
                     }
                 }
             }
@@ -262,9 +128,9 @@ fn generate_rpc_server_method_match(rpc: &TypedRpc) -> TokenStream {
 
                 quote! {
                     #name => {
-                        let result = rpc.lock().await.#name_ident(serde_json::from_str(&payload_line)?, metadata).await;
+                        let result = rpc.lock().await.#name_ident(serde_json::from_str(&payload_line)?, metadata, Arc::downgrade(&client)).await;
 
-                        send_response(&mut write, result, request_id, false).await?;
+                        send_response(client.clone(), result, request_id, false).await?;
                     }
                 }
             }
@@ -291,15 +157,13 @@ fn generate_rpc_server(rpc: &TypedRpc) -> TokenStream {
         use std::sync::Arc;
         use tokio::sync::Mutex;
         use tokio::net::TcpListener;
-        use tokio::net::TcpStream;
-        use tokio::io::BufReader;
         use rpc_support::send_response;
         #[allow(unused)] use rpc_support::send_stream_response;
         use rpc_support::read_request;
 
         pub struct Server<TRpc>
         where
-            TRpc: Rpc + Send + Sync,
+            TRpc: RpcServer + Send + Sync,
         {
             tcp: Arc<Mutex<TcpListener>>,
             rpc: Arc<Mutex<TRpc>>,
@@ -323,7 +187,7 @@ fn generate_rpc_server(rpc: &TypedRpc) -> TokenStream {
 
         impl<T> Server<T>
         where
-            T: Rpc + Send + Sync + 'static,
+            T: RpcServer + Send + Sync + 'static,
         {
             /// # Errors
             /// Will return an error when establishing the TCP Listener fails
@@ -332,14 +196,10 @@ fn generate_rpc_server(rpc: &TypedRpc) -> TokenStream {
                 Ok(Server { tcp, rpc })
             }
 
-            async fn handle_client(socket: TcpStream, rpc: Arc<Mutex<T>>) -> Result<(), ClientError> {
-                let mut socket = socket;
-                let (read, mut write) = socket.split();
-                let mut reader = BufReader::new(read);
-
+            async fn handle_client(client: Arc<Mutex<dyn rpc_support::Client>>, rpc: Arc<Mutex<T>>) -> Result<(), ClientError> {
                 loop {
                     let (payload_line, method_name, request_id, metadata): (String, String, u64, Metadata) =
-                        read_request(&mut reader).await?;
+                        read_request(client.clone()).await?;
 
                     #method_match
                 }
@@ -355,7 +215,7 @@ fn generate_rpc_server(rpc: &TypedRpc) -> TokenStream {
                     let rpc = self.rpc.clone();
 
                     tokio::spawn(platform::async_infra::run_with_error_handling(
-                        Self::handle_client(socket, rpc),
+                        Self::handle_client(Arc::new(Mutex::new(rpc_support::DefaultClient::new(socket))), rpc),
                     ));
                 }
             }
@@ -412,8 +272,6 @@ fn to_rust_type(type_: &TypedFieldType) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::type_checking::TypedField;
-
     use super::*;
 
     #[test]
@@ -450,68 +308,5 @@ mod tests {
             to_rust_type(&TypedFieldType::Array(Box::new(TypedFieldType::U8))),
             "Vec<u8>"
         );
-    }
-
-    #[test]
-    pub fn generate_header_test() {
-        insta::assert_snapshot!(prettyplease::unparse(
-            &syn::parse_file(&generate_header().to_string()).unwrap()
-        ));
-    }
-
-    #[test]
-    pub fn generate_metadata_test() {
-        let meta = generate_metadata(&TypedMetadata {
-            fields: vec![
-                TypedField {
-                    name: "foo".to_string(),
-                    type_id: TypedFieldType::U8,
-                },
-                TypedField {
-                    name: "bar".to_string(),
-                    type_id: TypedFieldType::U64,
-                },
-            ],
-        });
-
-        insta::assert_snapshot!(prettyplease::unparse(
-            &syn::parse_file(&meta.to_string()).unwrap()
-        ));
-    }
-
-    #[test]
-    pub fn generate_structs_test() {
-        let structs = generate_structs(&vec![
-            TypedStruct {
-                name: "Foo".to_string(),
-                fields: vec![
-                    TypedField {
-                        name: "foo".to_string(),
-                        type_id: TypedFieldType::U8,
-                    },
-                    TypedField {
-                        name: "bar".to_string(),
-                        type_id: TypedFieldType::U64,
-                    },
-                ],
-            },
-            TypedStruct {
-                name: "Bar".to_string(),
-                fields: vec![
-                    TypedField {
-                        name: "foo".to_string(),
-                        type_id: TypedFieldType::U8,
-                    },
-                    TypedField {
-                        name: "bar".to_string(),
-                        type_id: TypedFieldType::U64,
-                    },
-                ],
-            },
-        ]);
-
-        insta::assert_snapshot!(prettyplease::unparse(
-            &syn::parse_file(&structs.to_string()).unwrap()
-        ));
     }
 }
