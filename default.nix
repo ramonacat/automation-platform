@@ -74,5 +74,6 @@ in
           cargo-udeps
           cargo-audit
           insta
+          grype
         ];
   }

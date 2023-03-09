@@ -1,12 +1,11 @@
-{tag ? "latest"} @ args:
+{tag ? "latest", name} @ args:
     let
         pkgs = import <nixpkgs> { };
         crate = pkgs.callPackage ../Cargo.nix { };
     in
         pkgs.dockerTools.streamLayeredImage {
-            name = "svc-music";
+            inherit name tag;
             fromImage = null;
-            tag = tag;
             config.Cmd = [ 
                 "${crate.workspaceMembers.svc-music.build}/bin/svc-music" 
             ];
