@@ -1,13 +1,15 @@
 use std::{
     ops::Add,
+    sync::Weak,
     time::{Duration, SystemTime},
 };
 
-use events::{Client, Rpc as EventsRpc};
-use lib_directory_watcher::{FilesystemEvent, FilesystemEventKind, Metadata, Rpc};
+use events::{Client, RpcClient as EventsRpc};
+use lib_directory_watcher::{FilesystemEvent, FilesystemEventKind, Metadata, RpcServer as Rpc};
 use platform::mounts::PathInside;
-use rpc_support::{rpc_error::RpcError, RawRpcClient};
+use rpc_support::{rpc_error::RpcError, Client as RpcClient, RawRpcClient};
 use time::OffsetDateTime;
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::file_status_store::FileStatusStore;
@@ -43,6 +45,7 @@ impl<T: FileStatusStore + Sync + Send, TRawRpcClient: RawRpcClient + Send + Sync
         &mut self,
         event: FilesystemEvent,
         _metadata: Metadata,
+        _client: Weak<Mutex<dyn RpcClient>>,
     ) -> Result<(), RpcError> {
         info!("Received file changed event: {:?}", event);
 
@@ -285,13 +288,29 @@ mod tests {
             timestamp: 1024,
         };
 
-        rpc_server.file_changed(event, Metadata {}).await.unwrap();
+        rpc_server
+            .file_changed(event, Metadata {}, Weak::<Mutex<MockClient>>::new())
+            .await
+            .unwrap();
 
         insta::assert_debug_snapshot!(rpc_server.file_status_store.events);
 
         let rpcs = rpcs.lock().await;
 
         insta::assert_debug_snapshot!(rpcs.clone());
+    }
+
+    struct MockClient;
+
+    #[async_trait::async_trait]
+    impl rpc_support::Client for MockClient {
+        async fn write_all(&mut self, data: &[u8]) -> std::io::Result<()> {
+            todo!();
+        }
+
+        async fn read_line(&mut self) -> std::io::Result<String> {
+            todo!();
+        }
     }
 
     #[tokio::test]
@@ -317,7 +336,10 @@ mod tests {
             timestamp: 1024,
         };
 
-        rpc_server.file_changed(event, Metadata {}).await.unwrap();
+        rpc_server
+            .file_changed(event, Metadata {}, Weak::<Mutex<MockClient>>::new())
+            .await
+            .unwrap();
 
         insta::assert_debug_snapshot!(rpc_server.file_status_store.events);
 
@@ -347,7 +369,10 @@ mod tests {
             timestamp: 1024,
         };
 
-        rpc_server.file_changed(event, Metadata {}).await.unwrap();
+        rpc_server
+            .file_changed(event, Metadata {}, Weak::<Mutex<MockClient>>::new())
+            .await
+            .unwrap();
 
         insta::assert_debug_snapshot!(rpc_server.file_status_store.events);
 
@@ -377,7 +402,10 @@ mod tests {
             timestamp: 1024,
         };
 
-        rpc_server.file_changed(event, Metadata {}).await.unwrap();
+        rpc_server
+            .file_changed(event, Metadata {}, Weak::<Mutex<MockClient>>::new())
+            .await
+            .unwrap();
 
         insta::assert_debug_snapshot!(rpc_server.file_status_store.events);
 
