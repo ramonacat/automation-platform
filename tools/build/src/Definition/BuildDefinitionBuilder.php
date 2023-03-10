@@ -10,6 +10,7 @@ use Ramona\AutomationPlatformLibBuild\Actions\BuildAction;
 use Ramona\AutomationPlatformLibBuild\Actions\NoOp;
 use Ramona\AutomationPlatformLibBuild\BuildFacts;
 use Ramona\AutomationPlatformLibBuild\Configuration\Configuration;
+use Ramona\AutomationPlatformLibBuild\Rust\LocalDependencyDetector;
 use Ramona\AutomationPlatformLibBuild\Targets\DefaultTargetKind;
 use Ramona\AutomationPlatformLibBuild\Targets\Target;
 use Ramona\AutomationPlatformLibBuild\Targets\TargetGenerator;
@@ -65,7 +66,7 @@ final class BuildDefinitionBuilder
 
     public function addRustTargetGenerator(): void
     {
-        $this->addTargetGenerator(new \Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator($this->path, $this->ansi));
+        $this->addTargetGenerator(new \Ramona\AutomationPlatformLibBuild\Rust\TargetGenerator($this->path, new LocalDependencyDetector($this->ansi)));
     }
 
     /**

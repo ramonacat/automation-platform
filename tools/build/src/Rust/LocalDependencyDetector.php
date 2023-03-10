@@ -13,15 +13,12 @@ use const PHP_EOL;
 use Symfony\Component\Process\Process;
 use Webmozart\Assert\Assert;
 
-final class LocalDependencyDetector
+final class LocalDependencyDetector implements DependencyDetector
 {
     public function __construct(private readonly Ansi $ansi)
     {
     }
 
-    /**
-     * @return list<string>
-     */
     public function forProject(string $projectDirectory): array
     {
         try {

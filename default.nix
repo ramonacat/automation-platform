@@ -37,8 +37,6 @@ in
       rustup toolchain install nightly; 
       rustup default stable; 
 
-      cargo install cargo-audit; 
-
       mkdir .php-tools/;
       pushd .php-tools;
         rm composer.json composer.lock;
@@ -72,7 +70,7 @@ in
           (callPackage crate2nix { })
           llvmCov
           cargo-udeps
-          cargo-audit
+          cargo-deny
           insta
           grype
         ];
