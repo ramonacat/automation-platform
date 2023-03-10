@@ -8,7 +8,7 @@ use super::to_rust_type;
 pub(crate) fn generate_header() -> TokenStream {
     quote! {
         #[allow(unused)]
-        use async_std::stream::Stream;
+        use futures::stream::Stream;
         use rpc_support::rpc_error::RpcError;
         use serde::{Deserialize, Serialize};
     }

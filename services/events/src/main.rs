@@ -8,8 +8,8 @@ use tracing::{debug, info};
 use tokio_postgres::Client;
 
 use events::{Event, EventKind, Metadata, RpcServer as Rpc, Server, SubscribeRequest};
-use futures_lite::stream::StreamExt;
-use futures_lite::Stream;
+use futures::stream::StreamExt;
+use futures::Stream;
 use platform::async_infra::run_with_error_handling;
 use postgres_native_tls::MakeTlsConnector;
 use rpc_support::{rpc_error::RpcError, Client as RpcClient};

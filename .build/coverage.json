@@ -1,17 +1,17 @@
 {
     "tools\/commit-verifier\/tests_coverage.json": 0.007462686567164178,
+    "tools\/build\/coverage.xml": 0.478809738503156,
     "tools\/dependabot-config-checker\/coverage.xml": 0.9736842105263158,
     "tools\/machine-info\/tests_coverage.json": 0.05263157894736842,
-    "tools\/build\/coverage.xml": 0.4598737601442741,
     "tools\/message-compiler\/tests_coverage.json": 0.42337164750957856,
+    "libraries\/rust\/directory-watcher\/tests_coverage.json": 0,
     "libraries\/rust\/events\/tests_coverage.json": 0,
+    "libraries\/rust\/music\/tests_coverage.json": 0,
     "libraries\/rust\/platform\/tests_coverage.json": 0.42201834862385323,
     "libraries\/rust\/rpc-support\/tests_coverage.json": 0.24242424242424243,
-    "libraries\/rust\/directory-watcher\/tests_coverage.json": 0,
-    "libraries\/rust\/music\/tests_coverage.json": 0,
     "services\/events\/tests_coverage.json": 0.005405405405405406,
-    "services\/directory-watcher\/tests_coverage.json": 0.3072033898305085,
     "agents\/filesystem\/tests_coverage.json": 0.006097560975609756,
-    "services\/music\/tests_coverage.json": 0.05130513051305131,
+    "services\/music\/tests_coverage.json": 0.051490514905149054,
+    "services\/directory-watcher\/tests_coverage.json": 0.3072033898305085,
     "agents\/music\/tests_coverage.json": 0.10509554140127389
 }
