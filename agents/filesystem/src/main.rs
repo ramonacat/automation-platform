@@ -1,6 +1,6 @@
 use async_walkdir::WalkDir;
 use clap::{arg, command, value_parser};
-use futures_util::StreamExt;
+use futures::StreamExt;
 use lib_directory_watcher::{Client, FilesystemEvent, Metadata, RpcClient};
 use notify::{
     event::{CreateKind, ModifyKind, RemoveKind, RenameMode},

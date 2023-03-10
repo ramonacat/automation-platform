@@ -304,7 +304,7 @@ mod tests {
 
     #[async_trait::async_trait]
     impl rpc_support::Client for MockClient {
-        async fn write_all(&mut self, data: &[u8]) -> std::io::Result<()> {
+        async fn write_all(&mut self, _data: &[u8]) -> std::io::Result<()> {
             todo!();
         }
 

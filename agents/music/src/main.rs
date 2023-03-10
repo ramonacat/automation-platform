@@ -1,4 +1,4 @@
-use futures_util::{AsyncReadExt, StreamExt, TryStreamExt};
+use futures::{AsyncReadExt, StreamExt, TryStreamExt};
 use music::{Client, Metadata, RpcClient, StreamTrackRequest};
 use rpc_support::{DefaultRawRpcClient, RawRpcClient};
 use std::io::Cursor;

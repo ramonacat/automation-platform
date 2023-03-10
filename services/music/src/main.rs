@@ -1,9 +1,9 @@
 mod event_storage;
 mod music_storage;
 
-use async_std::stream::StreamExt;
 use event_storage::EventStorage;
 use events::{EventKind, RpcClient as EventsRpc};
+use futures::stream::StreamExt;
 use music::{
     Album, AllAlbums, AllAlbumsRequest, AllArtists, AllTracks, AllTracksRequest, Artist, Metadata,
     RpcServer as MusicRpc, Server, StreamTrackRequest, Track, TrackData,
@@ -37,11 +37,7 @@ impl<TMusicStorage: MusicStorage + Send + Sync> MusicRpc for RpcServer<TMusicSto
         _metadata: Metadata,
         _client: Weak<Mutex<dyn RpcClient>>,
     ) -> Result<
-        Pin<
-            Box<
-                dyn futures_core::stream::Stream<Item = Result<TrackData, RpcError>> + Unpin + Send,
-            >,
-        >,
+        Pin<Box<dyn futures::stream::Stream<Item = Result<TrackData, RpcError>> + Unpin + Send>>,
         RpcError,
     > {
         let track = self
@@ -395,7 +391,7 @@ mod tests {
 
     #[async_trait::async_trait]
     impl rpc_support::Client for MockClient {
-        async fn write_all(&mut self, data: &[u8]) -> std::io::Result<()> {
+        async fn write_all(&mut self, _data: &[u8]) -> std::io::Result<()> {
             todo!();
         }
 
