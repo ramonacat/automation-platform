@@ -16,7 +16,7 @@ async-trait = "0.1.66"
 platform={path="../platform"}
 thiserror = "1.0.39"
 uuid = { version = "1.3.0", features=["v4", "serde"] }
-futures = "0.3.26"
+futures = "0.3.27"
 
 [build-dependencies]
 message-compiler={path= "../../../tools/message-compiler" }
