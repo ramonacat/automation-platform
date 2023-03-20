@@ -12,7 +12,7 @@ regex = "1"
 petgraph = "0.6.3"
 prettyplease= "0.1.25"
 quote = "1.0.26"
-syn = "1.0.109"
+syn = "2.0.3"
 proc-macro2 = "1.0.52"
 [build-dependencies]
 lalrpop = { version = "0.19.8", features=["lexer"] }
