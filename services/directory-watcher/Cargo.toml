@@ -21,7 +21,7 @@ tracing-subscriber = "0.3.16"
 futures = "0.3.27"
 async-trait = "0.1.67"
 time = { version = "0.3.20", features=["local-offset", "parsing", "serde", "formatting"] }
-insta = "1.10.0"
+insta = "1.29.0"
 
 platform = { path = "../../libraries/rust/platform" }
 events = { path = "../../libraries/rust/events" }
