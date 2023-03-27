@@ -2,18 +2,16 @@
 
 use std::error::Error;
 use std::future::Future;
-use std::pin::Pin;
+use tokio::net::TcpListener;
 use tracing::{debug, info};
 
 use tokio_postgres::Client;
 
-use events::{Event, EventKind, Metadata, RpcServer as Rpc, Server, SubscribeRequest};
+use events::{Event, EventKind, SubscribeRequest};
 use futures::stream::StreamExt;
-use futures::Stream;
 use platform::async_infra::run_with_error_handling;
 use postgres_native_tls::MakeTlsConnector;
-use rpc_support::{rpc_error::RpcError, Client as RpcClient};
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use std::time::SystemTime;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
@@ -39,8 +37,9 @@ struct SavedEvent {
     timestamp: SystemTime,
 }
 
-fn rpc_error_map(e: impl Error) -> RpcError {
-    RpcError::Custom(e.to_string())
+#[allow(clippy::missing_const_for_fn)]
+fn rpc_error_map(_e: impl Error) -> events::Error {
+    events::Error {}
 }
 
 struct SubscriptionHandler {
@@ -51,7 +50,7 @@ struct SubscriptionHandler {
 impl SubscriptionHandler {
     fn new(
         postgres: Arc<Mutex<tokio_postgres::Client>>,
-    ) -> (Self, impl Future<Output = Result<(), RpcError>>) {
+    ) -> (Self, impl Future<Output = Result<(), events::Error>>) {
         let subscriptions = Arc::new(dashmap::DashMap::new());
         let last_pushed_event_timestamp = Arc::new(Mutex::new(None));
 
@@ -82,7 +81,12 @@ impl SubscriptionHandler {
                                 subscription.key()
                             );
 
-                            subscription.value().tx.send(event.event).await?;
+                            subscription
+                                .value()
+                                .tx
+                                .send(event.event)
+                                .await
+                                .map_err(|_| events::Error {})?;
                             subscription.value_mut().cursor = Some(event.timestamp);
                         }
                     }
@@ -96,7 +100,7 @@ impl SubscriptionHandler {
     async fn read_events(
         postgres: Arc<Mutex<Client>>,
         since: Option<SystemTime>,
-    ) -> Result<Vec<SavedEvent>, RpcError> {
+    ) -> Result<Vec<SavedEvent>, events::Error> {
         let mut query = "SELECT data, created_timestamp FROM events".to_string();
 
         let rows = if let Some(cursor) = since {
@@ -145,7 +149,7 @@ impl RpcServer {
         }
     }
 
-    async fn save_event(&mut self, name: &str, message: Event) -> Result<(), RpcError> {
+    async fn save_event(&self, name: &str, message: Event) -> Result<(), events::Error> {
         let serde_value = serde_json::to_value(&message).map_err(rpc_error_map)?;
 
         self.postgres
@@ -168,13 +172,15 @@ impl RpcServer {
 }
 
 #[async_trait]
-impl Rpc for RpcServer {
+impl events::ResponderRpc for RpcServer {
     async fn subscribe(
-        &mut self,
+        &self,
         request: SubscribeRequest,
-        _metadata: Metadata,
-        _client: Weak<Mutex<dyn RpcClient>>,
-    ) -> Result<Pin<Box<dyn Stream<Item = Result<Event, RpcError>> + Unpin + Send>>, RpcError> {
+        _other_side: std::sync::Arc<dyn events::RequesterReverseRpc>,
+    ) -> Result<
+        Box<dyn futures::Stream<Item = Result<Event, events::Error>> + Send + Sync + 'static>,
+        rpc_support::connection::Error,
+    > {
         let (tx, rx) = tokio::sync::mpsc::channel(100);
 
         // FIXME add a method on the handler for that
@@ -188,15 +194,14 @@ impl Rpc for RpcServer {
 
         let stream = ReceiverStream::new(rx).map(Ok);
 
-        Ok(Box::pin(stream))
+        Ok(Box::new(stream))
     }
 
     async fn send_event(
-        &mut self,
+        &self,
         request: Event,
-        _metadata: Metadata,
-        _client: Weak<Mutex<dyn RpcClient>>,
-    ) -> Result<(), RpcError> {
+        _other_side: std::sync::Arc<dyn events::RequesterReverseRpc>,
+    ) -> Result<(), events::Error> {
         let created_time = request.created_time;
         self.save_event(
             match request.data {
@@ -218,6 +223,10 @@ impl Rpc for RpcServer {
         Ok(())
     }
 }
+
+struct ReverseRpc;
+
+impl events::ResponderReverseRpc for ReverseRpc {}
 
 #[tokio::main]
 #[tracing::instrument]
@@ -248,11 +257,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         run_with_error_handling(connection).await;
     });
 
-    let rpc_server = Arc::new(Mutex::new(RpcServer::new(Arc::new(Mutex::new(client)))));
+    let rpc_server = Arc::new(RpcServer::new(Arc::new(Mutex::new(client))));
 
     // todo make the bind addr/port configurable
-    let server = Server::new("0.0.0.0:7654", rpc_server).await?;
-    server.run().await?;
+    let listener = TcpListener::bind("0.0.0.0:7654").await?;
+
+    while let Ok((client, address)) = listener.accept().await {
+        info!("Client accepted: {address:?}");
+        let connection = events::ServerConnection::from_tcp_stream(client);
+
+        tokio::spawn(connection.run(rpc_server.clone()));
+    }
 
     Ok(())
 }

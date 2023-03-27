@@ -1,10 +1,10 @@
 use crate::parsing::IdentifierRaw;
 use crate::parsing::FieldRaw;
 use crate::parsing::StructDefinitionRaw;
-use crate::parsing::MetadataRaw;
 use crate::parsing::FileRaw;
 use crate::parsing::RpcDefinitionRaw;
 use crate::parsing::RpcRaw;
+use crate::parsing::ReverseRpcRaw;
 use crate::parsing::EnumVariantRaw;
 use crate::parsing::EnumDefinitionRaw;
 use crate::parsing::TypeRaw;
@@ -56,10 +56,6 @@ REnumDefinition:EnumDefinitionRaw<'input> = {
     "enum" <name:RIdentifier> "{" <body:REnumBody?> "}" => EnumDefinitionRaw::new(name, body.unwrap_or_else(|| vec![])),
 }
 
-RMetadata:MetadataRaw<'input> = {
-    "metadata" "{" <fields:RFields?> "}" => MetadataRaw::new(fields.unwrap_or_else(|| vec![]))
-}
-
 RRPCDefinition:RpcDefinitionRaw<'input> = {
     <name:RIdentifier> "(" <input_type:RType> ")" "->" "stream" <output_type:RType> => 
         RpcDefinitionRaw::Stream { name, request: input_type, response: output_type },
@@ -80,6 +76,9 @@ RRPCDefinitions:Vec<RpcDefinitionRaw<'input>> = {
 
 RRPC:RpcRaw<'input> = {
     "rpc" "{" <definitions:RRPCDefinitions?> "}" => RpcRaw::new(definitions.unwrap_or_else(|| vec![]))
+}
+RReverseRPC:ReverseRpcRaw<'input> = {
+    "reverse" "rpc" "{" <definitions:RRPCDefinitions?> "}" => ReverseRpcRaw::new(definitions.unwrap_or_else(|| vec![]))
 }
 
 RStructDefinitions:Vec<StructDefinitionRaw<'input>> = {
@@ -107,5 +106,5 @@ REnumDefinitions:Vec<EnumDefinitionRaw<'input>> = {
 }
 
 pub RFile:FileRaw<'input> = {
-    <meta:RMetadata?> <structs:RStructDefinitions> <enums:REnumDefinitions?> <rpc:RRPC?> => FileRaw::new(meta, structs, enums.unwrap_or_else(|| vec![]), rpc)
+    <structs:RStructDefinitions> <enums:REnumDefinitions?> <rpc:RRPC?> <reverse_rpc:RReverseRPC?> => FileRaw::new(structs, enums.unwrap_or_else(|| vec![]), rpc, reverse_rpc)
 }

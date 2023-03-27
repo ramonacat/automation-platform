@@ -1,48 +1,46 @@
-use futures::{AsyncReadExt, StreamExt, TryStreamExt};
-use music::{Client, Metadata, RpcClient, StreamTrackRequest};
-use rpc_support::{DefaultRawRpcClient, RawRpcClient};
-use std::io::Cursor;
+use futures::StreamExt;
+use music::{ClientConnection, RequesterRpc, ResponderReverseRpc, StreamTrackRequest};
+use std::{io::Cursor, sync::Arc};
 use tokio::net::TcpStream;
 
 // todo this is inefficient, as it loads the whole file in memory
-async fn read_track<TRawRpcClient: RawRpcClient + Send + Sync>(
+async fn read_track(
     track_id: uuid::Uuid,
-    client: &mut Client<TRawRpcClient>,
+    client: &Arc<impl RequesterRpc>,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut vec = vec![];
 
-    client
-        .stream_track(
-            StreamTrackRequest { track_id },
-            Metadata {
-                correlation_id: uuid::Uuid::new_v4(),
-            },
-        )
+    let stream = client
+        .stream_track(StreamTrackRequest { track_id })
         .await
-        .unwrap()
-        .map(|x| {
-            x.map(|y| y.data)
-                .map_err(|y| std::io::Error::new(std::io::ErrorKind::Other, y))
-        })
-        .into_async_read()
-        .read_to_end(&mut vec)
-        .await?;
+        .unwrap();
+
+    let mut stream = Box::into_pin(stream);
+
+    while let Some(item) = stream.next().await {
+        vec.append(&mut item?.data);
+    }
 
     Ok(vec)
 }
+
+struct ReverseRpc;
+
+impl ResponderReverseRpc for ReverseRpc {}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let subscriber = tracing_subscriber::FmtSubscriber::new();
     tracing::subscriber::set_global_default(subscriber)?;
 
-    let mut client = Client::new(DefaultRawRpcClient::new(
-        TcpStream::connect("192.168.49.2:30655").await?,
-    ));
+    let stream = TcpStream::connect("192.168.49.2:30655").await?;
+    let client = ClientConnection::from_tcp_stream(stream);
+
+    let requester = client.run(Arc::new(ReverseRpc)).await;
 
     let vec = read_track(
         uuid::Uuid::parse_str("7fcc568b-9d29-426e-a4cd-d85e8fdef3d7").unwrap(),
-        &mut client,
+        &requester,
     )
     .await?;
 
@@ -58,65 +56,56 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg(test)]
 mod tests {
-    use rpc_support::{rpc_error::RpcError, ResponseStream};
-    use serde::{de::DeserializeOwned, Serialize};
+    use music::{AllAlbums, AllAlbumsRequest, AllArtists, AllTracks, AllTracksRequest, TrackData};
     use uuid::Uuid;
 
     use super::*;
 
-    struct MockRawRpcClient {
-        response_stream: Box<dyn Fn() -> ResponseStream<String> + Send + Sync>,
-    }
+    struct MockRequesterRpc;
 
     #[async_trait::async_trait]
-    impl RawRpcClient for MockRawRpcClient {
-        async fn send_rpc<TRequest, TMetadata, TResponse>(
-            &mut self,
-            _id: u64,
-            _method_name: &str,
-            _request: &TRequest,
-            _metadata: &TMetadata,
-        ) -> Result<TResponse, RpcError>
-        where
-            TRequest: Serialize + Sync + Send,
-            TMetadata: Serialize + Sync + Send,
-            TResponse: DeserializeOwned,
-        {
+    impl RequesterRpc for MockRequesterRpc {
+        async fn stream_track(
+            &self,
+            _request: StreamTrackRequest,
+        ) -> Result<
+            Box<
+                dyn futures::Stream<Item = Result<TrackData, music::Error>> + Send + Sync + 'static,
+            >,
+            rpc_support::connection::Error,
+        > {
+            let stream = Box::new(async_stream::stream! {
+                yield Ok(TrackData { data: vec![1,2,3] });
+                yield Ok(TrackData { data: vec![4,5] });
+            });
+
+            Ok(stream)
+        }
+        async fn all_artists(
+            &self,
+            _request: (),
+        ) -> Result<Result<AllArtists, music::Error>, rpc_support::connection::Error> {
             todo!();
         }
-
-        async fn send_rpc_stream_request<TRequest, TMetadata, TResponse>(
-            &mut self,
-            _request_id: u64,
-            _method_name: &str,
-            _request: &TRequest,
-            _metadata: &TMetadata,
-        ) -> Result<ResponseStream<TResponse>, RpcError>
-        where
-            TRequest: Serialize + Sync + Send,
-            TMetadata: Serialize + Sync + Send,
-            TResponse: DeserializeOwned,
-        {
-            Ok(Box::pin((self.response_stream)().map(move |x| {
-                Ok::<_, RpcError>(serde_json::from_str(&x?)?)
-            })))
+        async fn all_albums(
+            &self,
+            _request: AllAlbumsRequest,
+        ) -> Result<Result<AllAlbums, music::Error>, rpc_support::connection::Error> {
+            todo!();
+        }
+        async fn all_tracks(
+            &self,
+            _request: AllTracksRequest,
+        ) -> Result<Result<AllTracks, music::Error>, rpc_support::connection::Error> {
+            todo!();
         }
     }
 
     #[tokio::test]
     async fn test_read_track() {
-        let mut client = Client::new(MockRawRpcClient {
-            response_stream: Box::new(|| {
-                Box::pin(
-                    async_stream::stream! {
-                        yield Ok("{\"data\": [1,2,3,4,5]}".to_string());
-                    }
-                    .boxed(),
-                )
-            }),
-        });
+        let client = MockRequesterRpc;
 
-        let result = read_track(Uuid::new_v4(), &mut client).await.unwrap();
+        let result = read_track(Uuid::new_v4(), &Arc::new(client)).await.unwrap();
 
         assert_eq!(result, vec![1, 2, 3, 4, 5]);
     }

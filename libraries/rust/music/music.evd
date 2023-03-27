@@ -1,7 +1,3 @@
-metadata {
-    correlation_id: guid,
-}
-
 struct TrackData {
     data: binary,
 }

@@ -2,22 +2,19 @@ mod event_storage;
 mod music_storage;
 
 use event_storage::EventStorage;
-use events::{EventKind, RpcClient as EventsRpc};
+use events::{EventKind, RequesterRpc};
 use futures::stream::StreamExt;
 use music::{
-    Album, AllAlbums, AllAlbumsRequest, AllArtists, AllTracks, AllTracksRequest, Artist, Metadata,
-    RpcServer as MusicRpc, Server, StreamTrackRequest, Track, TrackData,
+    Album, AllAlbums, AllAlbumsRequest, AllArtists, AllTracks, AllTracksRequest, Artist,
+    ServerConnection, StreamTrackRequest, Track, TrackData,
 };
-use music_storage::{Error, MusicStorage, Postgres};
+use music_storage::{MusicStorage, Postgres};
 use platform::async_infra;
 use platform::postgres::connect;
 use platform::secrets::SecretProvider;
-use rpc_support::rpc_error::RpcError;
-use rpc_support::{Client as RpcClient, DefaultRawRpcClient};
-use std::pin::Pin;
+use std::collections::HashMap;
 use std::sync::Arc;
-use std::{collections::HashMap, sync::Weak};
-use tokio::net::TcpStream;
+use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
 use tokio_util::io::ReaderStream;
 use tracing::info;
@@ -30,43 +27,54 @@ struct RpcServer<TMusicStorage: MusicStorage> {
 }
 
 #[async_trait::async_trait]
-impl<TMusicStorage: MusicStorage + Send + Sync> MusicRpc for RpcServer<TMusicStorage> {
+impl<TMusicStorage: MusicStorage + Send + Sync + 'static> music::ResponderRpc
+    for RpcServer<TMusicStorage>
+{
     async fn stream_track(
-        &mut self,
+        &self,
         request: StreamTrackRequest,
-        _metadata: Metadata,
-        _client: Weak<Mutex<dyn RpcClient>>,
+        _other_side: std::sync::Arc<dyn music::RequesterReverseRpc>,
     ) -> Result<
-        Pin<Box<dyn futures::stream::Stream<Item = Result<TrackData, RpcError>> + Unpin + Send>>,
-        RpcError,
+        Box<dyn futures::Stream<Item = Result<TrackData, music::Error>> + Send + Sync + 'static>,
+        rpc_support::connection::Error,
     > {
         let track = self
             .music_storage
             .lock()
             .await
             .track_by_id(request.track_id)
-            .await?;
+            // TODO actual error handling
+            .await
+            .map_err(|_| rpc_support::connection::Error::UnexpectedEndOfStream)?;
         // TODO get the mount path from track.path as well!
         let mut path = std::path::PathBuf::from("/mnt/the-nas/");
         path.push(track.path.path);
 
-        let file = tokio::fs::File::open(path).await?;
+        // FIXME actual error handling
+        let file = tokio::fs::File::open(path)
+            .await
+            .map_err(|_| rpc_support::connection::Error::UnexpectedEndOfStream)?;
         let reader = ReaderStream::new(file);
 
-        Ok(Box::pin(reader.map(|buf| {
+        Ok(Box::new(reader.map(|buf| {
             Ok(TrackData {
-                data: buf?.to_vec(),
+                data: buf.map_err(|_| music::Error {})?.to_vec(),
             })
         })))
     }
 
     async fn all_artists(
-        &mut self,
+        &self,
         _request: (),
-        _metadata: Metadata,
-        _client: Weak<Mutex<dyn RpcClient>>,
-    ) -> Result<AllArtists, RpcError> {
-        let artists = self.music_storage.lock().await.all_artists().await?;
+        _other_side: std::sync::Arc<dyn music::RequesterReverseRpc>,
+    ) -> Result<AllArtists, music::Error> {
+        let artists = self
+            .music_storage
+            .lock()
+            .await
+            .all_artists()
+            .await
+            .map_err(|_| music::Error {})?;
 
         Ok(AllArtists {
             artists: artists
@@ -80,17 +88,17 @@ impl<TMusicStorage: MusicStorage + Send + Sync> MusicRpc for RpcServer<TMusicSto
     }
 
     async fn all_albums(
-        &mut self,
+        &self,
         request: AllAlbumsRequest,
-        _metadata: Metadata,
-        _client: Weak<Mutex<dyn RpcClient>>,
-    ) -> Result<AllAlbums, RpcError> {
+        _other_side: std::sync::Arc<dyn music::RequesterReverseRpc>,
+    ) -> Result<AllAlbums, music::Error> {
         let albums = self
             .music_storage
             .lock()
             .await
             .all_albums(request.artist_id)
-            .await?;
+            .await
+            .map_err(|_| music::Error {})?;
 
         Ok(AllAlbums {
             albums: albums
@@ -105,17 +113,17 @@ impl<TMusicStorage: MusicStorage + Send + Sync> MusicRpc for RpcServer<TMusicSto
     }
 
     async fn all_tracks(
-        &mut self,
+        &self,
         request: AllTracksRequest,
-        _metadata: Metadata,
-        _client: Weak<Mutex<dyn RpcClient>>,
-    ) -> Result<AllTracks, RpcError> {
+        _other_side: std::sync::Arc<dyn music::RequesterReverseRpc>,
+    ) -> Result<AllTracks, music::Error> {
         let tracks = self
             .music_storage
             .lock()
             .await
             .all_tracks(request.album_id)
-            .await?;
+            .await
+            .map_err(|_| music::Error {})?;
 
         Ok(AllTracks {
             tracks: tracks
@@ -131,19 +139,9 @@ impl<TMusicStorage: MusicStorage + Send + Sync> MusicRpc for RpcServer<TMusicSto
     }
 }
 
-impl From<Error> for RpcError {
-    fn from(err: Error) -> Self {
-        RpcError::Custom(format!("{err:?}"))
-    }
-}
+struct EventsReverseRpc {}
 
-// TODO this should be per-error, so we don't expose all the error messages
-fn to_rpc_error<T>(e: T) -> RpcError
-where
-    T: std::error::Error,
-{
-    RpcError::Custom(format!("{e:?}"))
-}
+impl events::ResponderReverseRpc for EventsReverseRpc {}
 
 #[tokio::main]
 #[tracing::instrument]
@@ -163,38 +161,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ));
     let music_storage = Arc::new(Mutex::new(Postgres::new(pg_client.clone())));
 
-    tokio::spawn(async_infra::run_with_error_handling::<RpcError>(
+    tokio::spawn(async_infra::run_with_error_handling::<music::Error>(
         async move {
             let storage = Postgres::new(pg_client.clone());
             let mut event_storage = EventStorage::new(pg_client);
 
-            let mut client = events::Client::new(DefaultRawRpcClient::new(
-                TcpStream::connect("svc-events:7654").await?,
-            ));
+            let tcp_stream = TcpStream::connect("svc-events:7654")
+                .await
+                .map_err(|_| music::Error {})?;
+            let connection = events::ClientConnection::from_tcp_stream(tcp_stream);
+            let client = connection.run(Arc::new(EventsReverseRpc {})).await;
 
-            let mut stream = client
-                .subscribe(
-                    events::SubscribeRequest {
-                        id: Uuid::new_v4(),
-                        from: event_storage
-                            .latest_processed_timestamp()
-                            .await
-                            .map_err(to_rpc_error)?,
-                    },
-                    events::Metadata {
-                        source: "music".to_string(),
-                        correlation_id: Uuid::new_v4(),
-                    },
-                )
-                .await?;
+            let stream = client
+                .subscribe(events::SubscribeRequest {
+                    id: Uuid::new_v4(),
+                    from: event_storage
+                        .latest_processed_timestamp()
+                        .await
+                        .map_err(|_| music::Error {})?,
+                })
+                .await
+                .map_err(|_| music::Error {})?;
+
+            let mut stream = Box::into_pin(stream);
 
             while let Some(x) = stream.next().await {
-                let x = x?;
+                let x = x.map_err(|_| music::Error {})?;
 
                 if event_storage
                     .was_processed(&x.id)
                     .await
-                    .map_err(to_rpc_error)?
+                    .map_err(|_| music::Error {})?
                 {
                     continue;
                 }
@@ -208,14 +205,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 &path.mount_id,
                                 &path.path,
                             )
-                            .map_err(to_rpc_error)?;
+                            .map_err(|_| music::Error {})?;
 
                         // TODO of course this ain't great, make the directories configurable
                         if !path.path.starts_with("Music") {
                             event_storage
                                 .store_event(&x.id, &x.created_time)
                                 .await
-                                .map_err(to_rpc_error)?;
+                                .map_err(|_| music::Error {})?;
                             continue;
                         }
 
@@ -225,29 +222,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 event_storage
                                     .store_event(&x.id, &x.created_time)
                                     .await
-                                    .map_err(to_rpc_error)?;
+                                    .map_err(|_| music::Error {})?;
                                 continue;
                             }
                         } else {
                             event_storage
                                 .store_event(&x.id, &x.created_time)
                                 .await
-                                .map_err(to_rpc_error)?;
+                                .map_err(|_| music::Error {})?;
                             continue;
                         }
 
-                        let flac = claxon::FlacReader::open(physical_path).map_err(to_rpc_error)?;
+                        let flac =
+                            claxon::FlacReader::open(physical_path).map_err(|_| music::Error {})?;
                         let tags: HashMap<_, _> = flac.tags().collect();
 
                         // TODO are these the only tag names, or do we need to care about alternative names?
                         // TODO we need to insert the tracks even if some data is missing
                         // TODO differentiate between track artists and album artists
                         if let Some(artist) = tags.get("ARTIST") {
-                            let artist_id = storage.upsert_artist(artist, None).await?;
+                            let artist_id = storage
+                                .upsert_artist(artist, None)
+                                .await
+                                .map_err(|_| music::Error {})?;
                             info!("Artist ID: {:?}", artist_id);
                             // TODO: Do not hardcode the relation type
-                            let relation_type_id =
-                                storage.upsert_relation_type("Main Artist").await?;
+                            let relation_type_id = storage
+                                .upsert_relation_type("Main Artist")
+                                .await
+                                .map_err(|_| music::Error {})?;
 
                             if let Some(album) = tags.get("ALBUM") {
                                 let album_id = storage
@@ -257,19 +260,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         title: album,
                                         disc_count: tags
                                             .get("TOTALDISCS")
-                                            .map(|y| y.parse().map_err(to_rpc_error))
+                                            .map(|y| y.parse().map_err(|_| music::Error {}))
                                             .transpose()?,
                                         track_count: tags
                                             .get("TOTALTRACKS")
-                                            .map(|y| y.parse().map_err(to_rpc_error))
+                                            .map(|y| y.parse().map_err(|_| music::Error {}))
                                             .transpose()?,
                                         year: tags
                                             .get("YEAR")
-                                            .map(|y| y.parse().map_err(to_rpc_error))
+                                            .map(|y| y.parse().map_err(|_| music::Error {}))
                                             .transpose()?,
                                         discogs_id: None,
                                     })
-                                    .await?;
+                                    .await
+                                    .map_err(|_| music::Error {})?;
                                 info!("Album ID: {:?}", album_id);
 
                                 if let Some(title) = tags.get("TITLE") {
@@ -281,16 +285,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             relation_type_id,
                                             disc_number: tags
                                                 .get("DISCNUMBER")
-                                                .map(|y| y.parse().map_err(to_rpc_error))
+                                                .map(|y| y.parse().map_err(|_| music::Error {}))
                                                 .transpose()?,
                                             track_number: tags
                                                 .get("TRACKNUMBER")
-                                                .map(|y| y.parse().map_err(to_rpc_error))
+                                                .map(|y| y.parse().map_err(|_| music::Error {}))
                                                 .transpose()?,
                                             path: serde_json::to_value(&path)
-                                                .map_err(to_rpc_error)?,
+                                                .map_err(|_| music::Error {})?,
                                         })
-                                        .await?;
+                                        .await
+                                        .map_err(|_| music::Error {})?;
                                     info!("Track ID: {:?}", track_id);
                                 } else {
                                     info!("No title tag, tags: {:?}, path: {:?}", tags, path);
@@ -312,7 +317,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 event_storage
                     .store_event(&x.id, &x.created_time)
                     .await
-                    .map_err(to_rpc_error)?;
+                    .map_err(|_| music::Error {})?;
             }
 
             // FIXME: Mark the events as handled and ensure we read from the right place next time
@@ -321,23 +326,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     ));
 
-    // todo make the bind addr/port configurable
-    let server = Server::new(
-        "0.0.0.0:7655",
-        Arc::new(Mutex::new(RpcServer {
+    let listener = TcpListener::bind("0.0.0.0:7655").await?;
+
+    while let Ok((client, address)) = listener.accept().await {
+        info!("Client accepted: {address:?}");
+        let server_connection = ServerConnection::from_tcp_stream(client);
+
+        tokio::spawn(server_connection.run(Arc::new(RpcServer {
             music_storage: music_storage.clone(),
-        })),
-    )
-    .await?;
-    server.run().await?;
+        })));
+    }
 
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use music::ResponderRpc;
+
     use super::*;
-    use crate::music_storage::MusicStorage;
+    use crate::music_storage::{Error, MusicStorage};
 
     struct MockMusicStorage;
 
@@ -387,22 +395,13 @@ mod tests {
         }
     }
 
-    struct MockClient;
+    struct MockReverseRpc;
 
-    #[async_trait::async_trait]
-    impl rpc_support::Client for MockClient {
-        async fn write_all(&mut self, _data: &[u8]) -> std::io::Result<()> {
-            todo!();
-        }
-
-        async fn read_line(&mut self) -> std::io::Result<String> {
-            todo!();
-        }
-    }
+    impl music::RequesterReverseRpc for MockReverseRpc {}
 
     #[tokio::test]
     async fn rpc_server_all_albums() {
-        let mut server = RpcServer {
+        let server = RpcServer {
             music_storage: Arc::new(Mutex::new(MockMusicStorage)),
         };
 
@@ -411,13 +410,7 @@ mod tests {
         };
 
         let response = server
-            .all_albums(
-                request,
-                Metadata {
-                    correlation_id: Uuid::new_v4(),
-                },
-                Weak::<Mutex<MockClient>>::new(),
-            )
+            .all_albums(request, Arc::new(MockReverseRpc))
             .await
             .unwrap();
 

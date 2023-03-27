@@ -1,6 +1,6 @@
 use crate::parsing::{
-    EnumDefinitionRaw, EnumVariantRaw, FieldRaw, FileRaw, IdentifierRaw, StructDefinitionRaw,
-    TypeRaw,
+    EnumDefinitionRaw, EnumVariantRaw, FieldRaw, FileRaw, IdentifierRaw, RpcDefinitionRaw,
+    StructDefinitionRaw, TypeRaw,
 };
 use petgraph::algo::toposort;
 use petgraph::graph::DiGraph;
@@ -67,34 +67,10 @@ pub struct TypedField {
     pub type_id: TypedFieldType,
 }
 
-impl TypedField {
-    #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    #[must_use]
-    pub fn type_name(&self) -> &TypedFieldType {
-        &self.type_id
-    }
-}
-
 #[derive(Debug)]
 pub struct TypedStruct {
     pub name: String,
     pub fields: Vec<TypedField>,
-}
-
-impl TypedStruct {
-    #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    #[must_use]
-    pub fn fields(&self) -> &[TypedField] {
-        &self.fields
-    }
 }
 
 #[derive(Debug)]
@@ -103,34 +79,10 @@ pub struct TypedEnumVariant {
     pub fields: Vec<TypedField>,
 }
 
-impl TypedEnumVariant {
-    #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    #[must_use]
-    pub fn fields(&self) -> &[TypedField] {
-        &self.fields
-    }
-}
-
 #[derive(Debug)]
 pub struct TypedEnum {
     pub name: String,
     pub variants: Vec<TypedEnumVariant>,
-}
-
-impl TypedEnum {
-    #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    #[must_use]
-    pub fn variants(&self) -> &[TypedEnumVariant] {
-        &self.variants
-    }
 }
 
 #[derive(Debug)]
@@ -177,24 +129,13 @@ enum TypeCheckableDataDefinition<'input> {
     Enum(&'input TypeCheckableEnumDefinition<'input>),
 }
 
-pub struct TypedMetadata {
-    pub fields: Vec<TypedField>,
-}
-
-impl TypedMetadata {
-    #[must_use]
-    pub fn fields(&self) -> &[TypedField] {
-        &self.fields
-    }
-}
-
 pub enum TypedRpcCall {
-    Stream {
+    Unary {
         name: String,
         request: TypedFieldType,
         response: TypedFieldType,
     },
-    Unary {
+    Stream {
         name: String,
         request: TypedFieldType,
         response: TypedFieldType,
@@ -205,18 +146,15 @@ pub struct TypedRpc {
     pub calls: Vec<TypedRpcCall>,
 }
 
-impl TypedRpc {
-    #[must_use]
-    pub fn calls(&self) -> &[TypedRpcCall] {
-        &self.calls
-    }
+pub struct TypedReverseRpc {
+    pub calls: Vec<TypedRpcCall>,
 }
 
 pub struct TypedFile {
     pub structs: Vec<TypedStruct>,
     pub enums: Vec<TypedEnum>,
-    pub meta: TypedMetadata,
     pub rpc: TypedRpc,
+    pub reverse_rpc: TypedReverseRpc,
 }
 
 #[derive(Default)]
@@ -346,6 +284,39 @@ impl<'input> TypeChecker<'input> {
         })
     }
 
+    fn check_rpc_method(&self, rpc_definition: &RpcDefinitionRaw<'input>) -> TypedRpcCall {
+        match rpc_definition {
+            crate::parsing::RpcDefinitionRaw::Stream {
+                name,
+                request,
+                response,
+            } => {
+                let typed_rpc = TypedRpcCall::Stream {
+                    name: name.0.to_string(),
+                    request: self.resolve_type(&Self::resolve_raw_type(request)).unwrap(),
+                    response: self
+                        .resolve_type(&Self::resolve_raw_type(response))
+                        .unwrap(),
+                };
+                typed_rpc
+            }
+            crate::parsing::RpcDefinitionRaw::Unary {
+                name,
+                request,
+                response,
+            } => {
+                let typed_rpc = TypedRpcCall::Unary {
+                    name: name.0.to_string(),
+                    request: self.resolve_type(&Self::resolve_raw_type(request)).unwrap(),
+                    response: self
+                        .resolve_type(&Self::resolve_raw_type(response))
+                        .unwrap(),
+                };
+                typed_rpc
+            }
+        }
+    }
+
     /// # Errors
     /// May return an error when the type check fails
     /// # Panics
@@ -380,11 +351,6 @@ impl<'input> TypeChecker<'input> {
                     variants,
                 },
             );
-        }
-
-        let mut metadata_fields = HashMap::new();
-        if let Some(metadata) = file.metadata() {
-            metadata_fields = Self::map_fields(metadata.fields(), "metadata")?;
         }
 
         let mut graph = DiGraph::new();
@@ -447,40 +413,21 @@ impl<'input> TypeChecker<'input> {
             }
         }
 
-        let meta_fields = self.type_check_fields(&metadata_fields)?;
         let rpc = file.rpc().map(|rpc| {
-            let mut rpc_typed = HashMap::new();
+            let mut rpc_typed = Vec::new();
+
             for rpc_definition in &rpc.definitions {
-                match rpc_definition {
-                    crate::parsing::RpcDefinitionRaw::Stream {
-                        name,
-                        request,
-                        response,
-                    } => {
-                        let typed_rpc = TypedRpcCall::Stream {
-                            name: name.0.to_string(),
-                            request: self.resolve_type(&Self::resolve_raw_type(request)).unwrap(),
-                            response: self
-                                .resolve_type(&Self::resolve_raw_type(response))
-                                .unwrap(),
-                        };
-                        rpc_typed.insert(name.0.to_string(), typed_rpc);
-                    }
-                    crate::parsing::RpcDefinitionRaw::Unary {
-                        name,
-                        request,
-                        response,
-                    } => {
-                        let typed_rpc = TypedRpcCall::Unary {
-                            name: name.0.to_string(),
-                            request: self.resolve_type(&Self::resolve_raw_type(request)).unwrap(),
-                            response: self
-                                .resolve_type(&Self::resolve_raw_type(response))
-                                .unwrap(),
-                        };
-                        rpc_typed.insert(name.0.to_string(), typed_rpc);
-                    }
-                };
+                rpc_typed.push(self.check_rpc_method(rpc_definition));
+            }
+
+            rpc_typed
+        });
+
+        let reverse_rpc = file.reverse_rpc().map(|rpc| {
+            let mut rpc_typed = Vec::new();
+
+            for rpc_definition in &rpc.definitions {
+                rpc_typed.push(self.check_rpc_method(rpc_definition));
             }
 
             rpc_typed
@@ -489,11 +436,11 @@ impl<'input> TypeChecker<'input> {
         Ok(TypedFile {
             structs: structs_typed.into_values().collect(),
             enums: enums_typed.into_values().collect(),
-            meta: TypedMetadata {
-                fields: meta_fields,
-            },
             rpc: TypedRpc {
-                calls: rpc.map_or_else(Vec::new, |rpc| rpc.into_values().collect()),
+                calls: rpc.unwrap_or_default(),
+            },
+            reverse_rpc: TypedReverseRpc {
+                calls: reverse_rpc.unwrap_or_default(),
             },
         })
     }

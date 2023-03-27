@@ -1,31 +1,32 @@
 use std::{
     ops::Add,
-    sync::Weak,
+    sync::Arc,
     time::{Duration, SystemTime},
 };
 
-use events::{Client, RpcClient as EventsRpc};
-use lib_directory_watcher::{FilesystemEvent, FilesystemEventKind, Metadata, RpcServer as Rpc};
+use lib_directory_watcher::{FilesystemEvent, FilesystemEventKind};
 use platform::mounts::PathInside;
-use rpc_support::{rpc_error::RpcError, Client as RpcClient, RawRpcClient};
 use time::OffsetDateTime;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::file_status_store::FileStatusStore;
 
-pub struct RpcServer<T: FileStatusStore + Sync + Send, TRawRpcClient: RawRpcClient + Send + Sync> {
-    file_status_store: T,
-    event_service: Client<TRawRpcClient>,
+pub struct EventsReverseRpc;
+
+#[async_trait::async_trait]
+impl events::ResponderReverseRpc for EventsReverseRpc {}
+
+pub struct RpcServer<T: FileStatusStore + Sync + Send> {
+    file_status_store: Mutex<T>,
+    event_service: Arc<dyn events::RequesterRpc>,
     generate_uuid: Box<dyn Fn() -> Uuid + Send + Sync>,
 }
 
-impl<T: FileStatusStore + Sync + Send, TRawRpcClient: RawRpcClient + Send + Sync>
-    RpcServer<T, TRawRpcClient>
-{
+impl<T: FileStatusStore + Sync + Send> RpcServer<T> {
     pub const fn new(
-        file_status_store: T,
-        event_service: events::Client<TRawRpcClient>,
+        file_status_store: Mutex<T>,
+        event_service: Arc<dyn events::RequesterRpc>,
         generate_uuid: Box<dyn Fn() -> Uuid + Send + Sync>,
     ) -> Self {
         Self {
@@ -37,36 +38,45 @@ impl<T: FileStatusStore + Sync + Send, TRawRpcClient: RawRpcClient + Send + Sync
 }
 
 #[async_trait::async_trait]
-impl<T: FileStatusStore + Sync + Send, TRawRpcClient: RawRpcClient + Send + Sync> Rpc
-    for RpcServer<T, TRawRpcClient>
+impl<T: FileStatusStore + Sync + Send + 'static> lib_directory_watcher::ResponderRpc
+    for RpcServer<T>
 {
     #[allow(clippy::too_many_lines)]
     async fn file_changed(
-        &mut self,
+        &self,
         event: FilesystemEvent,
-        _metadata: Metadata,
-        _client: Weak<Mutex<dyn RpcClient>>,
-    ) -> Result<(), RpcError> {
+        other_side: Arc<dyn lib_directory_watcher::RequesterReverseRpc>,
+    ) -> Result<(), lib_directory_watcher::Error> {
         info!("Received file changed event: {:?}", event);
 
         match event.kind {
             FilesystemEventKind::Created {} | FilesystemEventKind::Modified {} => {
+                let contents = other_side
+                    .read_file(event.path.clone())
+                    .await
+                    .unwrap()
+                    .unwrap();
+
+                info!("File contents: {}", String::from_utf8(contents).unwrap());
+
                 let timestamp = OffsetDateTime::from_unix_timestamp(
                     event
                         .timestamp
                         .try_into()
-                        .map_err(|e| RpcError::Custom(format!("{e}")))?,
+                        .map_err(|_| lib_directory_watcher::Error {})?,
                 )
-                .map_err(|e| RpcError::Custom(format!("{e}")))?;
+                .map_err(|_| lib_directory_watcher::Error {})?;
 
                 let sync_status = self
                     .file_status_store
+                    .lock()
+                    .await
                     .sync(
                         &PathInside::new(event.mount_id.clone(), event.path.clone()),
                         timestamp,
                     )
                     .await
-                    .map_err(|e| RpcError::Custom(format!("{e}")))?;
+                    .map_err(|_| lib_directory_watcher::Error {})?;
 
                 let data = match sync_status {
                     crate::file_status_store::FileStatusSyncResult::Created => {
@@ -89,80 +99,69 @@ impl<T: FileStatusStore + Sync + Send, TRawRpcClient: RawRpcClient + Send + Sync
                 };
 
                 self.event_service
-                    .send_event(
-                        events::Event {
-                            id: (self.generate_uuid)(),
-                            created_time: timestamp.into(),
-                            data,
-                        },
-                        events::Metadata {
-                            // TODO pass the correlation ID from parent scope!
-                            correlation_id: (self.generate_uuid)(),
-                            source: "directory-watcher".to_string(),
-                        },
-                    )
-                    .await?;
+                    .send_event(events::Event {
+                        id: (self.generate_uuid)(),
+                        created_time: timestamp.into(),
+                        data,
+                    })
+                    .await
+                    .map_err(|_| lib_directory_watcher::Error {})?
+                    .map_err(|_| lib_directory_watcher::Error {})?;
             }
             FilesystemEventKind::Moved { to } => {
                 self.file_status_store
+                    .lock()
+                    .await
                     .rename(
                         &PathInside::new(event.mount_id.clone(), event.path.clone()),
                         &PathInside::new(event.mount_id.clone(), to.clone()),
                     )
                     .await
-                    .map_err(|e| RpcError::Custom(format!("{e}")))?;
+                    .map_err(|_| lib_directory_watcher::Error {})?;
 
                 self.event_service
-                    .send_event(
-                        events::Event {
-                            id: (self.generate_uuid)(),
-                            created_time: SystemTime::UNIX_EPOCH
-                                .add(Duration::from_secs(event.timestamp)),
-                            data: events::EventKind::FileMoved {
-                                from: events::FileOnMountPath {
-                                    path: event.path,
-                                    mount_id: event.mount_id.clone(),
-                                },
-                                to: events::FileOnMountPath {
-                                    path: to,
-                                    mount_id: event.mount_id,
-                                },
+                    .send_event(events::Event {
+                        id: (self.generate_uuid)(),
+                        created_time: SystemTime::UNIX_EPOCH
+                            .add(Duration::from_secs(event.timestamp)),
+                        data: events::EventKind::FileMoved {
+                            from: events::FileOnMountPath {
+                                path: event.path,
+                                mount_id: event.mount_id.clone(),
+                            },
+                            to: events::FileOnMountPath {
+                                path: to,
+                                mount_id: event.mount_id,
                             },
                         },
-                        events::Metadata {
-                            // TODO pass the correlation ID from parent scope!
-                            correlation_id: (self.generate_uuid)(),
-                            source: "directory-watcher".to_string(),
-                        },
-                    )
-                    .await?;
+                    })
+                    .await
+                    .map_err(|_| lib_directory_watcher::Error {})?
+                    .map_err(|_| lib_directory_watcher::Error {})?;
             }
             FilesystemEventKind::Deleted {} => {
                 self.file_status_store
+                    .lock()
+                    .await
                     .delete(&PathInside::new(event.mount_id.clone(), event.path.clone()))
                     .await
-                    .map_err(|e| RpcError::Custom(format!("{e}")))?;
+                    .map_err(|_| lib_directory_watcher::Error {})?;
 
                 self.event_service
-                    .send_event(
-                        events::Event {
-                            id: (self.generate_uuid)(),
-                            created_time: SystemTime::UNIX_EPOCH
-                                .add(Duration::from_secs(event.timestamp)),
-                            data: events::EventKind::FileDeleted {
-                                path: events::FileOnMountPath {
-                                    path: event.path,
-                                    mount_id: event.mount_id,
-                                },
+                    .send_event(events::Event {
+                        id: (self.generate_uuid)(),
+                        created_time: SystemTime::UNIX_EPOCH
+                            .add(Duration::from_secs(event.timestamp)),
+                        data: events::EventKind::FileDeleted {
+                            path: events::FileOnMountPath {
+                                path: event.path,
+                                mount_id: event.mount_id,
                             },
                         },
-                        events::Metadata {
-                            // TODO pass the correlation ID from parent scope!
-                            correlation_id: (self.generate_uuid)(),
-                            source: "directory-watcher".to_string(),
-                        },
-                    )
-                    .await?;
+                    })
+                    .await
+                    .map_err(|_| lib_directory_watcher::Error {})?
+                    .map_err(|_| lib_directory_watcher::Error {})?;
             }
         }
 
@@ -175,8 +174,7 @@ mod tests {
     use std::str::FromStr;
     use std::sync::Arc;
 
-    use rpc_support::ResponseStream;
-    use serde::{de::DeserializeOwned, Serialize};
+    use lib_directory_watcher::ResponderRpc;
     use tokio::sync::Mutex;
 
     use super::*;
@@ -223,60 +221,66 @@ mod tests {
         }
     }
 
-    struct MockRawRpcClient {
-        pub rpcs: Arc<Mutex<Vec<String>>>,
-    }
+    struct MockEventsRequester {}
 
     #[async_trait::async_trait]
-    impl RawRpcClient for MockRawRpcClient {
-        // TODO rename to send_rpc_request
-        async fn send_rpc<TRequest, TMetadata, TResponse>(
-            &mut self,
-            id: u64,
-            method_name: &str,
-            request: &TRequest,
-            metadata: &TMetadata,
-        ) -> Result<TResponse, RpcError>
-        where
-            TRequest: Serialize + Sync + Send,
-            TMetadata: Serialize + Sync + Send,
-            TResponse: DeserializeOwned,
-        {
-            self.rpcs.lock().await.push(format!(
-                "send_rpc {id} {method_name} {:?} {:?}",
-                serde_json::to_value(request),
-                serde_json::to_value(metadata)
-            ));
-
-            Ok(serde_json::from_str("null").unwrap())
+    impl events::RequesterRpc for MockEventsRequester {
+        async fn send_event(
+            &self,
+            _request: events::Event,
+        ) -> Result<Result<(), events::Error>, rpc_support::connection::Error> {
+            Ok(Ok(()))
         }
-
-        async fn send_rpc_stream_request<TRequest, TMetadata, TResponse>(
-            &mut self,
-            _request_id: u64,
-            _method_name: &str,
-            _request: &TRequest,
-            _metadata: &TMetadata,
-        ) -> Result<ResponseStream<TResponse>, RpcError>
-        where
-            TRequest: Serialize + Sync + Send,
-            TMetadata: Serialize + Sync + Send,
-            TResponse: DeserializeOwned,
-        {
+        async fn subscribe(
+            &self,
+            _request: events::SubscribeRequest,
+        ) -> Result<
+            Box<
+                dyn futures::Stream<Item = Result<events::Event, events::Error>>
+                    + Send
+                    + Sync
+                    + 'static,
+            >,
+            rpc_support::connection::Error,
+        > {
             todo!()
+        }
+    }
+
+    struct MockFilesResponder {}
+
+    #[async_trait::async_trait]
+    impl lib_directory_watcher::ResponderRpc for MockFilesResponder {
+        async fn file_changed(
+            &self,
+            _request: FilesystemEvent,
+            _other_side: std::sync::Arc<dyn lib_directory_watcher::RequesterReverseRpc>,
+        ) -> Result<(), lib_directory_watcher::Error> {
+            Ok(())
+        }
+    }
+
+    struct MockFilesReverseRequester {}
+
+    #[async_trait::async_trait]
+    impl lib_directory_watcher::RequesterReverseRpc for MockFilesReverseRequester {
+        async fn read_file(
+            &self,
+            _request: String,
+        ) -> Result<Result<Vec<u8>, lib_directory_watcher::Error>, rpc_support::connection::Error>
+        {
+            Ok(Ok(vec![]))
         }
     }
 
     #[tokio::test]
     async fn test_file_created() {
         let file_status_store = MockFileStatusStore::new(FileStatusSyncResult::Created);
-        let rpcs = Arc::new(Mutex::new(vec![]));
-        let raw_rpc_client = MockRawRpcClient { rpcs: rpcs.clone() };
 
-        let event_service = events::Client::new(raw_rpc_client);
+        let event_service = Arc::new(MockEventsRequester {});
 
-        let mut rpc_server = RpcServer::new(
-            file_status_store,
+        let rpc_server = RpcServer::new(
+            Mutex::new(file_status_store),
             event_service,
             Box::new(|| Uuid::from_str("00000000-0000-0000-0000-000000000000").unwrap()),
         );
@@ -289,40 +293,21 @@ mod tests {
         };
 
         rpc_server
-            .file_changed(event, Metadata {}, Weak::<Mutex<MockClient>>::new())
+            .file_changed(event, Arc::new(MockFilesReverseRequester {}))
             .await
             .unwrap();
 
-        insta::assert_debug_snapshot!(rpc_server.file_status_store.events);
-
-        let rpcs = rpcs.lock().await;
-
-        insta::assert_debug_snapshot!(rpcs.clone());
-    }
-
-    struct MockClient;
-
-    #[async_trait::async_trait]
-    impl rpc_support::Client for MockClient {
-        async fn write_all(&mut self, _data: &[u8]) -> std::io::Result<()> {
-            todo!();
-        }
-
-        async fn read_line(&mut self) -> std::io::Result<String> {
-            todo!();
-        }
+        insta::assert_debug_snapshot!(rpc_server.file_status_store.lock().await.events);
     }
 
     #[tokio::test]
     async fn test_file_moved() {
         let file_status_store = MockFileStatusStore::new(FileStatusSyncResult::Created);
-        let rpcs = Arc::new(Mutex::new(vec![]));
-        let raw_rpc_client = MockRawRpcClient { rpcs: rpcs.clone() };
 
-        let event_service = events::Client::new(raw_rpc_client);
+        let event_service = Arc::new(MockEventsRequester {});
 
-        let mut rpc_server = RpcServer::new(
-            file_status_store,
+        let rpc_server = RpcServer::new(
+            Mutex::new(file_status_store),
             event_service,
             Box::new(|| Uuid::from_str("00000000-0000-0000-0000-000000000000").unwrap()),
         );
@@ -337,27 +322,20 @@ mod tests {
         };
 
         rpc_server
-            .file_changed(event, Metadata {}, Weak::<Mutex<MockClient>>::new())
+            .file_changed(event, Arc::new(MockFilesReverseRequester {}))
             .await
             .unwrap();
 
-        insta::assert_debug_snapshot!(rpc_server.file_status_store.events);
-
-        let rpcs = rpcs.lock().await;
-
-        insta::assert_debug_snapshot!(rpcs.clone());
+        insta::assert_debug_snapshot!(rpc_server.file_status_store.lock().await.events);
     }
 
     #[tokio::test]
     async fn test_file_deleted() {
         let file_status_store = MockFileStatusStore::new(FileStatusSyncResult::Created);
-        let rpcs = Arc::new(Mutex::new(vec![]));
-        let raw_rpc_client = MockRawRpcClient { rpcs: rpcs.clone() };
+        let event_service = Arc::new(MockEventsRequester {});
 
-        let event_service = events::Client::new(raw_rpc_client);
-
-        let mut rpc_server = RpcServer::new(
-            file_status_store,
+        let rpc_server = RpcServer::new(
+            Mutex::new(file_status_store),
             event_service,
             Box::new(|| Uuid::from_str("00000000-0000-0000-0000-000000000000").unwrap()),
         );
@@ -370,27 +348,21 @@ mod tests {
         };
 
         rpc_server
-            .file_changed(event, Metadata {}, Weak::<Mutex<MockClient>>::new())
+            .file_changed(event, Arc::new(MockFilesReverseRequester {}))
             .await
             .unwrap();
 
-        insta::assert_debug_snapshot!(rpc_server.file_status_store.events);
-
-        let rpcs = rpcs.lock().await;
-
-        insta::assert_debug_snapshot!(rpcs.clone());
+        insta::assert_debug_snapshot!(rpc_server.file_status_store.lock().await.events);
     }
 
     #[tokio::test]
     async fn test_file_modified() {
         let file_status_store = MockFileStatusStore::new(FileStatusSyncResult::Modified);
-        let rpcs = Arc::new(Mutex::new(vec![]));
-        let raw_rpc_client = MockRawRpcClient { rpcs: rpcs.clone() };
 
-        let event_service = events::Client::new(raw_rpc_client);
+        let event_service = Arc::new(MockEventsRequester {});
 
-        let mut rpc_server = RpcServer::new(
-            file_status_store,
+        let rpc_server = RpcServer::new(
+            Mutex::new(file_status_store),
             event_service,
             Box::new(|| Uuid::from_str("00000000-0000-0000-0000-000000000000").unwrap()),
         );
@@ -403,14 +375,10 @@ mod tests {
         };
 
         rpc_server
-            .file_changed(event, Metadata {}, Weak::<Mutex<MockClient>>::new())
+            .file_changed(event, Arc::new(MockFilesReverseRequester {}))
             .await
             .unwrap();
 
-        insta::assert_debug_snapshot!(rpc_server.file_status_store.events);
-
-        let rpcs = rpcs.lock().await;
-
-        insta::assert_debug_snapshot!(rpcs.clone());
+        insta::assert_debug_snapshot!(rpc_server.file_status_store.lock().await.events);
     }
 }

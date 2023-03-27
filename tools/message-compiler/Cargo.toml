@@ -16,5 +16,3 @@ syn = "2.0.12"
 proc-macro2 = "1.0.53"
 [build-dependencies]
 lalrpop = { version = "0.19.8", features=["lexer"] }
-[dev-dependencies]
-insta= "1.29.0"

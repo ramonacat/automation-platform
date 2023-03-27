@@ -32,25 +32,6 @@ impl<'input> FieldRaw<'input> {
 pub struct StructDefinitionRaw<'input>(pub IdentifierRaw<'input>, pub Vec<FieldRaw<'input>>);
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct MetadataRaw<'input> {
-    fields: Vec<FieldRaw<'input>>,
-}
-
-impl<'input> MetadataRaw<'input> {
-    #[must_use]
-    pub(crate) fn fields(&self) -> &[FieldRaw<'input>] {
-        &self.fields
-    }
-}
-
-impl<'input> MetadataRaw<'input> {
-    #[must_use]
-    pub fn new(fields: Vec<FieldRaw<'input>>) -> Self {
-        Self { fields }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
 pub struct EnumVariantRaw<'input> {
     pub(crate) name: IdentifierRaw<'input>,
     pub(crate) fields: Vec<FieldRaw<'input>>,
@@ -103,32 +84,39 @@ impl<'input> RpcRaw<'input> {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub struct ReverseRpcRaw<'input> {
+    pub(crate) definitions: Vec<RpcDefinitionRaw<'input>>,
+}
+
+impl<'input> ReverseRpcRaw<'input> {
+    #[must_use]
+    pub fn new(definitions: Vec<RpcDefinitionRaw<'input>>) -> Self {
+        Self { definitions }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct FileRaw<'input> {
-    metadata: Option<MetadataRaw<'input>>,
     structs: Vec<StructDefinitionRaw<'input>>,
     enums: Vec<EnumDefinitionRaw<'input>>,
     rpc: Option<RpcRaw<'input>>,
+    reverse_rpc: Option<ReverseRpcRaw<'input>>,
 }
 
 impl<'input> FileRaw<'input> {
     #[must_use]
     pub fn new(
-        metadata: Option<MetadataRaw<'input>>,
         structs: Vec<StructDefinitionRaw<'input>>,
         enums: Vec<EnumDefinitionRaw<'input>>,
         rpc: Option<RpcRaw<'input>>,
+        reverse_rpc: Option<ReverseRpcRaw<'input>>,
     ) -> Self {
         Self {
-            metadata,
             structs,
             enums,
             rpc,
+            reverse_rpc,
         }
-    }
-
-    #[must_use]
-    pub fn metadata(&self) -> Option<&MetadataRaw<'input>> {
-        self.metadata.as_ref()
     }
 
     #[must_use]
@@ -144,6 +132,11 @@ impl<'input> FileRaw<'input> {
     #[must_use]
     pub fn rpc(&self) -> Option<&RpcRaw<'input>> {
         self.rpc.as_ref()
+    }
+
+    #[must_use]
+    pub fn reverse_rpc(&self) -> Option<&ReverseRpcRaw<'input>> {
+        self.reverse_rpc.as_ref()
     }
 }
 
@@ -170,9 +163,9 @@ mod test {
 
         assert_eq!(
             Ok(FileRaw::new(
-                None,
                 vec![StructDefinitionRaw(IdentifierRaw::new("A"), vec![])],
                 vec![],
+                None,
                 None
             )),
             r
@@ -186,7 +179,6 @@ mod test {
 
         assert_eq!(
             Ok(FileRaw::new(
-                None,
                 vec![
                     StructDefinitionRaw(
                         IdentifierRaw::new("A"),
@@ -229,6 +221,7 @@ mod test {
                     ),
                 ],
                 vec![],
+                None,
                 None
             )),
             r
@@ -242,7 +235,6 @@ mod test {
 
         assert_eq!(
             Ok(FileRaw::new(
-                None,
                 vec![
                     StructDefinitionRaw(
                         IdentifierRaw::new("request"),
@@ -264,7 +256,8 @@ mod test {
                     name: IdentifierRaw::new("call"),
                     request: TypeRaw::Type(IdentifierRaw::new("request")),
                     response: TypeRaw::Type(IdentifierRaw::new("response"))
-                }]))
+                }])),
+                None
             )),
             r
         );
@@ -277,7 +270,6 @@ mod test {
 
         assert_eq!(
             Ok(FileRaw::new(
-                None,
                 vec![
                     StructDefinitionRaw(
                         IdentifierRaw::new("request"),
@@ -299,7 +291,8 @@ mod test {
                     name: IdentifierRaw::new("call"),
                     request: TypeRaw::Type(IdentifierRaw::new("request")),
                     response: TypeRaw::Type(IdentifierRaw::new("response")),
-                }]))
+                }])),
+                None
             )),
             r
         );

@@ -1,25 +1,39 @@
 use async_walkdir::WalkDir;
 use clap::{arg, command, value_parser};
 use futures::StreamExt;
-use lib_directory_watcher::{Client, FilesystemEvent, Metadata, RpcClient};
+use lib_directory_watcher::{
+    ClientConnection, FilesystemEvent, Requester, RequesterRpc, ResponderReverseRpc,
+};
 use notify::{
     event::{CreateKind, ModifyKind, RemoveKind, RenameMode},
     Watcher,
 };
-use rpc_support::{rpc_error::RpcError, DefaultRawRpcClient, RawRpcClient};
-use std::{error::Error, path::PathBuf, time::SystemTime};
+use std::{error::Error, path::PathBuf, sync::Arc, time::SystemTime};
 use tokio::net::TcpStream;
 
-async fn send_event<TRawRpcClient: RawRpcClient + Send + Sync>(
-    client: &mut Client<TRawRpcClient>,
+async fn send_event(
+    client: &Arc<Requester>,
     event: FilesystemEvent,
-) -> Result<(), RpcError> {
-    client.file_changed(event, Metadata {}).await
+) -> Result<Result<(), lib_directory_watcher::Error>, rpc_support::connection::Error> {
+    client.file_changed(event).await
 }
 
 fn make_path_relative(base: &PathBuf, path: &PathBuf) -> PathBuf {
     // TODO proper error handling...
     pathdiff::diff_paths(path, base).unwrap()
+}
+
+struct FilesystemReverseRpc;
+
+#[async_trait::async_trait]
+impl ResponderReverseRpc for FilesystemReverseRpc {
+    async fn read_file(
+        &self,
+        _request: String,
+        _other_side: std::sync::Arc<dyn RequesterRpc>,
+    ) -> Result<Vec<u8>, lib_directory_watcher::Error> {
+        Ok("test69".as_bytes().to_owned())
+    }
 }
 
 /// # Panics
@@ -28,6 +42,9 @@ fn make_path_relative(base: &PathBuf, path: &PathBuf) -> PathBuf {
 /// May fail
 #[allow(clippy::too_many_lines)]
 pub async fn main_inner() -> Result<(), Box<dyn Error>> {
+    let subscriber = tracing_subscriber::FmtSubscriber::new();
+    tracing::subscriber::set_global_default(subscriber)?;
+
     let matches = command!()
         .arg(
             arg!(-p --path <PATH> "Path to the directory to be watched")
@@ -51,12 +68,12 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
         .watch(&path, notify::RecursiveMode::Recursive)
         .unwrap();
 
-    let raw_rpc_client = DefaultRawRpcClient::new(
-        TcpStream::connect(matches.get_one::<String>("url").unwrap())
-            .await
-            .unwrap(),
-    );
-    let mut client = Client::new(raw_rpc_client);
+    let tcp_stream = TcpStream::connect(matches.get_one::<String>("url").unwrap())
+        .await
+        .unwrap();
+
+    let client = ClientConnection::from_tcp_stream(tcp_stream);
+    let requester = client.run(Arc::new(FilesystemReverseRpc)).await;
 
     let mut walkdir = WalkDir::new(path.clone());
 
@@ -69,7 +86,7 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
         }
 
         send_event(
-            &mut client,
+            &requester,
             FilesystemEvent {
                 kind: lib_directory_watcher::FilesystemEventKind::Created {},
                 mount_id: mount_id.clone(),
@@ -88,6 +105,7 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
             },
         )
         .await
+        .unwrap()
         .unwrap();
     }
 
@@ -98,7 +116,7 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
             | notify::EventKind::Modify(ModifyKind::Name(RenameMode::To)) => {
                 for current_path in event.paths {
                     send_event(
-                        &mut client,
+                        &requester,
                         FilesystemEvent {
                             kind: lib_directory_watcher::FilesystemEventKind::Created {},
                             mount_id: mount_id.clone(),
@@ -115,6 +133,7 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
                         },
                     )
                     .await
+                    .unwrap()
                     .unwrap();
                 }
             }
@@ -127,7 +146,7 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
 
                 for current_path in event.paths {
                     send_event(
-                        &mut client,
+                        &requester,
                         FilesystemEvent {
                             kind: lib_directory_watcher::FilesystemEventKind::Deleted {},
                             mount_id: mount_id.clone(),
@@ -138,12 +157,13 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
                         },
                     )
                     .await
+                    .unwrap()
                     .unwrap();
                 }
             }
             notify::EventKind::Modify(ModifyKind::Name(RenameMode::Both)) => {
                 send_event(
-                    &mut client,
+                    &requester,
                     FilesystemEvent {
                         kind: lib_directory_watcher::FilesystemEventKind::Moved {
                             to: make_path_relative(&path, &event.paths[1])
@@ -164,29 +184,28 @@ pub async fn main_inner() -> Result<(), Box<dyn Error>> {
                     },
                 )
                 .await
+                .unwrap()
                 .unwrap();
             }
             notify::EventKind::Modify(_) => {
                 for current_path in event.paths {
-                    client
-                        .file_changed(
-                            FilesystemEvent {
-                                kind: lib_directory_watcher::FilesystemEventKind::Modified {},
-                                mount_id: mount_id.clone(),
-                                path: make_path_relative(&path, &current_path)
-                                    .to_string_lossy()
-                                    .to_string(),
-                                timestamp: std::fs::metadata(current_path)
-                                    .unwrap()
-                                    .modified()
-                                    .unwrap()
-                                    .duration_since(SystemTime::UNIX_EPOCH)
-                                    .unwrap()
-                                    .as_secs(),
-                            },
-                            Metadata {},
-                        )
+                    requester
+                        .file_changed(FilesystemEvent {
+                            kind: lib_directory_watcher::FilesystemEventKind::Modified {},
+                            mount_id: mount_id.clone(),
+                            path: make_path_relative(&path, &current_path)
+                                .to_string_lossy()
+                                .to_string(),
+                            timestamp: std::fs::metadata(current_path)
+                                .unwrap()
+                                .modified()
+                                .unwrap()
+                                .duration_since(SystemTime::UNIX_EPOCH)
+                                .unwrap()
+                                .as_secs(),
+                        })
                         .await
+                        .unwrap()
                         .unwrap();
                 }
             }
