@@ -11,7 +11,7 @@ clap = { version = "4.2.0", features = ["cargo"] }
 tokio = { version = "1.26.0", features = ["full"] }
 async-walkdir="0.2.0"
 notify = "5.1.0"
-futures = "0.3.27"
+futures = "0.3.28"
 pathdiff = "0.2.1"
 
 lib-directory-watcher = { path = "../../libraries/rust/directory-watcher" }
