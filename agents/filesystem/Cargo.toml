@@ -10,7 +10,7 @@ license = "BSD-3-Clause"
 clap = { version = "4.2.1", features = ["cargo"] }
 tokio = { version = "1.26.0", features = ["full"] }
 async-walkdir="0.2.0"
-notify = "5.1.0"
+notify = "6.0.0"
 futures = "0.3.28"
 pathdiff = "0.2.1"
 
