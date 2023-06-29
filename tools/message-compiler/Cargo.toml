@@ -17,4 +17,4 @@ proc-macro2 = "1.0.63"
 [build-dependencies]
 lalrpop = { version = "0.19.8", features=["lexer"] }
 [dev-dependencies]
-insta= "1.29.0"
+insta= "1.30.0"
