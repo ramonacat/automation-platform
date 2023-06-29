@@ -11,7 +11,7 @@ lalrpop-util = { version = "0.19.8", features=["lexer"] }
 regex = "1"
 petgraph = "0.6.3"
 prettyplease= "0.2.4"
-quote = "1.0.26"
+quote = "1.0.29"
 syn = "2.0.12"
 proc-macro2 = "1.0.63"
 [build-dependencies]
